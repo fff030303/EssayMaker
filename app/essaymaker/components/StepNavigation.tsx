@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Upload, FileText } from "lucide-react";
 import { AgentType } from "../types";
 import { cn } from "@/lib/utils";
 // 移除侧边栏导入
@@ -16,6 +16,7 @@ interface StepNavigationProps {
   isThirdStepLoading: boolean;
   agentType: AgentType;
   isProfessorSearch?: boolean;
+  isPSAssistant?: boolean;
 }
 
 export function StepNavigation({
@@ -27,9 +28,10 @@ export function StepNavigation({
   isThirdStepLoading,
   agentType,
   isProfessorSearch = false,
+  isPSAssistant = false,
 }: StepNavigationProps) {
-  // 如果不需要多步骤流程且不是教授搜索，则不显示导航
-  if (!shouldShowMultiStepFlow && !isProfessorSearch) {
+  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理，则不显示导航
+  if (!shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant) {
     return null;
   }
 
@@ -61,7 +63,11 @@ export function StepNavigation({
                 1
               </span>
             )}
-            {isProfessorSearch ? "查询结果" : "查询信息"}
+            {isProfessorSearch 
+              ? "查询结果" 
+              : isPSAssistant 
+                ? <><Upload className="h-4 w-4 mr-1" />文件上传</> 
+                : "查询信息"}
           </Button>
 
           {/* 步骤分隔线 */}
@@ -80,7 +86,7 @@ export function StepNavigation({
                 : ""
             )}
             onClick={() => onStepChange(2)}
-            disabled={currentStep < 2 && !shouldShowMultiStepFlow && !isProfessorSearch}
+            disabled={currentStep < 2 && !shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant}
           >
             {currentStep > 2 ? (
               <ArrowLeft className="h-4 w-4 mr-1" />
@@ -93,11 +99,15 @@ export function StepNavigation({
                 2
               </span>
             )}
-            {isProfessorSearch ? "教授信息" : "补充信息"}
+            {isProfessorSearch 
+              ? "教授信息" 
+              : isPSAssistant 
+                ? <><FileText className="h-4 w-4 mr-1" />初稿生成</> 
+                : "补充信息"}
           </Button>
 
-          {/* 如果是常规多步骤流程，显示第三步按钮；如果是教授搜索类型，不显示第三步按钮 */}
-          {shouldShowMultiStepFlow && !isProfessorSearch && (
+          {/* 如果是常规多步骤流程，显示第三步按钮；如果是教授搜索类型或PS初稿助理，不显示第三步按钮 */}
+          {shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && (
             <>
               {/* 步骤分隔线 */}
               <div className="h-[2px] w-8 md:w-12 bg-muted"></div>

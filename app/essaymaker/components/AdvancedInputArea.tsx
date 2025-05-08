@@ -44,6 +44,8 @@ interface AdvancedInputAreaProps {
   finalDraftResult?: DisplayResult | null;
   // 新增：是否正在生成最终初稿
   isGeneratingFinalDraft?: boolean;
+  // 新增：跳转到步骤的回调函数
+  onStepChange?: (step: number) => void;
 }
 
 export function AdvancedInputArea({
@@ -73,6 +75,8 @@ export function AdvancedInputArea({
   finalDraftResult,
   // 新增：是否正在生成最终初稿
   isGeneratingFinalDraft,
+  // 新增：跳转到步骤的回调函数
+  onStepChange,
 }: AdvancedInputAreaProps) {
   // 移除本地状态，改用父组件传入的状态
   // const [direction, setDirection] = useState("");
@@ -99,8 +103,16 @@ export function AdvancedInputArea({
   useEffect(() => {
     if (!isLoading && submitting) {
       setSubmitting(false);
+      
+      // 当加载完成且之前处于提交状态，自动跳转到第二步
+      if (onStepChange && type === "draft") {
+        // 延迟300ms再跳转，确保状态更新完成
+        setTimeout(() => {
+          onStepChange(2);
+        }, 300);
+      }
     }
-  }, [isLoading, submitting]);
+  }, [isLoading, submitting, onStepChange, type]);
 
   // 设置初稿文件区域的拖放事件
   useEffect(() => {
@@ -683,7 +695,7 @@ export function AdvancedInputArea({
                   </>
                 )}
               </Button>
-              {/* 显示生成初稿按钮（当初稿文件已提纯时） */}
+              {/* 显示生成初稿按钮（当初稿文件已提纯时）
               {type === "draft" && (
                 <Button
                   onClick={handleGenerateFinalDraft}
@@ -704,7 +716,7 @@ export function AdvancedInputArea({
                     </>
                   )}
                 </Button>
-              )}
+              )} */}
             </div>
           </div>
         </div>

@@ -13,14 +13,11 @@ import { DisplayResult, AgentType } from "../types";
 import { InputArea } from "./InputArea";
 import { ResultSection } from "./ResultSection";
 import { debounce } from "../utils/helpers";
-import { QuickActionButtons } from "./QuickActionButtons";
+import { QuickActionButtons, ButtonType } from "./QuickActionButtons";
 import { AdvancedInputArea } from "./AdvancedInputArea";
 import { useToast } from "@/hooks/use-toast";
 import { ResultDisplay } from "./ResultDisplay";
 import { DraftResultDisplay } from "./DraftResultDisplay";
-
-// 导入按钮类型
-type ButtonType = "draft" | "custom" | "schoolProfessor" | "question" | null;
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
 interface FirstStepProps {
@@ -54,6 +51,11 @@ interface FirstStepProps {
     requirements?: string
   ) => Promise<void>;
   setFinalDraft?: (finalDraft: DisplayResult | null) => void;
+  onButtonChange?: (type: ButtonType) => void; // 添加按钮切换处理函数
+  setIsPSAssistant?: (isPS: boolean) => void; // 添加设置PS初稿助理状态
+  setShowStepNavigation?: (show: boolean) => void; // 添加控制步骤导航显示
+  onUserInputChange?: (direction: string, requirements: string) => void; // 添加接收用户输入的回调
+  onOtherFilesChange?: (files: File[]) => void; // 添加接收其他文件的回调
 }
 
 export function FirstStep({
@@ -80,6 +82,11 @@ export function FirstStep({
   isGeneratingFinalDraft,
   handleFinalDraftSubmit,
   setFinalDraft,
+  onButtonChange,
+  setIsPSAssistant,
+  setShowStepNavigation,
+  onUserInputChange,
+  onOtherFilesChange,
 }: FirstStepProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -245,6 +252,20 @@ export function FirstStep({
       }
     };
   }, [finalDraftResult]);
+
+  // 监听direction和requirements变化，同步到父组件
+  useEffect(() => {
+    if (onUserInputChange) {
+      onUserInputChange(direction, requirements);
+    }
+  }, [direction, requirements, onUserInputChange]);
+
+  // 监听otherFiles变化，同步到父组件
+  useEffect(() => {
+    if (onOtherFilesChange) {
+      onOtherFilesChange(otherFiles);
+    }
+  }, [otherFiles, onOtherFilesChange]);
 
   // 处理简单输入区域的提交
   const handleSimpleSubmit = useCallback(() => {
@@ -485,8 +506,10 @@ export function FirstStep({
         onSchoolProfessorClick={handleSchoolProfessorClick}
         onQuestionClick={handleQuestionClick}
         onCustomClick={handleCustomClick}
-        onButtonChange={handleButtonChange}
+        onButtonChange={onButtonChange}
         setResult={setResult}
+        setIsPSAssistant={setIsPSAssistant}
+        setShowStepNavigation={setShowStepNavigation}
       />
       
       {/* 根据当前模式显示不同的输入区域 */}
@@ -524,40 +547,13 @@ export function FirstStep({
           isPurifying={isPurifying}
           onGenerateFinalDraft={handleGenerateFinalDraft}
           onClearGeneratedContent={handleClearGeneratedContent}
+          onStepChange={onStepChange} // 添加跳转步骤的回调
         />
       )}
 
       {/* 结果区域 - 如果有结果 */}
       <div ref={resultRef}>
-        {/* 初稿模式下的结果显示 */}
-        {inputMode === "draft" && (
-          <div className="w-full flex flex-col space-y-6">
-            {/* 初稿文件提纯版卡片 */}
-            {result && (
-              <div className="w-full mt-4 mb-8">
-                <div className="mx-auto w-[1024px] min-w-[1024px] max-w-[1024px] mx-auto">
-                  <div className="p-5 overflow-visible">
-                    <DraftResultDisplay result={result} title="素材整理报告" />
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* 最终初稿卡片 - 优先使用finalDraft，如果不存在则使用finalDraftResult */}
-            {(finalDraft || finalDraftResult) && (
-              <div className="w-full mt-4 mb-8">
-                <div className="mx-auto w-[1024px] min-w-[1024px] max-w-[1024px] mx-auto">
-                  <div className="p-5 overflow-visible">
-                    <DraftResultDisplay 
-                      result={finalDraft || finalDraftResult!} 
-                      title="个人陈述初稿" 
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* 初稿模式下不再显示结果，因为已经移到DraftGeneration组件中 */}
         
         {/* 非初稿模式下的结果显示 - 添加shouldHideResult条件 */}
         {inputMode !== "draft" && result && !shouldHideResult && (

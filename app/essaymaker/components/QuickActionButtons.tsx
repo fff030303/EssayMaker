@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 import { DisplayResult } from "../types"; // 导入DisplayResult类型
 
 // 定义按钮类型
-type ButtonType = "draft" | "custom" | "schoolProfessor" | "question" | null;
+export type ButtonType = "draft" | "custom" | "schoolProfessor" | "question" | null;
 
 interface QuickActionButtonsProps {
   onDraftClick?: () => void;
@@ -20,6 +20,8 @@ interface QuickActionButtonsProps {
   onCustomClick?: () => void;
   onButtonChange?: (type: ButtonType) => void;
   setResult?: (result: DisplayResult | null) => void; // 修改类型为DisplayResult | null
+  setIsPSAssistant?: (isPS: boolean) => void; // 新增属性，设置是否为PS初稿助理
+  setShowStepNavigation?: (show: boolean) => void; // 新增属性，控制是否显示步骤导航
 }
 
 export function QuickActionButtons({
@@ -29,6 +31,8 @@ export function QuickActionButtons({
   onCustomClick,
   onButtonChange,
   setResult,
+  setIsPSAssistant,
+  setShowStepNavigation,
 }: QuickActionButtonsProps) {
   // 跟踪当前选中的按钮
   const [selectedButton, setSelectedButton] = useState<ButtonType>(null);
@@ -42,6 +46,14 @@ export function QuickActionButtons({
       onButtonChange("draft");
     }
     setSelectedButton("draft");
+    
+    // 自动设置为PS初稿助理并显示底边栏
+    if (setIsPSAssistant) {
+      setIsPSAssistant(true);
+    }
+    if (setShowStepNavigation) {
+      setShowStepNavigation(true);
+    }
   }, []);
 
   // 处理按钮点击事件
@@ -53,6 +65,14 @@ export function QuickActionButtons({
     // 当点击任何按钮时，将result设为null
     if (setResult) {
       setResult(null);
+    }
+    
+    // 如果是PS初稿助理按钮，显示底边栏，否则隐藏
+    if (setIsPSAssistant) {
+      setIsPSAssistant(type === "draft");
+    }
+    if (setShowStepNavigation) {
+      setShowStepNavigation(type === "draft");
     }
     
     // 清空个人陈述初稿
@@ -100,8 +120,8 @@ export function QuickActionButtons({
 
   return (
     <div className="w-full max-w-[600px] mx-auto mb-6 mt-6 text-base font-normal">
-      <div className="flex justify-center">
-      {/* 第一行 */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* 第一行 */}
         <button
           onClick={() => handleButtonClick("draft", onDraftClick)}
           className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("draft")}
@@ -111,7 +131,7 @@ export function QuickActionButtons({
           PS初稿助理
         </button>
 
-        {/* <button
+        <button
           onClick={() => handleButtonClick("custom", onCustomClick)}
           className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("custom")}
               text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
@@ -136,7 +156,7 @@ export function QuickActionButtons({
               hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("question")}`}
         >
           随便问问
-        </button> */}
+        </button>
       </div>
     </div>
   );

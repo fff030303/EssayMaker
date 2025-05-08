@@ -15,6 +15,7 @@ import { FirstStep } from "./components/FirstStep";
 import { SecondStep } from "./components/SecondStep";
 import { ThirdStep } from "./components/ThirdStep";
 import { StepNavigation } from "./components/StepNavigation";
+import { DraftGeneration } from "./components/DraftGeneration";
 import { useEssayMaker } from "./hooks/useEssayMaker";
 import { AgentType } from "./types";
 import { useState, useEffect, useCallback } from "react";
@@ -43,13 +44,9 @@ export default function EssayMakerPage() {
     expandedSteps,
     setExpandedSteps,
     currentStep,
-    setCurrentStep,
     secondStepInput,
-    setSecondStepInput,
     secondStepResult,
-    setSecondStepResult,
     finalResult,
-    setFinalResult,
     files,
     setFiles,
     finalDraft,
@@ -83,6 +80,22 @@ export default function EssayMakerPage() {
   
   // 添加判断是否为教授搜索类型
   const isProfessorSearch = detectedAgentType === AgentType.PROFESSOR_SEARCH;
+  
+  // 添加判断是否为PS初稿助理
+  const [isPSAssistant, setIsPSAssistant] = useState<boolean>(false);
+  
+  // 添加控制步骤导航显示状态
+  const [showStepNavigation, setShowStepNavigation] = useState<boolean>(false);
+  
+  // 添加finalDraftResult状态用于初稿生成
+  const [finalDraftResult, setFinalDraftResult] = useState<any>(null);
+  
+  // 添加申请方向和要求状态，从FirstStep组件中获取
+  const [userDirection, setUserDirection] = useState<string>("");
+  const [userRequirements, setUserRequirements] = useState<string>("");
+  
+  // 添加otherFiles状态，用于存储辅助资料文件
+  const [otherFiles, setOtherFiles] = useState<File[]>([]);
 
   // 监控文件状态
   useEffect(() => {
@@ -92,23 +105,44 @@ export default function EssayMakerPage() {
   // 添加清除步骤内容的函数
   const clearSteps = useCallback(() => {
     setResult(null);
-    setSecondStepInput("");
-    setSecondStepResult(null);
-    setFinalResult(null);
-    setCurrentStep(1);
     setDetectedAgentType(AgentType.UNKNOWN);
-  }, [setResult, setSecondStepInput, setSecondStepResult, setFinalResult, setCurrentStep, setDetectedAgentType]);
+    
+    // 如果需要切换回第一步，可以使用handleStepChange函数
+    handleStepChange(1);
+  }, [setResult, setDetectedAgentType, handleStepChange]);
 
   // 修改handleButtonChange函数
   const handleButtonChange = useCallback((type: ButtonType) => {
     clearSteps();
+    
+    // 当用户点击PS初稿助理按钮时，设置isPSAssistant为true
+    if (type === "draft") {
+      setIsPSAssistant(true);
+      setShowStepNavigation(true);
+    } else {
+      setIsPSAssistant(false);
+      setShowStepNavigation(false);
+    }
   }, [clearSteps]);
+
+  // 添加用于接收用户输入信息的回调函数
+  const handleUserInputChange = useCallback((direction: string, requirements: string) => {
+    setUserDirection(direction);
+    setUserRequirements(requirements);
+    console.log("用户输入更新 - 方向:", direction, "要求:", requirements);
+  }, []);
+  
+  // 添加用于接收辅助资料文件的回调函数
+  const handleOtherFilesChange = useCallback((files: File[]) => {
+    setOtherFiles(files);
+    console.log("辅助资料文件更新 - 文件数量:", files.length);
+  }, []);
 
   return (
     <div
       className={cn(
         "min-h-screen flex flex-col",
-        shouldShowMultiStepFlow || isProfessorSearch ? "pb-16" : "pb-4"
+        (shouldShowMultiStepFlow || isProfessorSearch || showStepNavigation) ? "pb-16" : "pb-4"
       )}
     >
       <style jsx global>
@@ -144,7 +178,7 @@ export default function EssayMakerPage() {
       <div
         className={cn(
           "flex-1 px-4 pt-2 pb-6 md:px-8 md:pt-3 md:pb-6",
-          shouldShowMultiStepFlow || isProfessorSearch ? "pb-24" : "pb-8",
+          (shouldShowMultiStepFlow || isProfessorSearch || showStepNavigation) ? "pb-24" : "pb-8",
           "transition-all duration-300 mx-auto max-w-7xl w-full"
         )}
       >
@@ -189,6 +223,10 @@ export default function EssayMakerPage() {
                 handleFinalDraftSubmit={handleFinalDraftSubmit}
                 setFinalDraft={setFinalDraft}
                 onButtonChange={handleButtonChange}
+                setIsPSAssistant={setIsPSAssistant}
+                setShowStepNavigation={setShowStepNavigation}
+                onUserInputChange={handleUserInputChange}
+                onOtherFilesChange={handleOtherFilesChange}
               />
             </div>
 
@@ -197,7 +235,7 @@ export default function EssayMakerPage() {
               {shouldShowMultiStepFlow ? (
                 <SecondStep
                   secondStepInput={secondStepInput}
-                  setSecondStepInput={setSecondStepInput}
+                  setSecondStepInput={(input) => {}}
                   secondStepLoading={secondStepLoading}
                   secondStepResult={secondStepResult}
                   thirdStepLoading={thirdStepLoading}
@@ -226,6 +264,26 @@ export default function EssayMakerPage() {
                     </div>
                   </div>
                 </div>
+              ) : isPSAssistant ? (
+                <DraftGeneration
+                  result={result}
+                  finalDraft={finalDraft}
+                  finalDraftResult={finalDraftResult}
+                  onStepChange={handleStepChange}
+                  onGenerateFinalDraft={handleFinalDraftSubmit ? 
+                    () => handleFinalDraftSubmit(
+                      "生成最终初稿", 
+                      otherFiles || [],
+                      result?.content || "", 
+                      userDirection || "计算机科学", // 使用用户输入的方向，如果没有则使用默认值
+                      userRequirements || "请撰写一篇有关申请人学术背景、专业能力和职业规划的个人陈述" // 使用用户输入的要求，如果没有则使用默认值
+                    ) : undefined
+                  }
+                  isGeneratingFinalDraft={isGeneratingFinalDraft}
+                  userDirection={userDirection}
+                  userRequirements={userRequirements}
+                  otherFiles={otherFiles}
+                />
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center p-8 max-w-md">
@@ -279,16 +337,19 @@ export default function EssayMakerPage() {
       </div>
 
       {/* 共享导航组件 */}
-      <StepNavigation
-        currentStep={currentStep}
-        onStepChange={handleStepChange}
-        shouldShowMultiStepFlow={shouldShowMultiStepFlow}
-        hasSecondStepResult={!!secondStepResult}
-        hasFinalResult={!!finalResult && finalResult.isComplete}
-        isThirdStepLoading={thirdStepLoading}
-        agentType={detectedAgentType}
-        isProfessorSearch={isProfessorSearch}
-      />
+      {(shouldShowMultiStepFlow || isProfessorSearch || showStepNavigation) && (
+        <StepNavigation
+          currentStep={currentStep}
+          onStepChange={handleStepChange}
+          shouldShowMultiStepFlow={shouldShowMultiStepFlow}
+          hasSecondStepResult={!!secondStepResult}
+          hasFinalResult={!!finalResult && finalResult.isComplete}
+          isThirdStepLoading={thirdStepLoading}
+          agentType={detectedAgentType}
+          isProfessorSearch={isProfessorSearch}
+          isPSAssistant={isPSAssistant}
+        />
+      )}
     </div>
   );
 }

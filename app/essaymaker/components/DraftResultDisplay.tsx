@@ -310,8 +310,8 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
 
   if (isGenerating) {
     return (
-      <Card className="shadow-lg flex flex-col bg-white relative w-[1024px] min-w-[1024px] max-w-[1024px] mx-auto">
-        <CardHeader className="flex flex-row items-center gap-3 pb-4 pt-5 px-5 flex-shrink-0">
+      <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto">
+        <CardHeader className="flex flex-row items-center gap-2 pb-2 pt-4 px-5 flex-shrink-0">
           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
             <FileText className="h-5 w-5 text-blue-500" />
           </div>
@@ -377,8 +377,8 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
   const shouldShowToggle = result.isComplete && displayedContent.length > previewLength;
 
   return (
-    <Card className="shadow-lg flex flex-col bg-white relative w-[1024px] min-w-[1024px] max-w-[1024px] mx-auto">
-      <CardHeader className="flex flex-row items-center gap-3 pb-4 pt-5 px-5 flex-shrink-0">
+    <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto">
+      <CardHeader className="flex flex-row items-center gap-2 pb-2 pt-4 px-5 flex-shrink-0">
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
           <FileText className="h-5 w-5 text-blue-500" />
         </div>
@@ -453,11 +453,11 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
       {/* 内容区域 */}
       <CardContent 
         ref={contentRef}
-        className="p-5 flex-grow card-content overflow-auto" 
-        style={{ maxHeight: '60vh' }}
+        className="px-5 py-4 flex-grow card-content overflow-auto" 
+        style={{ maxHeight: '70vh' }}
       >
         {/* 优化的Markdown渲染区域 */}
-        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-li:my-1 prose-pre:bg-gray-100 prose-pre:p-2 prose-pre:rounded prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-a:text-blue-500 prose-a:underline prose-table:border prose-table:border-gray-300 prose-th:bg-gray-100 prose-th:p-2 prose-td:p-2">
+        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-4 prose-headings:mb-3 prose-p:my-2.5 prose-li:my-1 prose-pre:bg-gray-100 prose-pre:p-3 prose-pre:rounded prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-a:text-blue-500 prose-a:underline prose-table:border prose-table:border-gray-300 prose-th:bg-gray-100 prose-th:p-2 prose-td:p-2">
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={{
@@ -496,7 +496,7 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
                 </td>
               ),
               code: ({ node, className, children }) => {
-                const isInline = node?.type === 'inlineCode';
+                const isInline = node?.tagName === 'code' && !className;
                 if (isInline) {
                   return <code className="bg-gray-100 px-1 py-0.5 rounded">{children}</code>;
                 }
