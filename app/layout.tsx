@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sansFont = Noto_Sans_SC({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["100", "300", "400", "500", "700", "900"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const serifFont = Noto_Serif_SC({
+  variable: "--font-serif",
   subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "900"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -23,9 +29,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="zh-CN">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </head>
+      <body className={`${sansFont.variable} ${serifFont.variable}`}>
+        <nav style={{
+          display: 'flex',
+          justifyContent: 'space-around',
+          padding: '1rem',
+          backgroundColor: '#f3f4f6',
+          marginBottom: '1rem'
+        }}>
+          <Link href="/" style={{ textDecoration: 'none', color: '#333' }}>
+            首页
+          </Link>
+          <Link href="/blog" style={{ textDecoration: 'none', color: '#333' }}>
+            我的博客
+          </Link>
+          <Link href="/about" style={{ textDecoration: 'none', color: '#333' }}>
+            关于我
+          </Link>
+          <Link href="/charts" style={{ textDecoration: 'none', color: '#333' }}>
+            图表
+          </Link>
+        </nav>
         {children}
+        <Toaster />
       </body>
     </html>
   );

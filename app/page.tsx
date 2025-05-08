@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";  // 导入 Link 组件
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -13,6 +14,18 @@ export default function Home() {
           height={38}
           priority
         />
+        
+        {/* 添加导航链接 */}
+        {/* 在导航部分添加链接 */}
+        <nav className={styles.nav}>
+          <Link href="/">首页</Link>
+          <Link href="/about">关于我们</Link>
+          <Link href="/blog/posts">博客文章</Link>
+          <Link href="/essaymaker">AI助手</Link>
+          <Link href="/excel-chart">Excel 图表</Link>
+        </nav>
+        
+        {/* 原有内容 */}
         <ol>
           <li>
             Get started by editing <code>app/page.tsx</code>.
