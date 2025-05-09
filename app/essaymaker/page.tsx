@@ -17,7 +17,7 @@ import { ThirdStep } from "./components/ThirdStep";
 import { StepNavigation } from "./components/StepNavigation";
 import { DraftGeneration } from "./components/DraftGeneration";
 import { useEssayMaker } from "./hooks/useEssayMaker";
-import { AgentType } from "./types";
+import { AgentType, DisplayResult } from "./types";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
@@ -137,11 +137,21 @@ export default function EssayMakerPage() {
     // 保存成绩单解析结果
     if (transcript) {
       setTranscriptAnalysis(transcript);
-      console.log("成绩单解析结果更新:", transcript.substring(0, 100) + "...");
+      console.log("成绩单解析结果更新(从用户输入):", transcript.substring(0, 100) + "...");
     }
     
     console.log("用户输入更新 - 方向:", direction, "要求:", requirements);
   }, []);
+
+  // 监听result变化，提取transcriptAnalysis
+  useEffect(() => {
+    if (result && 'transcriptAnalysis' in result) {
+      // 使用类型断言告诉TypeScript transcriptAnalysis确实存在
+      const resultWithTranscript = result as DisplayResult & { transcriptAnalysis: string };
+      console.log("从result中检测到transcriptAnalysis，长度:", resultWithTranscript.transcriptAnalysis.length);
+      setTranscriptAnalysis(resultWithTranscript.transcriptAnalysis);
+    }
+  }, [result]);
   
   // 添加用于接收辅助资料文件的回调函数
   const handleOtherFilesChange = useCallback((files: File[]) => {

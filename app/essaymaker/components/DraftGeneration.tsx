@@ -140,6 +140,13 @@ export function DraftGeneration({
           )}
             <div className="mt-8 flex flex-col items-center pb-6">
                 
+                {/* 调试信息 */}
+                <div className="mb-4 text-xs text-gray-500">
+                  <p>transcriptAnalysis: {transcriptAnalysis ? `存在(${transcriptAnalysis.length}字符)` : '不存在'}</p>
+                  {transcriptAnalysis && <p>前50个字符: {transcriptAnalysis.substring(0, 50)}...</p>}
+                  <p>result.transcriptAnalysis: {result && 'transcriptAnalysis' in result ? 
+                    `存在(${(result as any).transcriptAnalysis.length}字符)` : '不存在'}</p>
+                </div>
                 
                 {/* 成绩单解析结果 暂时保留，正式版需要删除*/}
                 {transcriptAnalysis && (

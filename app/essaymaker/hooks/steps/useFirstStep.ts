@@ -279,6 +279,47 @@ export function useFirstStep({
                     });
                     break;
 
+                  case "transcript":
+                    // 接收到成绩单解析数据
+                    console.log("收到成绩单解析数据，完整内容:", data.content);
+                    console.log("成绩单解析数据类型:", typeof data.content);
+                    console.log("成绩单解析数据长度:", data.content?.length || 0);
+                    
+                    // 在结果中添加transcriptAnalysis字段
+                    setResult((prev) => {
+                      if (!prev) return prev;
+                      
+                      console.log("更新result的transcriptAnalysis字段");
+                      
+                      // 使用完整对象更新，确保所有字段都存在
+                      const updatedResult = {
+                        ...prev,
+                        transcriptAnalysis: data.content,
+                      };
+                      
+                      console.log("更新后的result:", {
+                        hasTranscriptAnalysis: !!updatedResult.transcriptAnalysis,
+                        transcriptAnalysisLength: updatedResult.transcriptAnalysis?.length || 0
+                      });
+                      
+                      return updatedResult;
+                    });
+                    
+                    // 添加一个步骤表示成绩单已分析
+                    if (!mergedSteps.some(step => step.includes("成绩单解析"))) {
+                      const transcriptStep = "已完成成绩单解析 [执行时间: 0.5秒]";
+                      mergedSteps.push(transcriptStep);
+                      
+                      // 更新步骤列表
+                      setResult((prev) => ({
+                        ...prev!,
+                        steps: [...mergedSteps],
+                      }));
+                      
+                      console.log("添加成绩单解析步骤到steps列表");
+                    }
+                    break;
+
                   case "complete":
                     // 保存最后一个分析查询步骤的输出内容
                     if (currentAnalysisStepIndex !== null) {
