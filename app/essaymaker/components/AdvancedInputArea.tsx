@@ -275,11 +275,53 @@ export function AdvancedInputArea({
       return;
     }
 
+    // 输出上传数据信息
+    console.error("===== 提交数据信息 =====");
+    console.error("申请方向:", direction);
+    console.error("具体需求:", requirements);
+    
+    // 输出初稿文件信息
+    if (draftFile) {
+      console.error("初稿文件(material_file):", {
+        fileName: draftFile.name,
+        fileSize: `${(draftFile.size / 1024).toFixed(1)} KB`,
+        fileType: draftFile.type
+      });
+    } else {
+      console.error("初稿文件(material_file): 无");
+    }
+    
+    // 输出成绩单文件信息
+    if (otherFiles.length > 0) {
+      console.error("成绩单文件(transcript_files):", otherFiles.map(file => ({
+        fileName: file.name,
+        fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+        fileType: file.type
+      })));
+    } else {
+      console.error("成绩单文件(transcript_files): 无");
+    }
+    
+    // 文件状态汇总
+    console.error("文件提交统计:", {
+      material_file_count: draftFile ? 1 : 0,
+      transcript_files_count: otherFiles.length,
+      total_files_count: (draftFile ? 1 : 0) + otherFiles.length
+    });
+
     // 防止重复提交，设置提交状态
     setSubmitting(true);
     
     // 直接调用父组件提交函数，不在这里构建queryText
     onSubmitClick();
+    
+    // 输出状态变化
+    console.error("状态变化:", {
+      isLoading,
+      submitting,
+      generatingFinalDraft,
+      disabled: isLoading || submitting || generatingFinalDraft
+    });
   };
 
   // 监听最终初稿生成状态
@@ -426,7 +468,7 @@ export function AdvancedInputArea({
         content: finalDraftResult?.content
       }
     });
-  }, [generatingFinalDraft, finalDraftResult?.isComplete, finalDraftResult?.content]);
+  }, [generatingFinalDraft, finalDraftResult?.isComplete]);
 
   console.log("状态变化:", {
     isLoading,
@@ -695,28 +737,6 @@ export function AdvancedInputArea({
                   </>
                 )}
               </Button>
-              {/* 显示生成初稿按钮（当初稿文件已提纯时）
-              {type === "draft" && (
-                <Button
-                  onClick={handleGenerateFinalDraft}
-                  disabled={isLoading || submitting || generatingFinalDraft || isGeneratingFinalDraft || !purifiedDraft || !direction.trim()}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-green-50 to-lime-50
-                    text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-                    hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-300"
-                >
-                  {isGeneratingFinalDraft ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      生成中...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      生成初稿
-                    </>
-                  )}
-                </Button>
-              )} */}
             </div>
           </div>
         </div>

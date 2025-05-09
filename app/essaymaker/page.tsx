@@ -69,6 +69,7 @@ export default function EssayMakerPage() {
     handleFinalGeneration,
     // 添加新的函数
     handleFinalDraftSubmit,
+    handleStreamResponse,
   } = useEssayMaker(null); // 传入null代替session
 
   const [detectedAgentType, setDetectedAgentType] = useState<AgentType>(
@@ -93,6 +94,9 @@ export default function EssayMakerPage() {
   // 添加申请方向和要求状态，从FirstStep组件中获取
   const [userDirection, setUserDirection] = useState<string>("");
   const [userRequirements, setUserRequirements] = useState<string>("");
+  
+  // 添加成绩单解析结果状态
+  const [transcriptAnalysis, setTranscriptAnalysis] = useState<string | null>(null);
   
   // 添加otherFiles状态，用于存储辅助资料文件
   const [otherFiles, setOtherFiles] = useState<File[]>([]);
@@ -126,9 +130,16 @@ export default function EssayMakerPage() {
   }, [clearSteps]);
 
   // 添加用于接收用户输入信息的回调函数
-  const handleUserInputChange = useCallback((direction: string, requirements: string) => {
+  const handleUserInputChange = useCallback((direction: string, requirements: string, transcript: string | null) => {
     setUserDirection(direction);
     setUserRequirements(requirements);
+    
+    // 保存成绩单解析结果
+    if (transcript) {
+      setTranscriptAnalysis(transcript);
+      console.log("成绩单解析结果更新:", transcript.substring(0, 100) + "...");
+    }
+    
     console.log("用户输入更新 - 方向:", direction, "要求:", requirements);
   }, []);
   
@@ -227,6 +238,7 @@ export default function EssayMakerPage() {
                 setShowStepNavigation={setShowStepNavigation}
                 onUserInputChange={handleUserInputChange}
                 onOtherFilesChange={handleOtherFilesChange}
+                handleStreamResponse={handleStreamResponse}
               />
             </div>
 
@@ -283,6 +295,7 @@ export default function EssayMakerPage() {
                   userDirection={userDirection}
                   userRequirements={userRequirements}
                   otherFiles={otherFiles}
+                  transcriptAnalysis={transcriptAnalysis}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">

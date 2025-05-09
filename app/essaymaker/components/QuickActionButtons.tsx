@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DisplayResult } from "../types"; // 导入DisplayResult类型
 
 // 定义按钮类型
@@ -36,6 +36,8 @@ export function QuickActionButtons({
 }: QuickActionButtonsProps) {
   // 跟踪当前选中的按钮
   const [selectedButton, setSelectedButton] = useState<ButtonType>(null);
+  // 创建一个ref用于PS初稿助理按钮
+  const psAssistantButtonRef = useRef<HTMLButtonElement>(null);
 
   // 在组件加载时自动触发初稿界面
   useEffect(() => {
@@ -53,6 +55,11 @@ export function QuickActionButtons({
     }
     if (setShowStepNavigation) {
       setShowStepNavigation(true);
+    }
+    
+    // 自动聚焦到PS初稿助理按钮
+    if (psAssistantButtonRef.current) {
+      psAssistantButtonRef.current.focus();
     }
   }, []);
 
@@ -123,6 +130,7 @@ export function QuickActionButtons({
       <div className="grid grid-cols-2 gap-6">
         {/* 第一行 */}
         <button
+          ref={psAssistantButtonRef}
           onClick={() => handleButtonClick("draft", onDraftClick)}
           className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("draft")}
               text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50

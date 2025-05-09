@@ -19,6 +19,7 @@ interface DraftGenerationProps {
   userDirection?: string;
   userRequirements?: string;
   otherFiles?: File[];
+  transcriptAnalysis?: string | null;
 }
 
 export function DraftGeneration({
@@ -31,6 +32,7 @@ export function DraftGeneration({
   userDirection = "",
   userRequirements = "",
   otherFiles = [],
+  transcriptAnalysis = null,
 }: DraftGenerationProps) {
   const [generatingFinalDraft, setGeneratingFinalDraft] = useState(false);
   const { toast } = useToast();
@@ -137,38 +139,36 @@ export function DraftGeneration({
             </div>
           )}
             <div className="mt-8 flex flex-col items-center pb-6">
-                {/* 申请方向和要求 */}
-                {userDirection && (
-                <div className="mb-6 text-center max-w-[600px]">
-                    <p className="text-base text-gray-700 mb-2">
-                    <span className="font-semibold">申请方向:</span> {userDirection}
-                    </p>
-                    {userRequirements && (
-                    <p className="text-base text-gray-700">
-                        <span className="font-semibold">具体要求:</span> {userRequirements}
-                    </p>
-                    )}
-                </div>
-                )}
                 
-                {/* 辅助资料文件 */}
-                {otherFiles.length > 0 && (
-                <div className="mb-6 text-center">
-                    <p className="text-base text-gray-700 mb-3">
-                    <span className="font-semibold">辅助资料文件:</span>
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2 max-w-[600px]">
-                    {otherFiles.map((file, index) => (
-                        <div key={index} className="flex items-center bg-gray-50 border border-gray-100 rounded-md px-3 py-1.5 text-sm">
-                        <File className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
-                        <span className="truncate max-w-[180px]">{file.name}</span>
-                        <span className="ml-1.5 text-gray-500 text-xs">
-                            ({(file.size / 1024).toFixed(1)} KB)
-                        </span>
-                        </div>
-                    ))}
+                
+                {/* 成绩单解析结果 暂时保留，正式版需要删除*/}
+                {transcriptAnalysis && (
+                  <div className="mb-6 text-left max-w-[700px] bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <p className="text-base text-center font-semibold text-blue-700 mb-3">成绩单解析结果</p>
+                    <div className="prose prose-sm max-w-none prose-headings:text-blue-700 prose-p:text-gray-700 prose-strong:text-blue-800">
+                      {/* 使用简单的文本格式化，展示Markdown格式的成绩单解析结果 */}
+                      {transcriptAnalysis.split('\n').map((line, index) => {
+                        // 处理标题行
+                        if (line.startsWith('##')) {
+                          return <h3 key={index} className="text-base font-bold mt-3 mb-2">{line.replace(/^##\s*/, '')}</h3>;
+                        } else if (line.startsWith('#')) {
+                          return <h2 key={index} className="text-lg font-bold mt-3 mb-2">{line.replace(/^#\s*/, '')}</h2>;
+                        } 
+                        // 处理列表项
+                        else if (line.trim().startsWith('- ')) {
+                          return <li key={index} className="ml-4">{line.replace(/^-\s*/, '')}</li>;
+                        } 
+                        // 处理空行
+                        else if (line.trim() === '') {
+                          return <br key={index} />;
+                        } 
+                        // 普通段落
+                        else {
+                          return <p key={index} className="my-1">{line}</p>;
+                        }
+                      })}
                     </div>
-                </div>
+                  </div>
                 )}
                 
                 {/* 生成按钮 */}

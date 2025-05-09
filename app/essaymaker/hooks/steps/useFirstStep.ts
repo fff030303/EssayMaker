@@ -19,9 +19,21 @@ export function useFirstStep({
   session,
 }: UseFirstStepProps) {
   // 处理流式响应
-  const handleStreamResponse = async (query: string, files?: File[]) => {
+  const handleStreamResponse = async (query: string, files?: File[], transcriptFiles?: File[]) => {
     try {
-      console.log("useFirstStep - handleStreamResponse - 接收的文件数量:", files?.length || 0);
+      console.log("useFirstStep - handleStreamResponse - 接收的初稿文件数量:", files?.length || 0);
+      console.log("useFirstStep - handleStreamResponse - 接收的成绩单文件数量:", transcriptFiles?.length || 0);
+      
+      // 输出具体文件信息
+      if (files && files.length > 0) {
+        console.log("useFirstStep - handleStreamResponse - 初稿文件:", 
+          files.map(f => `${f.name} (${(f.size/1024).toFixed(1)}KB)`).join(", "));
+      }
+      if (transcriptFiles && transcriptFiles.length > 0) {
+        console.log("useFirstStep - handleStreamResponse - 成绩单文件:", 
+          transcriptFiles.map(f => `${f.name} (${(f.size/1024).toFixed(1)}KB)`).join(", "));
+      }
+      
       setFirstStepLoading(true);
       setResult({
         content: "",
@@ -37,12 +49,21 @@ export function useFirstStep({
       });
 
       // 将文件传递给API服务
-      console.log("useFirstStep - 准备调用API - 文件数量:", files?.length || 0);
+      console.log("useFirstStep - 准备调用API - 初稿文件数量:", files?.length || 0);
+      console.log("useFirstStep - 准备调用API - 成绩单文件数量:", transcriptFiles?.length || 0);
+      
+      // 打印实际传递给API的文件详情
+      console.log("useFirstStep - API调用前最终文件检查:");
+      console.log(`- 初稿文件(${files?.length || 0}个):`, 
+        files && files.length > 0 ? files.map(f => f.name).join(", ") : "无");
+      console.log(`- 成绩单文件(${transcriptFiles?.length || 0}个):`, 
+        transcriptFiles && transcriptFiles.length > 0 ? transcriptFiles.map(f => f.name).join(", ") : "无");
+      
       const streamPromise = apiService.streamQuery(query, {
         timestamp: new Date().toISOString(),
         source: "web",
         userId: session?.user?.id,
-      }, files);
+      }, files, transcriptFiles);
 
       console.log("第一步API请求参数:", {
         query,
@@ -50,6 +71,7 @@ export function useFirstStep({
         source: "web",
         userId: session?.user?.id,
         filesCount: files?.length || 0,
+        transcriptFilesCount: transcriptFiles?.length || 0
       });
 
       // 使用 Promise.race 实现超时处理

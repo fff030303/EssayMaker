@@ -38,6 +38,8 @@ export function useEssayMaker(session: Session | null) {
     setCurrentStep,
     secondStepInput,
     setSecondStepInput,
+    detectedAgentType,
+    setDetectedAgentType,
   } = useStepState();
 
   // 使用拆分的结果状态钩子
@@ -80,6 +82,7 @@ export function useEssayMaker(session: Session | null) {
 
   // 添加文件状态
   const [files, setFiles] = useState<File[]>([]);
+  const [otherFiles, setOtherFiles] = useState<File[]>([]);
 
   // 添加最终初稿状态
   const [finalDraft, setFinalDraft] = useState<DisplayResult | null>(null);
@@ -89,6 +92,14 @@ export function useEssayMaker(session: Session | null) {
   useEffect(() => {
     console.log("useEssayMaker - files状态更新 - 文件数量:", files.length);
   }, [files]);
+
+  // 跟踪otherFiles状态变化
+  useEffect(() => {
+    console.log("useEssayMaker - otherFiles状态更新 - 文件数量:", otherFiles.length);
+    if (otherFiles.length > 0) {
+      console.log("useEssayMaker - otherFiles包含文件:", otherFiles.map(f => f.name).join(", "));
+    }
+  }, [otherFiles]);
 
   // 使用拆分的第一步钩子
   const { handleStreamResponse } = useFirstStep({
@@ -126,6 +137,15 @@ export function useEssayMaker(session: Session | null) {
     setQuery(content);
   };
 
+  // 处理其他文件变化的回调
+  const handleOtherFilesChange = (newFiles: File[]) => {
+    console.log(`useEssayMaker - handleOtherFilesChange - 接收到${newFiles.length}个成绩单文件:`, 
+      newFiles.length > 0 ? newFiles.map(f => f.name).join(", ") : "无");
+    
+    // 设置otherFiles状态
+    setOtherFiles(newFiles);
+  };
+
   // 定义handleSubmit函数
   const handleSubmit = async () => {
     const trimmedQuery = query.trim();
@@ -138,10 +158,27 @@ export function useEssayMaker(session: Session | null) {
       return;
     }
 
-    console.log("useEssayMaker - handleSubmit - 提交时文件数量:", files.length);
+    console.log("useEssayMaker - handleSubmit - 提交时初稿文件数量:", files.length);
+    console.log("useEssayMaker - handleSubmit - 提交时成绩单文件数量:", otherFiles.length);
+    
+    if (files.length > 0) {
+      console.log("useEssayMaker - handleSubmit - 初稿文件:", files.map(f => f.name).join(", "));
+    }
+    if (otherFiles.length > 0) {
+      console.log("useEssayMaker - handleSubmit - 成绩单文件:", otherFiles.map(f => f.name).join(", "));
+    }
+    
     setShowExamples(false);
     setIsInputExpanded(false); // 开始生成时自动收起输入框
-    await handleStreamResponse(trimmedQuery, files);
+    
+    // 确保调用API前已有正确的文件数量
+    console.log("useEssayMaker - handleSubmit - 准备调用API，传递参数:");
+    console.log("- 查询文本:", trimmedQuery);
+    console.log("- 初稿文件数量:", files.length);
+    console.log("- 成绩单文件数量:", otherFiles.length);
+    
+    // 调用API处理
+    await handleStreamResponse(trimmedQuery, files, otherFiles);
   };
 
   // 处理快捷键
@@ -366,6 +403,8 @@ export function useEssayMaker(session: Session | null) {
     finalResult,
     files,
     setFiles,
+    otherFiles,
+    setOtherFiles,
     finalDraft,
     isGeneratingFinalDraft,
     setFinalDraft,
@@ -385,5 +424,7 @@ export function useEssayMaker(session: Session | null) {
     handleSecondStepInputChange,
     handleFinalGeneration,
     handleFinalDraftSubmit,
+    handleOtherFilesChange,
+    handleStreamResponse,
   };
 }

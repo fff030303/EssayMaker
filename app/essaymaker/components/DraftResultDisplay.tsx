@@ -161,12 +161,32 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
     
     setCopying(true);
     try {
-      await navigator.clipboard.writeText(result.content);
+      // 尝试使用现代clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(result.content);
+      } else {
+        // 回退到传统方法
+        const textArea = document.createElement('textarea');
+        textArea.value = result.content;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        textArea.style.top = '0';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (!successful) throw new Error('document.execCommand复制失败');
+      }
+      
       toast({
         title: "复制成功",
-        description: "初稿内容已复制到剪贴板",
+        description: "内容已复制到剪贴板",
       });
     } catch (err) {
+      console.error("复制失败:", err);
       toast({
         title: "复制失败",
         description: "无法复制到剪贴板，请尝试手动复制",

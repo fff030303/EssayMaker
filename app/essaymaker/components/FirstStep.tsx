@@ -54,8 +54,10 @@ interface FirstStepProps {
   onButtonChange?: (type: ButtonType) => void; // 添加按钮切换处理函数
   setIsPSAssistant?: (isPS: boolean) => void; // 添加设置PS初稿助理状态
   setShowStepNavigation?: (show: boolean) => void; // 添加控制步骤导航显示
-  onUserInputChange?: (direction: string, requirements: string) => void; // 添加接收用户输入的回调
+  onUserInputChange?: (direction: string, requirements: string, transcriptAnalysis: string | null) => void; // 添加接收用户输入的回调
   onOtherFilesChange?: (files: File[]) => void; // 添加接收其他文件的回调
+  // 添加直接访问API的函数，以绕过handleSubmit
+  handleStreamResponse?: (query: string, materialFiles?: File[], transcriptFiles?: File[]) => Promise<void>;
 }
 
 export function FirstStep({
@@ -87,6 +89,7 @@ export function FirstStep({
   setShowStepNavigation,
   onUserInputChange,
   onOtherFilesChange,
+  handleStreamResponse,
 }: FirstStepProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -148,6 +151,9 @@ export function FirstStep({
   // 新增: 最终初稿生成状态
   const [finalDraftResult, setFinalDraftResult] = useState<DisplayResult | null>(null);
   const [localIsGeneratingFinalDraft, setLocalIsGeneratingFinalDraft] = useState<boolean>(false);
+  
+  // 新增：保存成绩单解析结果
+  const [transcriptAnalysis, setTranscriptAnalysis] = useState<string | null>(null);
   
   // 跟踪files状态变化
   useEffect(() => {
@@ -256,9 +262,10 @@ export function FirstStep({
   // 监听direction和requirements变化，同步到父组件
   useEffect(() => {
     if (onUserInputChange) {
-      onUserInputChange(direction, requirements);
+      // 添加成绩单解析结果作为第三个参数
+      onUserInputChange(direction, requirements, transcriptAnalysis);
     }
-  }, [direction, requirements, onUserInputChange]);
+  }, [direction, requirements, transcriptAnalysis, onUserInputChange]);
 
   // 监听otherFiles变化，同步到父组件
   useEffect(() => {
@@ -313,27 +320,124 @@ export function FirstStep({
     setPurifiedDraft(null);
     // 清除最终初稿结果
     setFinalDraftResult(null);
+    // 清除之前的成绩单解析结果
+    setTranscriptAnalysis(null);
     
     // 构建查询文本
     let queryText = `请提取该文件中重要的内容`;
     
-    // 第一步只上传初稿文件
-    const firstStepFiles = draftFile ? [draftFile] : [];
+    // 分开处理初稿文件和成绩单文件
+    // 记录文件信息到控制台
+    if (draftFile) {
+      console.log(`初稿文件(material_file): ${draftFile.name} (${(draftFile.size / 1024).toFixed(1)} KB)`);
+    }
     
-    // 使用Promise和状态更新后的回调函数
-    await new Promise(resolve => {
+    // 记录成绩单文件信息
+    if (otherFiles.length > 0) {
+      console.log(`成绩单文件(transcript_files): ${otherFiles.length}个文件:`, 
+        otherFiles.map(file => file.name).join(', '));
+    }
+    
+    // 使用状态更新回调和Promise来确保状态更新完成
+    await new Promise<void>(resolve => {
+      // 先设置查询文本
       setQuery(queryText);
-      setFiles(firstStepFiles);
+      
+      // 只设置初稿文件，不再合并所有文件
+      if (draftFile) {
+        // 只传递初稿文件到files状态
+        setFiles([draftFile]);
+      } else {
+        setFiles([]);
+      }
+      
+      // 先通知父组件关于成绩单文件的变化
+      if (onOtherFilesChange) {
+        // 传递otherFiles后要确保状态已更新再继续
+        onOtherFilesChange(otherFiles);
+      }
+      
       setShowExamples(false);
       setIsInputExpanded(false);
       
-      // 使用setTimeout确保状态已更新
-      setTimeout(resolve, 0);
+      // 使用更长的延迟确保所有状态更新完成
+      setTimeout(resolve, 100);
     });
     
-    // 状态更新后再调用handleSubmit
-    handleSubmit();
+    // 延迟再次确保状态更新已完成
+    await new Promise<void>(resolve => setTimeout(resolve, 50));
+    
+    console.log("状态更新完成，准备调用handleSubmit");
+    console.log("当前初稿文件:", draftFile ? draftFile.name : "无");
+    console.log("当前成绩单文件数量:", otherFiles.length);
+    
+    // 重要修改：直接将当前组件内的otherFiles传递给handleSubmit，不依赖于父组件状态更新
+    // 修改handleSubmit的调用方式，传递本地的otherFiles
+    if (typeof handleSubmit === 'function' && handleSubmit.length === 0) {
+      // 原始handleSubmit没有参数，我们需要特殊处理
+      // 为了确保成绩单文件能传递到后端，我们需要临时修改一下files状态
+      if (draftFile && otherFiles.length > 0) {
+        console.log("直接使用本地文件调用API");
+        // 直接调用API而不是通过handleSubmit
+        await handleStreamResponse?.(queryText, [draftFile], otherFiles);
+      } else {
+        // 没有成绩单文件或初稿文件，正常调用handleSubmit
+        handleSubmit();
+      }
+    } else {
+      // handleSubmit可以接受参数或者有特殊实现
+      handleSubmit();
+    }
   };
+  
+  // 添加监听器处理结果中的成绩单解析部分
+  useEffect(() => {
+    if (result && result.isComplete && inputMode === "draft") {
+      try {
+        // 尝试从结果中提取成绩单解析部分
+        const content = result.content || "";
+        
+        // 检查是否包含成绩单解析部分
+        if (content.includes("成绩单解析") || content.includes("成绩分析") || content.includes("GPA分析")) {
+          console.log("检测到成绩单解析结果");
+          
+          // 尝试提取成绩单解析部分
+          // 寻找常见的分隔标记
+          const markers = [
+            "## 成绩单解析", "### 成绩单解析", 
+            "## 成绩分析", "### 成绩分析",
+            "## GPA分析", "### GPA分析"
+          ];
+          
+          let transcriptSection = "";
+          
+          // 尝试找到并提取成绩单解析部分
+          for (const marker of markers) {
+            if (content.includes(marker)) {
+              const startIdx = content.indexOf(marker);
+              let endIdx = content.length;
+              
+              // 寻找下一个同级或更高级标题作为结束点
+              const nextHeadingMatch = content.slice(startIdx + marker.length).match(/^#{1,3}\s/m);
+              if (nextHeadingMatch && nextHeadingMatch.index !== undefined) {
+                endIdx = startIdx + marker.length + nextHeadingMatch.index;
+              }
+              
+              transcriptSection = content.slice(startIdx, endIdx).trim();
+              break;
+            }
+          }
+          
+          if (transcriptSection) {
+            console.log("成功提取成绩单解析结果:", transcriptSection.substring(0, 100) + "...");
+            setTranscriptAnalysis(transcriptSection);
+          }
+        }
+      } catch (error) {
+        console.error("提取成绩单解析失败:", error);
+      }
+    }
+  }, [result, inputMode]);
   
   // 新增：处理生成最终初稿
   const handleGenerateFinalDraft = async () => {
