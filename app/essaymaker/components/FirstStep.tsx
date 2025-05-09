@@ -48,7 +48,8 @@ interface FirstStepProps {
     draftFiles: File[],
     purifiedContent: string,
     direction: string,
-    requirements?: string
+    requirements?: string,
+    transcriptAnalysis?: string | null  // 添加成绩单解析参数，支持null
   ) => Promise<void>;
   setFinalDraft?: (finalDraft: DisplayResult | null) => void;
   onButtonChange?: (type: ButtonType) => void; // 添加按钮切换处理函数
@@ -444,7 +445,7 @@ export function FirstStep({
     if (!purifiedDraft) {
       toast({
         title: "错误",
-        description: "请先提交初稿文件生成提纯版",
+        description: "请先提交初稿文件获取提纯版内容",
         variant: "destructive",
       });
       return;
@@ -460,12 +461,13 @@ export function FirstStep({
     }
     
     console.log("准备生成最终初稿");
+    console.log("成绩单解析状态:", transcriptAnalysis ? `存在 (${transcriptAnalysis.length}字节)` : "不存在");
     
     try {
       // 构建查询
       const finalDraftQuery = `生成最终初稿`;
       
-      // 使用otherFiles作为成绩单文件上传
+      // 使用otherFiles作为成绩单文件上传 (已废弃，保留兼容)
       const transcriptFiles = otherFiles || [];
       
       if (transcriptFiles.length > 0) {
@@ -478,10 +480,11 @@ export function FirstStep({
       // 调用函数进行处理，传递所有必要的参数
       await handleFinalDraftSubmit!(
         finalDraftQuery,
-        transcriptFiles,  // 传递成绩单文件
-        purifiedDraft,    // 传递提纯后的内容
-        direction,        // 传递申请方向
-        requirements      // 传递具体要求
+        transcriptFiles,     // 传递成绩单文件 (已废弃，保留兼容)
+        purifiedDraft,       // 传递提纯后的内容
+        direction,           // 传递申请方向
+        requirements,        // 传递具体要求
+        transcriptAnalysis || undefined   // 传递成绩单解析结果，确保类型正确
       );
       
       // 结果会自动更新到finalDraft状态

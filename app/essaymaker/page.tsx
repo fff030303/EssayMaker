@@ -294,11 +294,12 @@ export default function EssayMakerPage() {
                   onStepChange={handleStepChange}
                   onGenerateFinalDraft={handleFinalDraftSubmit ? 
                     () => handleFinalDraftSubmit(
-                      "生成最终初稿", 
-                      otherFiles || [],
+                      "生成个人陈述初稿", 
+                      [], // 不再传递文件
                       result?.content || "", 
-                      userDirection || "计算机科学", // 使用用户输入的方向，如果没有则使用默认值
-                      userRequirements || "请撰写一篇有关申请人学术背景、专业能力和职业规划的个人陈述" // 使用用户输入的要求，如果没有则使用默认值
+                      userDirection, 
+                      userRequirements, 
+                      transcriptAnalysis 
                     ) : undefined
                   }
                   isGeneratingFinalDraft={isGeneratingFinalDraft}

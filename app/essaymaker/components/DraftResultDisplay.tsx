@@ -554,7 +554,6 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
               <span className="inline-block h-2 w-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: "300ms" }}></span>
               <span className="inline-block h-2 w-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: "600ms" }}></span>
             </div>
-            <span>正在创作中...</span>
           </div>
         )}
         

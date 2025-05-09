@@ -203,7 +203,8 @@ export function useEssayMaker(session: Session | null) {
     draftFiles: File[],
     purifiedContent: string,
     direction: string,
-    requirements?: string
+    requirements?: string,
+    transcriptAnalysis?: string | null  // 添加成绩单解析参数
   ) => {
     try {
       // 检查参数
@@ -222,6 +223,9 @@ export function useEssayMaker(session: Session | null) {
       // 构建定制需求组合文本
       const combinedRequirements = `申请方向：${direction}${requirements ? `，具体要求：${requirements}` : ''}`;
       
+      // 保存当前的result状态，确保不会被修改
+      const currentResult = result;
+      
       // 初始化finalDraft状态
       setFinalDraft({
         content: "",
@@ -231,12 +235,15 @@ export function useEssayMaker(session: Session | null) {
         isComplete: false,
       });
 
-      console.log("useEssayMaker - handleFinalDraftSubmit - 提交时文件数量:", draftFiles.length);
-      console.log("生成最终初稿参数:", {
-        simplified_material_length: purifiedContent.length,
-        transcript_files_count: draftFiles.length,
-        combined_requirements: combinedRequirements,
-      });
+      console.log("============= 初稿生成请求准备 =============");
+      console.log("提纯内容长度:", purifiedContent.length, "字节");
+      console.log("申请方向:", direction);
+      console.log("具体要求:", requirements || "无");
+      console.log("成绩单解析:", transcriptAnalysis ? `存在(${transcriptAnalysis.length}字节)` : "不存在");
+      if (transcriptAnalysis) {
+        console.log("成绩单解析前100字符:", transcriptAnalysis.substring(0, 100) + "...");
+      }
+      console.log("文件数量(已废弃):", draftFiles.length);
 
       // 使用新的API函数，适应新的参数格式
       const timeoutPromise = new Promise((_, reject) => {
@@ -246,7 +253,7 @@ export function useEssayMaker(session: Session | null) {
       // 使用新的API服务函数
       const streamPromise = apiService.streamFinalDraftWithFiles({
         simplified_material: purifiedContent,
-        transcript_files: draftFiles,
+        transcript_analysis: transcriptAnalysis || undefined,  // 改用文本形式传递成绩单解析
         combined_requirements: combinedRequirements,
       });
       

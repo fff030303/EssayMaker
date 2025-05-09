@@ -421,43 +421,51 @@ export const apiService = {
   // 添加一个新的最终初稿生成流式API，适应新的API格式
   async streamFinalDraftWithFiles(params: {
     simplified_material: string;
-    transcript_files: File[];
+    transcript_analysis?: string; // 修改为成绩单解析文本而不是文件
     combined_requirements: string;
   }) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
       
-      console.log("Final Draft request configuration:", {
-        url: `${apiUrl}/api/ps-initial-draft/generate-content`,
-        apiKeyPresent: !!apiKey,
-        simplified_material_length: params.simplified_material.length,
-        transcript_files_count: params.transcript_files.length,
-        combined_requirements_length: params.combined_requirements.length,
-      });
+      console.log("=============初稿生成请求配置=============");
+      console.log("API URL:", `${apiUrl}/api/ps-initial-draft/generate-content`);
+      console.log("API Key存在:", !!apiKey);
+      console.log("简化素材长度:", params.simplified_material.length);
+      console.log("成绩单解析长度:", params.transcript_analysis?.length || 0);
+      console.log("需求信息长度:", params.combined_requirements.length);
       
       // 使用FormData格式提交
       const formData = new FormData();
       
       // 添加简化的素材
       formData.append('simplified_material', params.simplified_material);
+      console.log("【素材内容前200字符】:", params.simplified_material.substring(0, 200) + "...");
       
       // 添加申请方向+定制需求
       formData.append('combined_requirements', params.combined_requirements);
+      console.log("【申请需求完整内容】:", params.combined_requirements);
       
-      // 添加成绩单文件
-      if (params.transcript_files.length > 0) {
-        params.transcript_files.forEach((file) => {
-          formData.append('transcript_files', file);
-        });
-        
-        // 打印上传的文件信息，便于调试
-        for (let [key, value] of formData.entries()) {
-          if (value instanceof File) {
-            console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
-          }
+      // 添加成绩单解析结果（如果有）
+      if (params.transcript_analysis) {
+        formData.append('transcript_analysis', params.transcript_analysis);
+        console.log("【成绩单解析前200字符】:", params.transcript_analysis.substring(0, 200) + "...");
+      } else {
+        console.log("【未提供成绩单解析】");
+      }
+      
+      console.log("=============FormData内容=============");
+      // 打印上传的表单数据
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+        } else if (typeof value === 'string' && value.length > 500) {
+          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        } else {
+          console.log(`${key}: ${value}`);
         }
       }
+      console.log("======================================");
       
       const response = await fetch(`${apiUrl}/api/ps-initial-draft/generate-content`, {
         method: "POST",

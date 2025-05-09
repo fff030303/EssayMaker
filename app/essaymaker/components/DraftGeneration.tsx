@@ -68,9 +68,12 @@ export function DraftGeneration({
       return;
     }
     
+    // 设置本地生成状态
     setGeneratingFinalDraft(true);
     
+    // 调用生成函数
     if (onGenerateFinalDraft) {
+      console.log("开始生成个人陈述初稿，使用现有的素材整理报告");
       onGenerateFinalDraft();
     } else {
       console.error("未提供onGenerateFinalDraft回调函数");
@@ -116,7 +119,11 @@ export function DraftGeneration({
               {/* 左侧 - 素材整理报告 */}
               <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-hidden">
                 <div className="rounded-lg overflow-hidden">
-                  <DraftResultDisplay result={result} title="素材整理报告" />
+                  <DraftResultDisplay 
+                    result={result} 
+                    title="素材整理报告" 
+                    key="material-report"
+                  />
                 </div>
               </div>
               
@@ -126,6 +133,7 @@ export function DraftGeneration({
                   <DraftResultDisplay 
                     result={finalDraft || finalDraftResult!} 
                     title="个人陈述初稿" 
+                    key="personal-draft"
                   />
                 </div>
               </div>
@@ -134,54 +142,39 @@ export function DraftGeneration({
             // 没有初稿时的布局
             <div className="w-full max-w-[1300px] mx-auto">
               <div className="rounded-lg overflow-hidden">
-                <DraftResultDisplay result={result} title="素材整理报告" />
+                <DraftResultDisplay 
+                  result={result} 
+                  title="素材整理报告" 
+                  key="material-report"
+                />
               </div>
             </div>
           )}
             <div className="mt-8 flex flex-col items-center pb-6">
                 
                 {/* 调试信息 */}
-                <div className="mb-4 text-xs text-gray-500">
+                {/* <div className="mb-4 text-xs text-gray-500">
                   <p>transcriptAnalysis: {transcriptAnalysis ? `存在(${transcriptAnalysis.length}字符)` : '不存在'}</p>
                   {transcriptAnalysis && <p>前50个字符: {transcriptAnalysis.substring(0, 50)}...</p>}
                   <p>result.transcriptAnalysis: {result && 'transcriptAnalysis' in result ? 
                     `存在(${(result as any).transcriptAnalysis.length}字符)` : '不存在'}</p>
-                </div>
+                </div> */}
                 
-                {/* 成绩单解析结果 暂时保留，正式版需要删除*/}
-                {transcriptAnalysis && (
-                  <div className="mb-6 text-left max-w-[700px] bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <p className="text-base text-center font-semibold text-blue-700 mb-3">成绩单解析结果</p>
-                    <div className="prose prose-sm max-w-none prose-headings:text-blue-700 prose-p:text-gray-700 prose-strong:text-blue-800">
-                      {/* 使用简单的文本格式化，展示Markdown格式的成绩单解析结果 */}
-                      {transcriptAnalysis.split('\n').map((line, index) => {
-                        // 处理标题行
-                        if (line.startsWith('##')) {
-                          return <h3 key={index} className="text-base font-bold mt-3 mb-2">{line.replace(/^##\s*/, '')}</h3>;
-                        } else if (line.startsWith('#')) {
-                          return <h2 key={index} className="text-lg font-bold mt-3 mb-2">{line.replace(/^#\s*/, '')}</h2>;
-                        } 
-                        // 处理列表项
-                        else if (line.trim().startsWith('- ')) {
-                          return <li key={index} className="ml-4">{line.replace(/^-\s*/, '')}</li>;
-                        } 
-                        // 处理空行
-                        else if (line.trim() === '') {
-                          return <br key={index} />;
-                        } 
-                        // 普通段落
-                        else {
-                          return <p key={index} className="my-1">{line}</p>;
-                        }
-                      })}
-                    </div>
+                
+                
+                {/* 正在创作提示 */}
+                {!result.isComplete && result.content && (
+                  <div className="mb-4 flex items-center gap-2 text-blue-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <p className="text-sm">材料正在整理中，请等待完成后再生成初稿...</p>
                   </div>
                 )}
                 
                 {/* 生成按钮 */}
                 <Button 
-                disabled={generatingFinalDraft || isGeneratingFinalDraft || !onGenerateFinalDraft || !result.content || !userDirection.trim()}
+                disabled={generatingFinalDraft || isGeneratingFinalDraft || !onGenerateFinalDraft || !result.content || !userDirection.trim() || !result.isComplete}
                 onClick={handleGenerateFinalDraft}
+                title={!result.isComplete ? "请等待内容创作完成后再生成初稿" : ""}
                 className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-green-50 to-lime-50
                     text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
                     hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-300"

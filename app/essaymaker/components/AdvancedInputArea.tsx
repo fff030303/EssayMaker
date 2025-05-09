@@ -274,40 +274,8 @@ export function AdvancedInputArea({
       });
       return;
     }
+    
 
-    // 输出上传数据信息
-    console.error("===== 提交数据信息 =====");
-    console.error("申请方向:", direction);
-    console.error("具体需求:", requirements);
-    
-    // 输出初稿文件信息
-    if (draftFile) {
-      console.error("初稿文件(material_file):", {
-        fileName: draftFile.name,
-        fileSize: `${(draftFile.size / 1024).toFixed(1)} KB`,
-        fileType: draftFile.type
-      });
-    } else {
-      console.error("初稿文件(material_file): 无");
-    }
-    
-    // 输出成绩单文件信息
-    if (otherFiles.length > 0) {
-      console.error("成绩单文件(transcript_files):", otherFiles.map(file => ({
-        fileName: file.name,
-        fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-        fileType: file.type
-      })));
-    } else {
-      console.error("成绩单文件(transcript_files): 无");
-    }
-    
-    // 文件状态汇总
-    console.error("文件提交统计:", {
-      material_file_count: draftFile ? 1 : 0,
-      transcript_files_count: otherFiles.length,
-      total_files_count: (draftFile ? 1 : 0) + otherFiles.length
-    });
 
     // 防止重复提交，设置提交状态
     setSubmitting(true);
@@ -315,13 +283,6 @@ export function AdvancedInputArea({
     // 直接调用父组件提交函数，不在这里构建queryText
     onSubmitClick();
     
-    // 输出状态变化
-    console.error("状态变化:", {
-      isLoading,
-      submitting,
-      generatingFinalDraft,
-      disabled: isLoading || submitting || generatingFinalDraft
-    });
   };
 
   // 监听最终初稿生成状态
