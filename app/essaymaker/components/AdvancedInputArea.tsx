@@ -527,7 +527,7 @@ export function AdvancedInputArea({
                   ) : (
                     <div className="flex flex-col items-center">
                       <FileText className="h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-sm font-medium text-gray-600 mb-1">上传初稿文件</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">上传初稿文件（支持doc、docx）</p>
                       <p className="text-sm font-medium text-gray-600">点击或拖拽文件至此处</p>
                     </div>
                   )}
@@ -615,7 +615,7 @@ export function AdvancedInputArea({
                   ) : (
                     <div className="flex flex-col items-center">
                       <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-sm font-medium text-gray-600 mb-1">上传成绩单文件</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">上传成绩单文件（支持pdf,图片格式）</p>
                       <p className="text-sm font-medium text-gray-600">点击或拖拽文件至此处</p>
                     </div>
                   )}

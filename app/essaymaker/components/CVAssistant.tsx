@@ -2,10 +2,9 @@
 
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, Upload, X } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { FileText, Upload, X, Loader2, ArrowUp } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export function CVAssistant() {
@@ -13,6 +12,7 @@ export function CVAssistant() {
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
   const [isDraggingResume, setIsDraggingResume] = useState(false);
   const [isDraggingSupport, setIsDraggingSupport] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const supportInputRef = useRef<HTMLInputElement>(null);
@@ -44,11 +44,34 @@ export function CVAssistant() {
   // 删除简历文件
   const handleRemoveResumeFile = () => {
     setResumeFile(null);
+    if (resumeInputRef.current) {
+      resumeInputRef.current.value = "";
+    }
+    toast({
+      title: "文件已移除",
+      description: "简历文件已删除",
+    });
   };
 
   // 删除支持文件
   const handleRemoveSupportFile = (index: number) => {
     setSupportFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // 清空所有支持文件
+  const handleClearAllSupportFiles = () => {
+    if (supportFiles.length === 0) return;
+    
+    setSupportFiles([]);
+    
+    if (supportInputRef.current) {
+      supportInputRef.current.value = "";
+    }
+    
+    toast({
+      title: "文件已清空",
+      description: "所有支持文件已删除",
+    });
   };
 
   // 触发文件选择对话框
@@ -74,6 +97,28 @@ export function CVAssistant() {
     if (files.length) {
       handleSupportFiles(files);
     }
+  };
+
+  // 处理提交
+  const handleSubmit = () => {
+    if (!resumeFile) {
+      toast({
+        variant: "destructive",
+        title: "文件缺失",
+        description: "请上传个人简历素材表",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    // 这里添加提交逻辑
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "已提交",
+        description: "您的简历已提交成功",
+      });
+    }, 2000);
   };
 
   // 设置简历文件区域的拖放事件
@@ -171,137 +216,304 @@ export function CVAssistant() {
   }, []);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 简历文件上传区域 */}
-        <div>
-          <Label className="block text-base font-medium text-gray-600 mb-1">
-            个人简历素材表 <span className="text-red-500">*</span>
-          </Label>
-          <div
-            ref={resumeDropAreaRef}
-            className={cn(
-              "border-2 border-dashed rounded-md p-4 transition-colors text-center cursor-pointer h-[180px] flex flex-col justify-center",
-              isDraggingResume
-                ? "border-primary bg-primary/5"
-                : resumeFile
-                ? "border-green-500 bg-green-50"
-                : "border-gray-300 hover:border-primary hover:bg-gray-50"
-            )}
-            onClick={triggerResumeFileInput}
-          >
-            <input
-              type="file"
-              ref={resumeInputRef}
-              onChange={handleResumeFileChange}
-              className="hidden"
-              accept=".pdf,.doc,.docx,.txt,.md"
-            />
-            
-            {resumeFile ? (
-              <div className="flex flex-col items-center">
-                <FileText className="h-8 w-8 text-green-500 mb-2" />
-                <p className="text-base font-medium text-gray-600 mb-1 truncate max-w-full">
-                  {resumeFile.name}
-                </p>
-                <p className="text-base font-medium text-gray-600 mb-2">
-                  {(resumeFile.size / 1024).toFixed(1)} KB
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-base h-7"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveResumeFile();
-                  }}
-                >
-                  <X className="h-3 w-3 mr-1" /> 删除
-                </Button>
+    <div className="w-full max-w-[800px] mx-auto mb-8 mt-2">
+      <div className="input-gradient-border rounded-3xl">
+        <div className="w-full h-full flex flex-col bg-white rounded-[calc(1.5rem-3px)] p-4">
+          <div className="grid grid-cols-1 gap-4">
+            {/* 个人简历素材表上传区域 */}
+            <div>
+              <label className="block text-base font-medium text-gray-600 mb-1">
+                个人简历素材表 <span className="text-red-500">*</span>
+              </label>
+              <div
+                ref={resumeDropAreaRef}
+                className={cn(
+                  "border-2 border-dashed rounded-md p-4 transition-colors text-center cursor-pointer h-[180px] flex flex-col justify-center",
+                  isDraggingResume
+                    ? "border-primary bg-primary/5"
+                    : resumeFile
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-300 hover:border-primary hover:bg-gray-50",
+                  isLoading && "opacity-50 cursor-not-allowed"
+                )}
+                onClick={triggerResumeFileInput}
+              >
+                <input
+                  type="file"
+                  ref={resumeInputRef}
+                  onChange={handleResumeFileChange}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.txt,.md"
+                  disabled={isLoading}
+                />
+                
+                {resumeFile ? (
+                  <div className="flex flex-col items-center">
+                    <FileText className="h-8 w-8 text-green-500 mb-2" />
+                    <p className="text-base font-medium text-gray-600 mb-1 truncate max-w-full">
+                      {resumeFile.name}
+                    </p>
+                    <p className="text-base font-medium text-gray-600 mb-2">
+                      {(resumeFile.size / 1024).toFixed(1)} KB
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-base h-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveResumeFile();
+                      }}
+                      disabled={isLoading}
+                    >
+                      <X className="h-3 w-3 mr-1" /> 删除
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <FileText className="h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm font-medium text-gray-600 mb-1">上传个人简历素材表</p>
+                    <p className="text-sm font-medium text-gray-600">点击或拖拽文件至此处</p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <FileText className="h-8 w-8 text-gray-400 mb-2" />
-                <p className="text-sm font-medium text-gray-600 mb-1">上传简历文件</p>
-                <p className="text-sm font-medium text-gray-600">点击或拖拽文件至此处</p>
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* 支持文件上传区域 */}
-        <div>
-          <Label className="block text-base font-medium text-gray-600 mb-1">
-            支持文件（可选）
-          </Label>
-          <div
-            ref={supportDropAreaRef}
-            className={cn(
-              "border-2 border-dashed rounded-md p-4 transition-colors text-center cursor-pointer h-[180px] flex flex-col justify-center",
-              isDraggingSupport
-                ? "border-primary bg-primary/5"
-                : supportFiles.length > 0
-                ? "border-green-500 bg-green-50"
-                : "border-gray-300 hover:border-primary hover:bg-gray-50"
-            )}
-            onClick={triggerSupportFileInput}
-          >
-            <input
-              type="file"
-              ref={supportInputRef}
-              onChange={handleSupportFileChange}
-              className="hidden"
-              multiple
-              accept=".pdf,.doc,.docx,.txt,.md"
-            />
-            
-            {supportFiles.length > 0 ? (
-              <div className="flex flex-col items-center">
-                <FileText className="h-8 w-8 text-green-500 mb-2" />
-                <p className="text-base font-medium text-gray-600 mb-1">
-                  已上传 {supportFiles.length} 个文件
-                </p>
-                <div className="max-h-[60px] overflow-y-auto w-full">
-                  {supportFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white p-1 rounded text-sm mb-1">
-                      <span className="truncate flex-1 text-gray-700">{file.name}</span>
+            {/* 支持文件上传区域 */}
+            <div>
+              <label className="block text-base font-medium text-gray-600 mb-1">
+                支持文件（可多选）
+              </label>
+              <div
+                ref={supportDropAreaRef}
+                className={cn(
+                  "border-2 border-dashed rounded-md p-4 transition-colors text-center cursor-pointer h-[180px] flex flex-col justify-center",
+                  isDraggingSupport
+                    ? "border-primary bg-primary/5"
+                    : supportFiles.length > 0
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-300 hover:border-primary hover:bg-gray-50",
+                  isLoading && "opacity-50 cursor-not-allowed"
+                )}
+                onClick={triggerSupportFileInput}
+              >
+                <input
+                  type="file"
+                  ref={supportInputRef}
+                  onChange={handleSupportFileChange}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.txt,.md"
+                  multiple
+                  disabled={isLoading}
+                />
+                
+                {supportFiles.length > 0 ? (
+                  <div className="flex flex-col items-center">
+                    <FileText className="h-8 w-8 text-green-500 mb-2" />
+                    <p className="text-base font-medium text-gray-600 mb-1">
+                      已选择 {supportFiles.length} 个支持文件
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-1 mb-2 max-h-[60px] overflow-y-auto">
+                      {supportFiles.map((file, index) => (
+                        <div key={index} className="flex items-center bg-white rounded-md px-2 py-1 text-xs">
+                          <span className="truncate max-w-[120px]">{file.name}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveSupportFile(index);
+                            }}
+                            className="ml-1 text-red-500 hover:text-red-700"
+                            disabled={isLoading}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="h-6 w-6 p-0 text-gray-500 hover:text-red-500"
+                        className="text-base h-7"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleRemoveSupportFile(index);
+                          handleClearAllSupportFiles();
                         }}
+                        disabled={isLoading}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3 mr-1" /> 清空
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-base h-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerSupportFileInput();
+                        }}
+                        disabled={isLoading}
+                      >
+                        <Upload className="h-3 w-3 mr-1" /> 添加更多
                       </Button>
                     </div>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-base h-7 mt-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerSupportFileInput();
-                  }}
-                >
-                  <Upload className="h-3 w-3 mr-1" /> 添加更多
-                </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm font-medium text-gray-600 mb-1">上传支持文件</p>
+                    <p className="text-sm font-medium text-gray-600">点击或拖拽文件至此处</p>
+                    <p className="text-xs text-gray-400 mt-1">支持多个文件</p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <FileText className="h-8 w-8 text-gray-400 mb-2" />
-                <p className="text-sm font-medium text-gray-600 mb-1">上传支持文件</p>
-                <p className="text-sm font-medium text-gray-600">点击或拖拽文件至此处</p>
-                <p className="text-xs text-gray-400 mt-1">支持多个文件</p>
-              </div>
-            )}
+            </div>
+          </div>
+          
+          {/* 提交按钮和清空按钮区域 */}
+          <div className="flex justify-between mt-4 space-x-3">
+            {/* 清空按钮 */}
+            <Button
+              onClick={() => {
+                // 清空所有内容
+                setResumeFile(null);
+                setSupportFiles([]);
+                
+                // 如果有文件输入元素，重置它们
+                if (resumeInputRef.current) {
+                  resumeInputRef.current.value = "";
+                }
+                if (supportInputRef.current) {
+                  supportInputRef.current.value = "";
+                }
+                
+                // 显示提示
+                toast({
+                  title: "内容已清空",
+                  description: "所有文件已重置",
+                });
+              }}
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-gray-50 via-gray-50 to-gray-50
+                text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
+                hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+              disabled={isLoading}
+            >
+              <X className="h-4 w-4 mr-2" />
+              清空
+            </Button>
+
+            {/* 提交按钮 */}
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading || !resumeFile}
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50
+                text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
+                hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-300"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  处理中...
+                </>
+              ) : (
+                <>
+                  <ArrowUp className="h-4 w-4 mr-2" />
+                  提交简历
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>
+      
+      {/* 添加渐变动画样式 */}
+      <style jsx global>{`
+        .input-gradient-border {
+          margin: 15px;
+          position: relative;
+          padding: 1px;
+          background-origin: border-box;
+          background-clip: content-box, border-box;
+          overflow: visible;
+          transition: all 0.3s ease;
+        }
+
+        .input-gradient-border::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border-radius: inherit;
+          padding: 3px;
+          background: linear-gradient(
+            45deg,
+            #80e5d8,
+            #bdb0ff,
+            #ffe28a,
+            #8ecffd,
+            #80e5d8
+          );
+          background-size: 400% 400%;
+          animation: animatedgradient 6s ease infinite;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          pointer-events: none;
+          transition: all 0.3s ease;
+        }
+
+        .input-gradient-border::after {
+          content: "";
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          border-radius: inherit;
+          background: linear-gradient(
+            45deg,
+            #80e5d8,
+            #bdb0ff,
+            #ffe28a,
+            #8ecffd,
+            #80e5d8
+          );
+          background-size: 400% 400%;
+          animation: animatedgradient 9s ease infinite;
+          filter: blur(8px);
+          opacity: 0.5;
+          z-index: -1;
+          transition: all 0.3s ease;
+        }
+
+        .input-gradient-border:hover::after {
+          filter: blur(12px);
+          opacity: 0.8;
+          top: -4px;
+          left: -4px;
+          right: -4px;
+          bottom: -4px;
+        }
+
+        .input-gradient-border:hover::before,
+        .input-gradient-border:hover::after {
+          animation: animatedgradient 9s ease infinite;
+        }
+
+        @keyframes animatedgradient {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+      `}</style>
     </div>
   );
 } 
