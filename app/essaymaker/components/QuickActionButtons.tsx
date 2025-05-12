@@ -11,17 +11,20 @@ import { useState, useEffect, useRef } from "react";
 import { DisplayResult } from "../types"; // 导入DisplayResult类型
 
 // 定义按钮类型
-export type ButtonType = "draft" | "custom" | "schoolProfessor" | "question" | null;
+export type ButtonType = "draft" | "custom" | "schoolProfessor" | "question" | "cv" | null;
 
 interface QuickActionButtonsProps {
   onDraftClick?: () => void;
   onSchoolProfessorClick?: () => void;
   onQuestionClick?: () => void;
   onCustomClick?: () => void;
+  onCvClick?: () => void; // 新增 CV 助理点击事件
   onButtonChange?: (type: ButtonType) => void;
   setResult?: (result: DisplayResult | null) => void; // 修改类型为DisplayResult | null
   setIsPSAssistant?: (isPS: boolean) => void; // 新增属性，设置是否为PS初稿助理
+  setIsCVAssistant?: (isCV: boolean) => void; // 新增 CV 助理状态设置
   setShowStepNavigation?: (show: boolean) => void; // 新增属性，控制是否显示步骤导航
+  setCurrentAssistantType?: (type: "draft" | "cv" | "ps" | "custom") => void; // 添加新的属性
 }
 
 export function QuickActionButtons({
@@ -29,10 +32,13 @@ export function QuickActionButtons({
   onSchoolProfessorClick,
   onQuestionClick,
   onCustomClick,
+  onCvClick,
   onButtonChange,
   setResult,
   setIsPSAssistant,
+  setIsCVAssistant,
   setShowStepNavigation,
+  setCurrentAssistantType, // 添加新的属性
 }: QuickActionButtonsProps) {
   // 跟踪当前选中的按钮
   const [selectedButton, setSelectedButton] = useState<ButtonType>(null);
@@ -69,17 +75,33 @@ export function QuickActionButtons({
       onButtonChange(type);
     }
     
+    // 设置当前助理类型
+    if (setCurrentAssistantType) {
+      if (type === "draft") {
+        setCurrentAssistantType("draft");
+      } else if (type === "cv") {
+        setCurrentAssistantType("cv");
+      } else if (type === "custom") {
+        setCurrentAssistantType("ps");
+      } else if (type === "schoolProfessor" || type === "question") {
+        setCurrentAssistantType("custom");
+      }
+    }
+    
     // 当点击任何按钮时，将result设为null
     if (setResult) {
       setResult(null);
     }
     
-    // 如果是PS初稿助理按钮，显示底边栏，否则隐藏
+    // 根据按钮类型设置相应的状态
     if (setIsPSAssistant) {
       setIsPSAssistant(type === "draft");
     }
+    if (setIsCVAssistant) {
+      setIsCVAssistant(type === "cv");
+    }
     if (setShowStepNavigation) {
-      setShowStepNavigation(type === "draft");
+      setShowStepNavigation(type === "draft" || type === "cv");
     }
     
     // 清空个人陈述初稿
@@ -104,6 +126,8 @@ export function QuickActionButtons({
         return "from-orange-50 via-amber-50 to-yellow-50";
       case "question":
         return "from-emerald-50 via-green-50 to-lime-50";
+      case "cv":
+        return "from-violet-50 via-purple-50 to-fuchsia-50";
       default:
         return "from-gray-50 via-gray-50 to-gray-50";
     }
@@ -120,14 +144,16 @@ export function QuickActionButtons({
         return "focus:ring-yellow-300";
       case "question":
         return "focus:ring-lime-300";
+      case "cv":
+        return "focus:ring-fuchsia-300";
       default:
         return "focus:ring-gray-300";
     }
   };
 
   return (
-    <div className="w-full max-w-[600px] mx-auto mb-6 mt-6 text-base font-normal">
-      <div className="grid grid-cols-2 gap-6">
+    <div className="w-full max-w-[500px] mx-auto mb-6 mt-6 text-base font-normal">
+      <div className="grid grid-cols-3 gap-6">
         {/* 第一行 */}
         <button
           ref={psAssistantButtonRef}
@@ -164,6 +190,15 @@ export function QuickActionButtons({
               hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("question")}`}
         >
           随便问问
+        </button>
+
+        <button
+          onClick={() => handleButtonClick("cv", onCvClick)}
+          className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("cv")}
+              text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
+              hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("cv")}`}
+        >
+          CV助理
         </button>
       </div>
     </div>

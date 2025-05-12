@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { DisplayResult } from "../types";
+import { TipsButton } from "./TipsButton";
 
 interface AdvancedInputAreaProps {
   isLoading: boolean;
@@ -23,16 +24,16 @@ interface AdvancedInputAreaProps {
   direction: string;
   requirements: string;
   setDirection: (direction: string) => void;
-  setRequirements: (requirements: string) => void;
+  setRequirements: React.Dispatch<React.SetStateAction<string>>;
   draftFile: File | null;
   otherFiles: File[];
   setDraftFile: (file: File | null) => void;
   setOtherFiles: (files: File[]) => void;
   onSubmitClick: () => void;
   // 添加输入变化回调
-  onInputChange?: () => void;
+  onInputChange: () => void;
   // 添加文件变化回调
-  onFileChange?: () => void;
+  onFileChange: () => void;
   // 新增：初稿文件提纯版状态
   purifiedDraft?: string | null;
   isPurifying?: boolean;
@@ -82,7 +83,6 @@ export function AdvancedInputArea({
   // const [direction, setDirection] = useState("");
   // const [requirements, setRequirements] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [generatingFinalDraft, setGeneratingFinalDraft] = useState(false);
   
   // 拖拽状态 - 仍保留在本地
   const [isDraggingDraft, setIsDraggingDraft] = useState(false);
@@ -292,13 +292,11 @@ export function AdvancedInputArea({
     console.log("检查 finalDraftResult:", {
       isComplete: finalDraftResult.isComplete,
       content: finalDraftResult.content,
-      generatingFinalDraft
     });
     
     // 如果内容已经生成完成，直接设置状态为false
     if (finalDraftResult.isComplete) {
-      console.log("检测到完成状态，设置 generatingFinalDraft 为 false");
-      setGeneratingFinalDraft(false);
+      console.log("检测到完成状态，设置 isGeneratingFinalDraft 为 false");
     }
   }, [finalDraftResult?.isComplete]);
 
@@ -420,22 +418,10 @@ export function AdvancedInputArea({
     }
   }, [draftFile, otherFiles, onFileChange]);
 
-  // 监听生成状态变化
-  useEffect(() => {
-    console.log("生成状态变化:", {
-      generatingFinalDraft,
-      finalDraftResult: {
-        isComplete: finalDraftResult?.isComplete,
-        content: finalDraftResult?.content
-      }
-    });
-  }, [generatingFinalDraft, finalDraftResult?.isComplete]);
-
   console.log("状态变化:", {
     isLoading,
     submitting,
-    generatingFinalDraft,
-    disabled: isLoading || submitting || generatingFinalDraft
+    disabled: isLoading || submitting
   });
 
   return (
@@ -453,14 +439,14 @@ export function AdvancedInputArea({
                 onChange={(e) => setDirection(e.target.value)}
                 placeholder="例如: 计算机科学、经济学、生物医学工程等"
                 className="placeholder:text-gray-400 w-full !text-base md:!text-base rounded-md border-gray-300"
-                disabled={isLoading || submitting || generatingFinalDraft || isGeneratingFinalDraft}
+                disabled={isLoading || submitting}
               />
             </div>
 
             {/* 特定需求输入区域 */}
             <div>
               <label className="block text-base font-medium text-gray-600 mb-1">
-                具体需求（选填）
+                写作需求（选填）
               </label>
               <Textarea
                 value={requirements}
@@ -468,12 +454,23 @@ export function AdvancedInputArea({
                 placeholder="例如：需要包含哪些方面的内容、字数要求、风格要求等"
                 className="text-base placeholder:text-gray-400 w-full rounded-md border-gray-300"
                 rows={3}
-                disabled={isLoading || submitting || generatingFinalDraft || isGeneratingFinalDraft}
+                disabled={isLoading || submitting}
               />
+              <div className="mt-1 flex justify-end">
+                <TipsButton
+                  onSelect={(text: string) => {
+                    const newRequirements = requirements ? requirements + "\n" + text : text;
+                    setRequirements(newRequirements);
+                  }}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-gray-50 via-gray-50 to-gray-50
+                    text-gray-700 font-semibold text-base transition-transform duration-50
+                    hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+                />
+              </div>
             </div>
 
             {/* 文件上传区域 - 双列布局 */}
-            <div className="grid grid-cols-2 gap-4 mt-2">
+            <div className="grid grid-cols-2 gap-4">
               {/* 左侧 - 初稿文件上传 */}
               <div>
                 <label className="block text-base font-medium text-gray-600 mb-1">
@@ -492,7 +489,7 @@ export function AdvancedInputArea({
                       : draftFile
                       ? "border-green-500 bg-green-50"
                       : "border-gray-300 hover:border-primary hover:bg-gray-50",
-                    (isLoading || submitting || generatingFinalDraft) && "opacity-50 cursor-not-allowed"
+                    (isLoading || submitting) && "opacity-50 cursor-not-allowed"
                   )}
                   onClick={triggerDraftFileInput}
                 >
@@ -502,7 +499,7 @@ export function AdvancedInputArea({
                     onChange={handleDraftFileChange}
                     className="hidden"
                     accept=".pdf,.doc,.docx,.txt,.md"
-                    disabled={isLoading || submitting || generatingFinalDraft || isGeneratingFinalDraft}
+                    disabled={isLoading || submitting}
                   />
                   
                   {draftFile ? (
@@ -522,7 +519,7 @@ export function AdvancedInputArea({
                           e.stopPropagation();
                           handleRemoveDraftFile();
                         }}
-                        disabled={isLoading || submitting || generatingFinalDraft}
+                        disabled={isLoading || submitting}
                       >
                         <X className="h-3 w-3 mr-1" /> 删除
                       </Button>
@@ -551,7 +548,7 @@ export function AdvancedInputArea({
                       : otherFiles.length > 0
                       ? "border-green-500 bg-green-50"
                       : "border-gray-300 hover:border-primary hover:bg-gray-50",
-                    (isLoading || submitting || generatingFinalDraft) && "opacity-50 cursor-not-allowed"
+                    (isLoading || submitting) && "opacity-50 cursor-not-allowed"
                   )}
                   onClick={triggerOtherFilesInput}
                 >
@@ -562,7 +559,7 @@ export function AdvancedInputArea({
                     className="hidden"
                     accept=".pdf,.doc,.docx,.txt,.xls,.xlsx"
                     multiple
-                    disabled={isLoading || submitting || generatingFinalDraft || isGeneratingFinalDraft}
+                    disabled={isLoading || submitting}
                   />
                   
                   {otherFiles.length > 0 ? (
@@ -581,7 +578,7 @@ export function AdvancedInputArea({
                                 handleRemoveOtherFile(index);
                               }}
                               className="ml-1 text-red-500 hover:text-red-700"
-                              disabled={isLoading || submitting || generatingFinalDraft}
+                              disabled={isLoading || submitting}
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -597,7 +594,7 @@ export function AdvancedInputArea({
                             e.stopPropagation();
                             handleClearAllOtherFiles();
                           }}
-                          disabled={isLoading || submitting || generatingFinalDraft}
+                          disabled={isLoading || submitting}
                         >
                           <X className="h-3 w-3 mr-1" /> 清空
                         </Button>
@@ -609,7 +606,7 @@ export function AdvancedInputArea({
                             e.stopPropagation();
                             triggerOtherFilesInput();
                           }}
-                          disabled={isLoading || submitting || generatingFinalDraft}
+                          disabled={isLoading || submitting}
                         >
                           <Upload className="h-3 w-3 mr-1" /> 添加更多
                         </Button>
@@ -668,7 +665,7 @@ export function AdvancedInputArea({
               className="px-6 py-3 rounded-2xl bg-gradient-to-r from-gray-50 via-gray-50 to-gray-50
                 text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
                 hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
-              disabled={isLoading || submitting || generatingFinalDraft}
+              disabled={isLoading || submitting}
             >
               <X className="h-4 w-4 mr-2" />
               清空
@@ -679,7 +676,7 @@ export function AdvancedInputArea({
               {/* 提交按钮 - 显示为"提交初稿文件"或"提交定制内容"*/}
               <Button
                 onClick={handleSubmit}
-                disabled={isLoading || submitting || generatingFinalDraft || (type === "draft" && !draftFile)}
+                disabled={isLoading || submitting || (type === "draft" && !draftFile)}
                 className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-50 via-cyan-50 to-teal-50
                   text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
                   hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-300"

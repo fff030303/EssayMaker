@@ -11,7 +11,7 @@ import { FileText, Loader2, CheckCircle, Copy, ClipboardCopy, Download, ChevronU
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DisplayResult } from "../types";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -55,6 +55,9 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
   // 添加一个状态来跟踪用户是否手动滚动过
   const [userManuallyScrolled, setUserManuallyScrolled] = useState(false);
 
+  // 添加状态来记录是否已经完成过流式生成
+  const [hasCompletedStreaming, setHasCompletedStreaming] = useState(false);
+
   // 新增: 每次result.timestamp变化时重置显示内容和状态
   useEffect(() => {
     if (!result) return;
@@ -80,6 +83,13 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
   useEffect(() => {
     if (!result || !result.content) return;
     
+    // 如果已经完成过流式生成，直接显示完整内容
+    if (hasCompletedStreaming) {
+      setDisplayedContent(result.content);
+      setTypingProgress(result.content.length);
+      return;
+    }
+    
     // 如果内容变化，记录之前的内容长度
     if (result.content !== previousContent) {
       setPreviousContent(result.content);
@@ -100,60 +110,25 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
         setDisplayedContent(result.content.substring(0, newProgress));
         // 更新最后内容变化时间
         lastUpdateRef.current = Date.now();
+
+        // 如果已经显示完所有内容，标记流式生成完成
+        if (newProgress >= result.content.length) {
+          setHasCompletedStreaming(true);
+        }
       }, 30); // 每30毫秒更新一次，看起来流畅
 
       return () => clearTimeout(timer);
     }
-  }, [result, typingProgress, previousContent, displayedContent]);
+  }, [result, typingProgress, previousContent, displayedContent, hasCompletedStreaming]);
 
-  // // 当结果完成时，确保显示全部内容并自动收起
-  // useEffect(() => {
-  //   // 检查是否真正完成生成 - 基于流式内容的状态
-  //   const isFullyComplete = result?.content && 
-  //                          result.content.length > 0 && 
-  //                          displayedContent === result.content && // 确保流式内容已完全显示
-  //                          !result.currentStep && // 确保没有正在执行的步骤
-  //                          result.isComplete; // 确保后端标记为完成
-
-  //   // 添加调试日志，帮助排查问题
-  //   console.log("内容生成状态:", {
-  //     hasContent: !!result?.content,
-  //     contentLength: result?.content?.length || 0,
-  //     displayedLength: displayedContent.length,
-  //     isContentEqual: displayedContent === result?.content,
-  //     hasCurrentStep: !!result?.currentStep,
-  //     isComplete: result?.isComplete,
-  //     isFullyComplete,
-  //     hasAutoCollapsed,
-  //     userManuallyExpanded,
-  //     userManuallyScrolled
-  //   });
-
-  //   // 修改自动收起逻辑，确保只有在内容完全生成后才自动收起
-  //   if (isFullyComplete && !hasAutoCollapsed && !userManuallyExpanded) {
-  //     // 当内容生成完毕且内容较长时，自动收起
-  //     // 延迟1秒收起，让用户能先看到完整内容
-  //     const timer = setTimeout(() => {
-  //       // 再次检查内容是否完全生成，防止在延迟期间内容继续更新
-  //       const isStillComplete = result?.content && 
-  //                              displayedContent === result.content && 
-  //                              !result.currentStep && 
-  //                              result.isComplete;
-        
-  //       // 只有在用户没有手动滚动且内容仍然完全生成时才自动收起
-  //       if (isStillComplete) {
-  //         setAutoScroll(true);
-  //         // 添加自动收起功能
-  //         if (displayedContent.length > previewLength) {
-  //           setIsCollapsed(true);
-  //           setHasAutoCollapsed(true); // 标记已经自动收起过
-  //         }
-  //       }
-  //     }, 1000);
-      
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [result?.content, result?.currentStep, result?.isComplete, previewLength, autoScroll, displayedContent, hasAutoCollapsed, userManuallyExpanded, userManuallyScrolled]);
+  // 当结果完成时，确保显示全部内容
+  useEffect(() => {
+    if (result?.isComplete && result.content) {
+      setDisplayedContent(result.content);
+      setTypingProgress(result.content.length);
+      setHasCompletedStreaming(true);
+    }
+  }, [result?.isComplete, result?.content]);
 
   // 处理复制内容
   const handleCopy = async () => {
@@ -270,63 +245,80 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
     }
   };
 
-  // 处理自动滚动切换
-  const toggleAutoScroll = () => {
-    setAutoScroll(!autoScroll);
-    if (!autoScroll) {
-      // 如果用户启用自动滚动，重置手动滚动状态
-      setUserManuallyScrolled(false);
-      console.log("用户手动启用了自动滚动");
-    } else {
-      console.error("用户手动关闭了自动滚动");
-    }
-    toast({
-      title: !autoScroll ? "已启用自动滚动" : "已禁用自动滚动",
-      description: !autoScroll ? "内容将自动滚动到底部" : "内容将保持当前位置",
-    });
-  };
-
   // 用户手动滚动检测
+  useEffect(() => {
+    
+    function globalWheelHandler(e: WheelEvent) {
+      if (autoScroll) {
+        setAutoScroll(false);
+        setUserManuallyScrolled(true);
+      }
+    }
+    
+    // 全局添加滚轮事件监听
+    window.addEventListener('wheel', globalWheelHandler, { capture: true });
+    window.addEventListener('mousewheel', globalWheelHandler as any, { capture: true });
+    window.addEventListener('DOMMouseScroll', globalWheelHandler as any, { capture: true });
+    
+    return () => {
+      window.removeEventListener('wheel', globalWheelHandler, { capture: true });
+      window.removeEventListener('mousewheel', globalWheelHandler as any, { capture: true });
+      window.removeEventListener('DOMMouseScroll', globalWheelHandler as any, { capture: true });
+    };
+  }, [autoScroll]);
+  
+  // 单独检测内容区域的滚动
   useEffect(() => {
     const container = contentRef.current;
     if (!container) return;
     
-    let lastScrollTop = container.scrollTop;
-    let lastScrollTime = Date.now();
-    
-    // 检测用户滚动
-    const handleScroll = () => {
-      const currentScrollTop = container.scrollTop;
-      const currentTime = Date.now();
-      const scrollSpeed = Math.abs(currentScrollTop - lastScrollTop) / (currentTime - lastScrollTime);
+    function containerScrollHandler() {
+      if (!container) return; // 再次检查确保容器存在
       
-      // 如果用户正在快速滚动（比如拖动滚动条），禁用自动滚动
-      if (currentTime - lastScrollTime < 100) {
-        setUserManuallyScrolled(true);
-        setAutoScroll(false);
-      }
-      
-      // 如果用户滚动到底部，重新启用自动滚动
+      // 检查是否滚动到底部
       const isAtBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 10;
-      if (isAtBottom) {
+      
+      if (isAtBottom && !autoScroll) {
+        // 如果滚动到底部，启用自动滚动
         setAutoScroll(true);
         setUserManuallyScrolled(false);
-        console.log("滚动到底部，自动滚动已启用");
+        console.log("滚动到底部，启用自动滚动");
+      } else if (!isAtBottom && autoScroll) {
+        // 如果没有滚动到底部，禁用自动滚动
+        setAutoScroll(false);
+        setUserManuallyScrolled(true);
+        console.log("滚动未到底部，禁用自动滚动");
       }
-      
-      lastScrollTop = currentScrollTop;
-      lastScrollTime = currentTime;
-    };
+    }
     
-    container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('scroll', containerScrollHandler);
     
     return () => {
-      container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('scroll', containerScrollHandler);
     };
-  }, []);
+  }, [autoScroll]);
 
   // 判断是否正在生成中（流式输出开始前）
   const isGenerating = !result || (result && !result.content);
+
+  // 处理自动滚动按钮点击
+  const handleAutoScrollClick = () => {
+    const newAutoScroll = !autoScroll;
+    setAutoScroll(newAutoScroll);
+    
+    if (newAutoScroll) {
+      // 如果用户启用自动滚动，重置手动滚动状态
+      setUserManuallyScrolled(false);
+      console.log("用户手动启用了自动滚动");
+    } else {
+      console.log("用户手动关闭了自动滚动");
+    }
+    
+    toast({
+      title: newAutoScroll ? "已启用自动滚动" : "已禁用自动滚动",
+      description: newAutoScroll ? "内容将自动滚动到底部" : "内容将保持当前位置",
+    });
+  };
 
   if (isGenerating) {
     return (
@@ -445,7 +437,7 @@ export function DraftResultDisplay({ result, title = "素材整理报告" }: Dra
             variant="ghost"
             size="sm"
             className="w-8 h-8 p-0 rounded-full"
-            onClick={toggleAutoScroll}
+            onClick={handleAutoScrollClick}
             title={autoScroll ? "禁用自动滚动" : "启用自动滚动"}
           >
             <ScrollText className={`h-4 w-4 ${autoScroll ? "text-blue-500" : "text-gray-400"}`} />

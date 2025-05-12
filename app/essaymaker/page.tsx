@@ -16,6 +16,7 @@ import { SecondStep } from "./components/SecondStep";
 import { ThirdStep } from "./components/ThirdStep";
 import { StepNavigation } from "./components/StepNavigation";
 import { DraftGeneration } from "./components/DraftGeneration";
+import { CVAssistant } from "./components/CVAssistant";
 import { useEssayMaker } from "./hooks/useEssayMaker";
 import { AgentType, DisplayResult } from "./types";
 import { useState, useEffect, useCallback } from "react";
@@ -85,6 +86,9 @@ export default function EssayMakerPage() {
   // 添加判断是否为PS初稿助理
   const [isPSAssistant, setIsPSAssistant] = useState<boolean>(false);
   
+  // 添加判断是否为CV助理
+  const [isCVAssistant, setIsCVAssistant] = useState<boolean>(false);
+  
   // 添加控制步骤导航显示状态
   const [showStepNavigation, setShowStepNavigation] = useState<boolean>(false);
   
@@ -122,9 +126,15 @@ export default function EssayMakerPage() {
     // 当用户点击PS初稿助理按钮时，设置isPSAssistant为true
     if (type === "draft") {
       setIsPSAssistant(true);
+      setIsCVAssistant(false);
+      setShowStepNavigation(true);
+    } else if (type === "cv") {
+      setIsPSAssistant(false);
+      setIsCVAssistant(true);
       setShowStepNavigation(true);
     } else {
       setIsPSAssistant(false);
+      setIsCVAssistant(false);
       setShowStepNavigation(false);
     }
   }, [clearSteps]);
@@ -245,6 +255,7 @@ export default function EssayMakerPage() {
                 setFinalDraft={setFinalDraft}
                 onButtonChange={handleButtonChange}
                 setIsPSAssistant={setIsPSAssistant}
+                setIsCVAssistant={setIsCVAssistant}
                 setShowStepNavigation={setShowStepNavigation}
                 onUserInputChange={handleUserInputChange}
                 onOtherFilesChange={handleOtherFilesChange}
@@ -308,6 +319,8 @@ export default function EssayMakerPage() {
                   otherFiles={otherFiles}
                   transcriptAnalysis={transcriptAnalysis}
                 />
+              ) : isCVAssistant ? (
+                <CVAssistant />
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center p-8 max-w-md">
@@ -372,6 +385,7 @@ export default function EssayMakerPage() {
           agentType={detectedAgentType}
           isProfessorSearch={isProfessorSearch}
           isPSAssistant={isPSAssistant}
+          isCVAssistant={isCVAssistant}
         />
       )}
     </div>

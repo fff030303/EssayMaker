@@ -18,6 +18,7 @@ import { AdvancedInputArea } from "./AdvancedInputArea";
 import { useToast } from "@/hooks/use-toast";
 import { ResultDisplay } from "./ResultDisplay";
 import { DraftResultDisplay } from "./DraftResultDisplay";
+import { AssistantTips } from "./AssistantTips";
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
 interface FirstStepProps {
@@ -59,6 +60,7 @@ interface FirstStepProps {
   onOtherFilesChange?: (files: File[]) => void; // 添加接收其他文件的回调
   // 添加直接访问API的函数，以绕过handleSubmit
   handleStreamResponse?: (query: string, materialFiles?: File[], transcriptFiles?: File[]) => Promise<void>;
+  setIsCVAssistant?: (isCV: boolean) => void; // 添加设置CV助理状态
 }
 
 export function FirstStep({
@@ -91,6 +93,7 @@ export function FirstStep({
   onUserInputChange,
   onOtherFilesChange,
   handleStreamResponse,
+  setIsCVAssistant,
 }: FirstStepProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -286,19 +289,40 @@ export function FirstStep({
       });
       return;
     }
-    
+
     // 在提交新查询时重置shouldHideResult
     setShouldHideResult(false);
-    
+
+    // 处理PS分稿助理模式 - 通过placeholder检测当前模式
+    let finalQuery = simpleQuery;
+
+    // 检测是否处于PS分稿助理模式
+    if (inputMode === "simple" && placeholder.includes("分稿")) {
+      // 自动为用户输入添加详细的查询模板
+      finalQuery = `请提供${simpleQuery}课程的详细信息，包括核心课程、选修课程、学分要求、课程大纲和评估方式。`;
+      console.log("PS分稿助理 - 自动拼接查询:", finalQuery);
+    }
+
     // 更新父组件状态
-    setQuery(simpleQuery);
+    setQuery(finalQuery);
     setFiles(simpleFiles);
     setShowExamples(false);
     setIsInputExpanded(false);
-    
+
     // 调用父组件提交
     handleSubmit();
-  }, [simpleQuery, simpleFiles, setQuery, setFiles, setShowExamples, setIsInputExpanded, handleSubmit, toast]);
+  }, [
+    simpleQuery,
+    simpleFiles,
+    setQuery,
+    setFiles,
+    setShowExamples,
+    setIsInputExpanded,
+    handleSubmit,
+    toast,
+    inputMode,
+    placeholder,
+  ]);
 
   // 处理高级输入提交 - 修改为与简单输入相同的模式
   const handleAdvancedSubmit = async () => {
@@ -536,8 +560,8 @@ export function FirstStep({
     // 切换到简单模式，而不是复杂模式的custom类型
   const handleCustomClick = () => {
     setInputMode("simple");
-    // 设置适合分稿的提示文本
-    setPlaceholder("例如：请帮我写一份关于可持续发展在现代企业中重要性的分稿");
+    // 设置适合分稿的简洁提示文本
+    setPlaceholder("例如：南加州大学(USC) 经济学硕士");
     // 不清空simpleQuery，保留用户之前的输入 - 现在会在handleButtonChange中处理
     setIsInputExpanded(true);
   };
@@ -561,34 +585,55 @@ export function FirstStep({
   };
 
   // 添加统一的按钮切换处理函数 - 清空输入和文件
-  const handleButtonChange = useCallback((type: ButtonType) => {
-    console.log("按钮切换至:", type);
-    
-    // 清空所有输入和文件
-    setSimpleQuery("");
-    setSimpleFiles([]);
-    setDirection("");
-    setRequirements("");
-    setDraftFile(null);
-    setOtherFiles([]);
-    setPurifiedDraft(null); // 清空提纯版内容
-    setFinalDraftResult(null); // 清空最终初稿结果
-    
-    // 同时清空父组件的状态
-    setQuery("");
-    setFiles([]);
-    
-    // 直接将result设为null，确保结果不会显示
-    setResult(null); 
-    
-    // 设置shouldHideResult为true，确保即使有result也不会显示
-    setShouldHideResult(true);
+  const handleButtonChange = useCallback(
+    (type: ButtonType) => {
+      console.log("按钮切换至:", type);
 
-    // 清空个人陈述初稿
-    if (setFinalDraft) {
-      setFinalDraft(null);
-    }
-  }, [setQuery, setFiles, setResult, setShouldHideResult, setFinalDraft]);
+      // 设置当前助理类型
+      if (type === "draft") {
+        setCurrentAssistantType("draft");
+      } else if (type === "cv") {
+        setCurrentAssistantType("cv");
+      } else if (type === "custom") {
+        setCurrentAssistantType("ps");
+      } else if (type === "schoolProfessor") {
+        setCurrentAssistantType("custom");
+      } else if (type === "question") {
+        setCurrentAssistantType("custom");
+      }
+
+      // 清空所有输入和文件
+      setSimpleQuery("");
+      setSimpleFiles([]);
+      setDirection("");
+      setRequirements("");
+      setDraftFile(null);
+      setOtherFiles([]);
+      setPurifiedDraft(null); // 清空提纯版内容
+      setFinalDraftResult(null); // 清空最终初稿结果
+
+      // 同时清空父组件的状态
+      setQuery("");
+      setFiles([]);
+
+      // 直接将result设为null，确保结果不会显示
+      setResult(null);
+
+      // 设置shouldHideResult为true，确保即使有result也不会显示
+      setShouldHideResult(true);
+
+      // 清空个人陈述初稿
+      if (setFinalDraft) {
+        setFinalDraft(null);
+      }
+
+      // 设置CV助理状态
+      if (setIsCVAssistant) {
+        setIsCVAssistant(type === "cv");
+      }
+    },
+    [setQuery, setFiles, setResult, setShouldHideResult, setFinalDraft, setIsCVAssistant]
+  );
 
   // 新增：处理清空生成内容
   const handleClearGeneratedContent = useCallback(() => {
@@ -605,10 +650,13 @@ export function FirstStep({
     }
   }, [setResult, setFinalDraft]);
 
+  // 添加状态来跟踪当前助理类型
+  const [currentAssistantType, setCurrentAssistantType] = useState<"draft" | "cv" | "ps" | "custom">("custom");
+
   return (
     <div className="w-full flex flex-col items-center">
       {/* 快速操作按钮 */}
-      <QuickActionButtons 
+      <QuickActionButtons
         onDraftClick={handleDraftClick}
         onSchoolProfessorClick={handleSchoolProfessorClick}
         onQuestionClick={handleQuestionClick}
@@ -617,7 +665,12 @@ export function FirstStep({
         setResult={setResult}
         setIsPSAssistant={setIsPSAssistant}
         setShowStepNavigation={setShowStepNavigation}
+        setIsCVAssistant={setIsCVAssistant}
+        setCurrentAssistantType={setCurrentAssistantType}
       />
+
+      {/* 只在初稿模式下显示提示组件 */}
+      {inputMode === "draft" && <AssistantTips type="draft" />}
       
       {/* 根据当前模式显示不同的输入区域 */}
       {inputMode === "simple" || inputMode === "custom" ? (

@@ -15,8 +15,9 @@ interface StepNavigationProps {
   hasFinalResult: boolean;
   isThirdStepLoading: boolean;
   agentType: AgentType;
-  isProfessorSearch?: boolean;
-  isPSAssistant?: boolean;
+  isProfessorSearch: boolean;
+  isPSAssistant: boolean;
+  isCVAssistant: boolean;
 }
 
 export function StepNavigation({
@@ -29,9 +30,10 @@ export function StepNavigation({
   agentType,
   isProfessorSearch = false,
   isPSAssistant = false,
+  isCVAssistant = false,
 }: StepNavigationProps) {
-  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理，则不显示导航
-  if (!shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant) {
+  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理，则不显示导航
+  if (!shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isCVAssistant) {
     return null;
   }
 
@@ -67,7 +69,9 @@ export function StepNavigation({
               ? "查询结果" 
               : isPSAssistant 
                 ? <><Upload className="h-4 w-4 mr-1" />文件上传</> 
-                : "查询信息"}
+                : isCVAssistant
+                  ? <><Upload className="h-4 w-4 mr-1" />简历上传</>
+                  : "查询信息"}
           </Button>
 
           {/* 步骤分隔线 */}
@@ -86,7 +90,7 @@ export function StepNavigation({
                 : ""
             )}
             onClick={() => onStepChange(2)}
-            disabled={currentStep < 2 && !shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant}
+            disabled={currentStep < 2 && !shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isCVAssistant}
           >
             {currentStep > 2 ? (
               <ArrowLeft className="h-4 w-4 mr-1" />
@@ -103,7 +107,9 @@ export function StepNavigation({
               ? "教授信息" 
               : isPSAssistant 
                 ? <><FileText className="h-4 w-4 mr-1" />初稿生成</> 
-                : "补充信息"}
+                : isCVAssistant
+                  ? <><FileText className="h-4 w-4 mr-1" />简历生成</>
+                  : "补充信息"}
           </Button>
 
           {/* 如果是常规多步骤流程，显示第三步按钮；如果是教授搜索类型或PS初稿助理，不显示第三步按钮 */}
