@@ -13,10 +13,22 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
+// 添加一个辅助函数来创建StepContentResult对象
+function createStepResult(data: Partial<StepContentResult>): StepContentResult {
+  return {
+    // 默认值
+    isComplete: true,
+    timestamp: new Date().toISOString(),
+    content: "",
+    // 覆盖默认值
+    ...data,
+  };
+}
+
 // 解析步骤内容
 export function parseStepContent(step: string): StepContentResult {
-  // 清理步骤内容
-  let cleanStep = step.trim();
+  // 清理步骤内容，移除前导空白
+  const cleanStep = step.trim();
 
   // 移除日志信息和时间戳的正则表达式
   const logPattern =
@@ -35,10 +47,10 @@ export function parseStepContent(step: string): StepContentResult {
     return indent + line.replace(logPattern, "");
   });
 
-  cleanStep = lines.join("\n");
+  const cleanStepContent = lines.join("\n");
 
   // 处理搜索结果
-  if (cleanStep.includes("搜索:") || cleanStep.includes("执行网络搜索")) {
+  if (cleanStep.includes("Search results") || cleanStep.includes("搜索结果")) {
     // 移除转义字符
     let searchContent = cleanStep.replace(/\\n/g, "\n");
 
@@ -73,11 +85,11 @@ export function parseStepContent(step: string): StepContentResult {
       ...formattedResults,
     ].join("\n");
 
-    return {
+    return createStepResult({
       type: "search",
       title: "搜索相关资料",
       content: finalContent,
-    };
+    });
   }
 
   // 处理网页内容
@@ -91,11 +103,11 @@ export function parseStepContent(step: string): StepContentResult {
   ) {
     // 检查是否是执行时间日志
     if (cleanStep.includes("[执行时间:") && !cleanStep.includes("页面内容")) {
-      return {
+      return createStepResult({
         type: "system",
         title: "系统信息",
         content: cleanStep,
-      };
+      });
     }
 
     // 移除转义字符
@@ -124,8 +136,9 @@ export function parseStepContent(step: string): StepContentResult {
     }
 
     // 格式化内容
-    const lines = webContent.split("\n").filter(Boolean);
-    const formattedLines = lines
+    const formattedLines = webContent
+      .split("\n")
+      .filter(Boolean)
       .map((line) => {
         // 保持标题格式
         if (line.startsWith("#")) return line;
@@ -158,12 +171,12 @@ export function parseStepContent(step: string): StepContentResult {
     // 创建预览内容 - 取前500个字符
     const previewContent = finalContent.substring(0, 500) + "...";
 
-    return {
+    return createStepResult({
       type: "web",
       title: title,
       content: previewContent,
       details: finalContent,
-    };
+    });
   }
 
   // 处理生成内容
@@ -182,7 +195,7 @@ export function parseStepContent(step: string): StepContentResult {
     const previewMatch = cleanStep.match(/生成内容预览: (.*?)\.{3}/);
 
     // 如果没有预览内容，尝试从完整内容中提取预览
-    return {
+    return createStepResult({
       type: "generation",
       title: "生成内容",
       content: previewMatch
@@ -191,7 +204,7 @@ export function parseStepContent(step: string): StepContentResult {
         ? fullContentMatch[1].substring(0, 500) + "..."
         : cleanStep.substring(0, 100) + (cleanStep.length > 100 ? "..." : ""),
       details: fullContentMatch ? fullContentMatch[1] : cleanStep,
-    };
+    });
   }
 
   // 处理分析步骤
@@ -233,13 +246,13 @@ export function parseStepContent(step: string): StepContentResult {
       }
     }
 
-    return {
+    return createStepResult({
       type: "analysis",
       title: cleanStep.split("\n")[0].trim(),
       content: cleanedStepContent,
       // 如果有嵌入内容，则提供详细内容
       details: details,
-    };
+    });
   }
 
   // 处理系统信息（如token使用情况）
@@ -247,11 +260,11 @@ export function parseStepContent(step: string): StepContentResult {
     cleanStep.includes("token_usage") ||
     cleanStep.includes("system_fingerprint")
   ) {
-    return {
+    return createStepResult({
       type: "system",
       title: "系统信息",
       content: cleanStep,
-    };
+    });
   }
 
   // 处理工具消息
@@ -278,20 +291,20 @@ export function parseStepContent(step: string): StepContentResult {
         `执行结果: ${content}`,
       ].join("\n");
 
-      return {
+      return createStepResult({
         type: "tool",
         title: formattedName,
         content: finalContent,
-      };
+      });
     }
   }
 
-  // 其他情况，保持原始格式
-  return {
+  // 默认情况
+  return createStepResult({
     type: "default",
-    title: cleanStep.split("\n")[0].trim(),
+    title: cleanStep.split("\n")[0] || "步骤",
     content: cleanStep,
-  };
+  });
 }
 
 // 获取步骤图标

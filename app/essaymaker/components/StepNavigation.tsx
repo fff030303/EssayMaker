@@ -1,7 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check, Upload, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Upload,
+  FileText,
+  Navigation2,
+} from "lucide-react";
 import { AgentType } from "../types";
 import { cn } from "@/lib/utils";
 // 移除侧边栏导入
@@ -18,6 +25,7 @@ interface StepNavigationProps {
   isProfessorSearch: boolean;
   isPSAssistant: boolean;
   isCVAssistant: boolean;
+  hasSubmittedDraft?: boolean;
 }
 
 export function StepNavigation({
@@ -31,125 +39,164 @@ export function StepNavigation({
   isProfessorSearch = false,
   isPSAssistant = false,
   isCVAssistant = false,
+  hasSubmittedDraft = false,
 }: StepNavigationProps) {
   // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理，则不显示导航
-  if (!shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isCVAssistant) {
+  if (
+    !shouldShowMultiStepFlow &&
+    !isProfessorSearch &&
+    !isPSAssistant &&
+    !isCVAssistant
+  ) {
     return null;
   }
+
+  // 修改显示条件：如果是PS初稿助理但是在第一步且未提交过文件，不显示导航
+  if (isPSAssistant && currentStep === 1 && !hasSubmittedDraft) {
+    console.log("PS初稿助理在第一步，且未提交过文件，不显示导航栏");
+    return null;
+  }
+
+  // 确定总步骤数
+  const totalSteps =
+    shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant ? 3 : 2;
 
   return (
     <div
       className={cn(
-        "fixed bottom-0 right-0 z-10 bg-background/95 backdrop-blur-sm border-t border-border left-0",
-        "transition-all duration-300"
+        "fixed bottom-0 right-0 z-10 bg-background border-t border-border",
+        "transition-all duration-300 ml-[60px] left-0"
       )}
     >
-      <div className="mx-auto p-2 max-w-3xl">
-        <div className="flex justify-center items-center gap-2 md:gap-8">
-          {/* 步骤1按钮 */}
-          <Button
-            variant={currentStep === 1 ? "default" : "outline"}
-            size="sm"
-            className={cn(
-              "h-10 min-w-[100px] rounded-md",
-              currentStep === 1
-                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                : ""
-            )}
+      {/* 添加超细线进度条 - 不增加高度 */}
+      <div className="h-[1px] bg-muted w-full">
+        <div
+          className="h-full bg-primary/40 transition-all duration-300"
+          style={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` }}
+        />
+      </div>
+
+      <div className="mx-auto py-1 px-2 max-w-2xl">
+        {/* 使用标签页样式的导航 */}
+        <nav className="flex justify-center items-center">
+          {/* 步骤1标签 */}
+          <div
             onClick={() => onStepChange(1)}
-          >
-            {currentStep > 1 ? (
-              <ArrowLeft className="h-4 w-4 mr-1" />
-            ) : (
-              <span className="h-5 w-5 flex items-center justify-center bg-background text-primary rounded-full mr-1 text-xs font-bold">
-                1
-              </span>
-            )}
-            {isProfessorSearch 
-              ? "查询结果" 
-              : isPSAssistant 
-                ? <><Upload className="h-4 w-4 mr-1" />文件上传</> 
-                : isCVAssistant
-                  ? <><Upload className="h-4 w-4 mr-1" />简历上传</>
-                  : "查询信息"}
-          </Button>
-
-          {/* 步骤分隔线 */}
-          <div className="h-[2px] w-8 md:w-12 bg-muted"></div>
-
-          {/* 步骤2按钮 */}
-          <Button
-            variant={currentStep === 2 ? "default" : "outline"}
-            size="sm"
             className={cn(
-              "h-10 min-w-[100px] rounded-md",
+              "px-3 py-1 text-xs cursor-pointer relative flex items-center",
+              "border-0 hover:bg-transparent transition-colors duration-150",
+              currentStep === 1
+                ? "text-primary font-medium"
+                : "text-muted-foreground"
+            )}
+          >
+            <div className="flex items-center justify-center">
+              {isProfessorSearch
+                ? "查询结果"
+                : isPSAssistant
+                ? "文件上传"
+                : isCVAssistant
+                ? "简历上传"
+                : "查询信息"}
+            </div>
+            {/* 当前步骤的下划线指示器 */}
+            {currentStep === 1 && (
+              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full"></div>
+            )}
+          </div>
+
+          {/* 分隔符 */}
+          <div className="text-muted-foreground/30 px-2">/</div>
+
+          {/* 步骤2标签 */}
+          <div
+            onClick={() => {
+              if (
+                !(
+                  currentStep < 2 &&
+                  !shouldShowMultiStepFlow &&
+                  !isProfessorSearch &&
+                  !isPSAssistant &&
+                  !isCVAssistant
+                )
+              ) {
+                onStepChange(2);
+              }
+            }}
+            className={cn(
+              "px-3 py-1 text-xs cursor-pointer relative flex items-center",
+              "border-0 hover:bg-transparent transition-colors duration-150",
               currentStep === 2
-                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                : currentStep < 2
-                ? "text-muted-foreground"
+                ? "text-primary font-medium"
+                : "text-muted-foreground",
+              currentStep < 2 &&
+                !shouldShowMultiStepFlow &&
+                !isProfessorSearch &&
+                !isPSAssistant &&
+                !isCVAssistant
+                ? "opacity-50 cursor-not-allowed"
                 : ""
             )}
-            onClick={() => onStepChange(2)}
-            disabled={currentStep < 2 && !shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isCVAssistant}
           >
-            {currentStep > 2 ? (
-              <ArrowLeft className="h-4 w-4 mr-1" />
-            ) : currentStep < 2 ? (
-              <span className="h-5 w-5 flex items-center justify-center bg-muted text-muted-foreground rounded-full mr-1 text-xs font-bold">
-                2
-              </span>
-            ) : (
-              <span className="h-5 w-5 flex items-center justify-center bg-background text-primary rounded-full mr-1 text-xs font-bold">
-                2
-              </span>
-            )}
-            {isProfessorSearch 
-              ? "教授信息" 
-              : isPSAssistant 
-                ? <><FileText className="h-4 w-4 mr-1" />初稿生成</> 
+            <div className="flex items-center justify-center">
+              {isProfessorSearch
+                ? "教授信息"
+                : isPSAssistant
+                ? "素材分析"
                 : isCVAssistant
-                  ? <><FileText className="h-4 w-4 mr-1" />简历生成</>
-                  : "补充信息"}
-          </Button>
+                ? "简历生成"
+                : "补充信息"}
+            </div>
+            {/* 当前步骤的下划线指示器 */}
+            {currentStep === 2 && (
+              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full"></div>
+            )}
+          </div>
 
-          {/* 如果是常规多步骤流程，显示第三步按钮；如果是教授搜索类型或PS初稿助理，不显示第三步按钮 */}
+          {/* 如果是常规多步骤流程，显示第三步标签 */}
           {shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && (
             <>
-              {/* 步骤分隔线 */}
-              <div className="h-[2px] w-8 md:w-12 bg-muted"></div>
+              {/* 分隔符 */}
+              <div className="text-muted-foreground/30 px-2">/</div>
 
-              {/* 步骤3按钮 */}
-              <Button
-                variant={currentStep === 3 ? "default" : "outline"}
-                size="sm"
+              {/* 步骤3标签 */}
+              <div
+                onClick={() => {
+                  if (
+                    !(
+                      currentStep < 3 &&
+                      (!hasSecondStepResult || isThirdStepLoading)
+                    )
+                  ) {
+                    onStepChange(3);
+                  }
+                }}
                 className={cn(
-                  "h-10 min-w-[100px] rounded-md",
+                  "px-3 py-1 text-xs cursor-pointer relative flex items-center",
+                  "border-0 hover:bg-transparent transition-colors duration-150",
                   currentStep === 3
-                    ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                    : currentStep < 3 || !hasSecondStepResult
-                    ? "text-muted-foreground"
+                    ? "text-primary font-medium"
+                    : "text-muted-foreground",
+                  currentStep < 3 &&
+                    (!hasSecondStepResult || isThirdStepLoading)
+                    ? "opacity-50 cursor-not-allowed"
                     : ""
                 )}
-                onClick={() => onStepChange(3)}
-                disabled={
-                  currentStep < 3 && 
-                  (!hasSecondStepResult || isThirdStepLoading)
-                }
               >
-                {currentStep === 3 && hasFinalResult ? (
-                  <Check className="h-4 w-4 mr-1" />
-                ) : currentStep < 3 || !hasSecondStepResult ? (
-                  <span className="h-5 w-5 flex items-center justify-center bg-muted text-muted-foreground rounded-full mr-1 text-xs font-bold">
-                    3
-                  </span>
-                ) : (
-                  <ArrowRight className="h-4 w-4 mr-1" />
+                <div className="flex items-center justify-center">
+                  最终文章
+                  {currentStep === 3 && hasFinalResult && (
+                    <Check className="h-3 w-3 ml-1 text-primary" />
+                  )}
+                </div>
+                {/* 当前步骤的下划线指示器 */}
+                {currentStep === 3 && (
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full"></div>
                 )}
-                最终文章
-              </Button>
+              </div>
             </>
           )}
-        </div>
+        </nav>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AgentType } from "../../types";
 
 export function useStepState() {
   // 查询和输入状态
@@ -19,6 +20,9 @@ export function useStepState() {
 
   // 步骤导航状态
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // 添加代理类型状态
+  const [detectedAgentType, setDetectedAgentType] = useState<AgentType>(AgentType.UNKNOWN);
 
   return {
     // 查询和输入
@@ -46,5 +50,9 @@ export function useStepState() {
     // 步骤导航
     currentStep,
     setCurrentStep,
+    
+    // 代理类型
+    detectedAgentType,
+    setDetectedAgentType,
   };
 }

@@ -19,21 +19,39 @@ export function useFirstStep({
   session,
 }: UseFirstStepProps) {
   // 处理流式响应
-  const handleStreamResponse = async (query: string, files?: File[], transcriptFiles?: File[]) => {
+  const handleStreamResponse = async (
+    query: string,
+    files?: File[],
+    transcriptFiles?: File[]
+  ) => {
     try {
-      console.log("useFirstStep - handleStreamResponse - 接收的初稿文件数量:", files?.length || 0);
-      console.log("useFirstStep - handleStreamResponse - 接收的成绩单文件数量:", transcriptFiles?.length || 0);
-      
+      console.log(
+        "useFirstStep - handleStreamResponse - 接收的初稿文件数量:",
+        files?.length || 0
+      );
+      console.log(
+        "useFirstStep - handleStreamResponse - 接收的成绩单文件数量:",
+        transcriptFiles?.length || 0
+      );
+
       // 输出具体文件信息
       if (files && files.length > 0) {
-        console.log("useFirstStep - handleStreamResponse - 初稿文件:", 
-          files.map(f => `${f.name} (${(f.size/1024).toFixed(1)}KB)`).join(", "));
+        console.log(
+          "useFirstStep - handleStreamResponse - 初稿文件:",
+          files
+            .map((f) => `${f.name} (${(f.size / 1024).toFixed(1)}KB)`)
+            .join(", ")
+        );
       }
       if (transcriptFiles && transcriptFiles.length > 0) {
-        console.log("useFirstStep - handleStreamResponse - 成绩单文件:", 
-          transcriptFiles.map(f => `${f.name} (${(f.size/1024).toFixed(1)}KB)`).join(", "));
+        console.log(
+          "useFirstStep - handleStreamResponse - 成绩单文件:",
+          transcriptFiles
+            .map((f) => `${f.name} (${(f.size / 1024).toFixed(1)}KB)`)
+            .join(", ")
+        );
       }
-      
+
       setFirstStepLoading(true);
       setResult({
         content: "",
@@ -49,21 +67,38 @@ export function useFirstStep({
       });
 
       // 将文件传递给API服务
-      console.log("useFirstStep - 准备调用API - 初稿文件数量:", files?.length || 0);
-      console.log("useFirstStep - 准备调用API - 成绩单文件数量:", transcriptFiles?.length || 0);
-      
+      console.log(
+        "useFirstStep - 准备调用API - 初稿文件数量:",
+        files?.length || 0
+      );
+      console.log(
+        "useFirstStep - 准备调用API - 成绩单文件数量:",
+        transcriptFiles?.length || 0
+      );
+
       // 打印实际传递给API的文件详情
       console.log("useFirstStep - API调用前最终文件检查:");
-      console.log(`- 初稿文件(${files?.length || 0}个):`, 
-        files && files.length > 0 ? files.map(f => f.name).join(", ") : "无");
-      console.log(`- 成绩单文件(${transcriptFiles?.length || 0}个):`, 
-        transcriptFiles && transcriptFiles.length > 0 ? transcriptFiles.map(f => f.name).join(", ") : "无");
-      
-      const streamPromise = apiService.streamQuery(query, {
-        timestamp: new Date().toISOString(),
-        source: "web",
-        userId: session?.user?.id,
-      }, files, transcriptFiles);
+      console.log(
+        `- 初稿文件(${files?.length || 0}个):`,
+        files && files.length > 0 ? files.map((f) => f.name).join(", ") : "无"
+      );
+      console.log(
+        `- 成绩单文件(${transcriptFiles?.length || 0}个):`,
+        transcriptFiles && transcriptFiles.length > 0
+          ? transcriptFiles.map((f) => f.name).join(", ")
+          : "无"
+      );
+
+      const streamPromise = apiService.streamQuery(
+        query,
+        {
+          timestamp: new Date().toISOString(),
+          source: "web",
+          userId: session?.user?.id,
+        },
+        files,
+        transcriptFiles
+      );
 
       console.log("第一步API请求参数:", {
         query,
@@ -71,7 +106,7 @@ export function useFirstStep({
         source: "web",
         userId: session?.user?.id,
         filesCount: files?.length || 0,
-        transcriptFilesCount: transcriptFiles?.length || 0
+        transcriptFilesCount: transcriptFiles?.length || 0,
       });
 
       // 使用 Promise.race 实现超时处理
@@ -279,43 +314,77 @@ export function useFirstStep({
                     });
                     break;
 
+                  case "error":
+                    // 处理错误类型的消息
+                    console.error("API返回错误:", data.content);
+
+                    // 停止加载状态
+                    setFirstStepLoading(false);
+
+                    // 显示错误提示
+                    toast({
+                      title: "处理错误",
+                      description: data.content,
+                      variant: "destructive",
+                    });
+
+                    // 更新结果状态，标记为错误
+                    setResult((prev) => {
+                      if (!prev) return prev;
+                      return {
+                        ...prev,
+                        isError: true,
+                        errorMessage: data.content,
+                        isComplete: true,
+                      };
+                    });
+                    break;
+
                   case "transcript":
                     // 接收到成绩单解析数据
                     console.log("收到成绩单解析数据，完整内容:", data.content);
                     console.log("成绩单解析数据类型:", typeof data.content);
-                    console.log("成绩单解析数据长度:", data.content?.length || 0);
-                    
+                    console.log(
+                      "成绩单解析数据长度:",
+                      data.content?.length || 0
+                    );
+
                     // 在结果中添加transcriptAnalysis字段
                     setResult((prev) => {
                       if (!prev) return prev;
-                      
+
                       console.log("更新result的transcriptAnalysis字段");
-                      
+
                       // 使用完整对象更新，确保所有字段都存在
                       const updatedResult = {
                         ...prev,
                         transcriptAnalysis: data.content,
                       };
-                      
+
                       console.log("更新后的result:", {
-                        hasTranscriptAnalysis: !!updatedResult.transcriptAnalysis,
-                        transcriptAnalysisLength: updatedResult.transcriptAnalysis?.length || 0
+                        hasTranscriptAnalysis:
+                          !!updatedResult.transcriptAnalysis,
+                        transcriptAnalysisLength:
+                          updatedResult.transcriptAnalysis?.length || 0,
                       });
-                      
+
                       return updatedResult;
                     });
-                    
+
                     // 添加一个步骤表示成绩单已分析
-                    if (!mergedSteps.some(step => step.includes("成绩单解析"))) {
-                      const transcriptStep = "已完成成绩单解析 [执行时间: 0.5秒]";
+                    if (
+                      !mergedSteps.some((step) => step.includes("成绩单解析"))
+                    ) {
+                      const transcriptStep =
+                        "已完成成绩单解析 [执行时间: 0.5秒]";
                       mergedSteps.push(transcriptStep);
-                      
+
                       // 更新步骤列表
                       setResult((prev) => ({
                         ...prev!,
                         steps: [...mergedSteps],
                       }));
-                      
+
                       console.log("添加成绩单解析步骤到steps列表");
                     }
                     break;

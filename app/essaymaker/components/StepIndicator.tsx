@@ -80,7 +80,7 @@ export function StepIndicator({
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="flex-shrink-0 w-4">
-                          {getStepIcon(stepData.type)}
+                          {stepData.type ? getStepIcon(stepData.type) : null}
                         </div>
                         <span className="font-medium truncate text-xs">
                           {stepData.title}

@@ -26,9 +26,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { AgentType, Example } from "../types";
-import { useToast } from "@/components/ui/use-toast";
+import { AgentType } from "../types";
+import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+
+// 从types导入的Example类型
+interface Example {
+  title: string;
+  content: string;
+  type?: AgentType;
+}
 
 interface InputAreaProps {
   query: string;
@@ -58,7 +65,7 @@ export function InputArea({
   // 创建文件输入引用
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
+
   // 使用toast钩子
   const { toast } = useToast();
 
@@ -142,8 +149,6 @@ export function InputArea({
       return;
     }
 
-
-    
     handleSubmit();
     // 如果有内容，提交后折叠输入框
     setIsInputExpanded(false);
@@ -172,13 +177,13 @@ export function InputArea({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...newFiles]);
+      setFiles((prev) => [...prev, ...newFiles]);
     }
   };
 
   // 处理文件删除
   const handleFileDelete = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   // 触发文件选择对话框
@@ -187,323 +192,223 @@ export function InputArea({
   };
 
   // 处理粘贴事件，自动识别图片
-  const handlePaste = useCallback((e: ClipboardEvent) => {
-    if (e.clipboardData) {
-      // 检查是否有图片在剪贴板中
-      const items = e.clipboardData.items;
-      
-      if (items) {
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].type.indexOf("image") !== -1) {
-            e.preventDefault();
-            
-            // 从剪贴板获取图片文件
-            const blob = items[i].getAsFile();
-            if (blob) {
-              // 创建唯一文件名
-              const now = new Date().getTime();
-              const fileName = `pasted-image-${now}.png`;
-              
-              // 将blob转换为File对象
-              const file = new File([blob], fileName, { type: blob.type });
-              
-              // 添加到文件列表
-              setFiles(prev => [...prev, file]);
+  const handlePaste = useCallback(
+    (e: ClipboardEvent) => {
+      if (e.clipboardData) {
+        // 检查是否有图片在剪贴板中
+        const items = e.clipboardData.items;
+
+        if (items) {
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") !== -1) {
+              e.preventDefault();
+
+              // 从剪贴板获取图片文件
+              const blob = items[i].getAsFile();
+              if (blob) {
+                // 创建唯一文件名
+                const now = new Date().getTime();
+                const fileName = `pasted-image-${now}.png`;
+
+                // 将blob转换为File对象
+                const file = new File([blob], fileName, { type: blob.type });
+
+                // 添加到文件列表
+                setFiles((prev) => [...prev, file]);
+              }
             }
           }
         }
       }
-    }
-  }, [setFiles]);
+    },
+    [setFiles]
+  );
 
   // 添加和移除粘贴事件监听器
   useEffect(() => {
     if (isInputExpanded && textareaRef.current) {
-      textareaRef.current.addEventListener('paste', handlePaste);
+      textareaRef.current.addEventListener("paste", handlePaste);
     }
-    
+
     return () => {
       if (textareaRef.current) {
-        textareaRef.current.removeEventListener('paste', handlePaste);
+        textareaRef.current.removeEventListener("paste", handlePaste);
       }
     };
   }, [isInputExpanded, handlePaste]);
 
   // 初始化时调整高度
-  const initTextarea = useCallback(
-    (textarea: HTMLTextAreaElement | null) => {
-      if (textarea) {
-        textareaRef.current = textarea;
-        setTimeout(() => {
-          textarea.style.height = "auto";
-          const newHeight = Math.min(textarea.scrollHeight, 150);
-          textarea.style.height = `${newHeight}px`;
+  const initTextarea = useCallback((node: HTMLTextAreaElement | null) => {
+    if (node) {
+      // 不要直接修改textareaRef.current
+      setTimeout(() => {
+        if (node) {
+          node.style.height = "auto";
+          const newHeight = Math.min(node.scrollHeight, 150);
+          node.style.height = `${newHeight}px`;
 
           // 确保滚动功能正常工作
           if (newHeight >= 150) {
-            textarea.style.overflowY = "scroll";
-            textarea.classList.add("scrollable");
+            node.style.overflowY = "scroll";
+            node.classList.add("scrollable");
           } else {
-            textarea.style.overflowY = "hidden";
-            textarea.classList.remove("scrollable");
+            node.style.overflowY = "hidden";
+            node.classList.remove("scrollable");
           }
-        }, 0);
-      }
-    },
-    [query]
-  );
+        }
+      }, 0);
+    }
+  }, []);
+
+  // 使用useEffect初始化textarea高度
+  useEffect(() => {
+    const currentTextarea = textareaRef.current;
+    if (currentTextarea && isInputExpanded) {
+      initTextarea(currentTextarea);
+    }
+  }, [isInputExpanded, initTextarea]);
 
   return (
-    <div className="w-full max-w-[800px] mx-auto mb-8 mt-2">
-      {/* 折叠时的简洁显示 */}
-      {!isInputExpanded && query.trim() ? (
-        <div className="input-gradient-border rounded-3xl">
+    <div className="w-full max-w-[800px] mx-auto">
+      <div className="relative">
+        {/* 折叠状态的输入框 */}
+        {!isInputExpanded && (
           <div
-            className="w-full h-full flex items-center justify-between bg-white rounded-[calc(1.5rem-3px)] p-3 cursor-pointer"
+            className="border rounded-md shadow-sm bg-white p-2 cursor-text flex items-center justify-between"
             onClick={() => setIsInputExpanded(true)}
           >
-            <div className="truncate text-sm text-gray-600 flex-1 mr-2">
-              {query}
+            <div className="text-gray-400 text-sm truncate">
+              {query || placeholder}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0 flex-shrink-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsInputExpanded(true);
-              }}
-            >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
+            <ChevronDown className="h-4 w-4 text-gray-400" />
           </div>
-        </div>
-      ) : (
-        <div className="input-gradient-border rounded-3xl">
-          <div className="w-full h-full flex flex-col bg-white rounded-[calc(1.5rem-3px)] p-4">
-            <div className="flex justify-between items-center">
-              {query.trim() && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
+        )}
+
+        {/* 展开状态的输入框 */}
+        {isInputExpanded && (
+          <div className="border rounded-md shadow-sm bg-white p-3">
+            <div className="flex flex-col space-y-2">
+              {/* 文本输入区域 */}
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={query}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder={placeholder}
+                  className="w-full border-0 focus:ring-0 resize-none text-sm text-gray-700 placeholder:text-gray-400 min-h-[40px] p-0 focus:outline-none"
+                  disabled={isLoading}
+                />
+
+                {/* 折叠按钮 - 放在右上角 */}
+                <button
+                  className="absolute top-1 right-1 text-gray-400 hover:text-gray-600 focus:outline-none"
                   onClick={() => setIsInputExpanded(false)}
                 >
                   <ChevronUp className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            <textarea
-              ref={initTextarea}
-              value={query}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              rows={1}
-              className="w-full py-2 outline-none focus:outline-none focus-visible:ring-0 placeholder:text-gray-400 resize-none scrollable text-base"
-              style={{
-                minHeight: "50px",
-                maxHeight: "200px",
-                overflowY: query && query.length > 100 ? "scroll" : "hidden",
-              }}
-              disabled={isLoading}
-            />
-            
-            {/* 显示上传的文件 */}
-            {files.length > 0 && (
-              <div className="mt-2 space-y-2 border rounded p-2 bg-gray-50">
-                <div className="text-xs font-medium text-gray-500 mb-1">已上传文件:</div>
-                <div className="max-h-[100px] overflow-y-auto">
-                  {files.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white p-2 rounded text-sm mb-1 border">
-                      <div className="truncate flex-1 text-gray-700">{file.name}</div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-gray-500 hover:text-red-500"
-                        onClick={() => handleFileDelete(index)}
-                        disabled={isLoading}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                </button>
               </div>
-            )}
-            
-            {/* Footer 行 */}
-            <div className="flex justify-between items-center pt-1">
-              <div className="flex items-center space-x-2">
-                {/* 示例按钮 */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-[240px] p-4 z-50 border-0"
-                    align="start"
-                    sideOffset={8}
+
+              {/* 显示上传的文件 */}
+              {files.length > 0 && (
+                <div className="mt-1 space-y-1 border rounded p-2 bg-gray-50">
+                  <div className="text-xs font-medium text-gray-500 mb-1">
+                    已上传文件:
+                  </div>
+                  <div className="max-h-[80px] overflow-y-auto">
+                    {files.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-white p-1 rounded text-xs mb-1 border"
+                      >
+                        <div className="truncate flex-1 text-gray-700">
+                          {file.name}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 text-gray-500 hover:text-red-500"
+                          onClick={() => handleFileDelete(index)}
+                          disabled={isLoading}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer 行 */}
+              <div className="flex justify-between items-center pt-1">
+                <div className="flex items-center space-x-2">
+                  {/* 示例按钮 */}
+                  <Popover>
+                    <PopoverTrigger asChild></PopoverTrigger>
+                    <PopoverContent
+                      className="w-[240px] p-4 z-50 border-0"
+                      align="start"
+                      sideOffset={8}
+                    >
+                      <ExampleList
+                        examples={defaultExamples}
+                        onExampleClick={(content, index) => {
+                          const example = defaultExamples[index];
+                          handleExampleSelection(content, example.type);
+                        }}
+                        inPopover={true}
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* 文件上传按钮 */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-md bg-background hover:bg-muted text-muted-foreground hover:text-foreground border"
+                    onClick={triggerFileInput}
+                    disabled={isLoading}
                   >
-                    <ExampleList
-                      examples={defaultExamples}
-                      onExampleClick={(content, index) => {
-                        const example = defaultExamples[index];
-                        handleExampleSelection(content, example.type);
-                      }}
-                      inPopover={true}
-                    />
-                  </PopoverContent>
-                </Popover>
-                
-                {/* 文件上传按钮 */}
+                    <FileUp className="h-3 w-3" />
+                  </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.txt"
+                  />
+
+                  {/* 可以在这里添加粘贴提示 */}
+                  <span className="text-xs text-gray-400 hidden sm:inline-block">
+                    支持粘贴图片
+                  </span>
+                </div>
+
                 <Button
-                  variant="ghost"
+                  variant={query.trim() ? "default" : "ghost"}
                   size="icon"
-                  className="h-8 w-8 rounded-md transition-all duration-300 shadow-[0_4px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_12px_rgba(0,0,0,0.15)] bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-0 hover:translate-y-[-1px]"
-                  onClick={triggerFileInput}
+                  className={cn(
+                    "h-7 w-7 rounded-md border",
+                    query.trim()
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                  onClick={handleSubmitAndCollapse}
                   disabled={isLoading}
                 >
-                  <FileUp className="h-4 w-4" />
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowUp className="h-4 w-4" />
+                  )}
                 </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  multiple
-                  accept="image/*,.pdf,.doc,.docx,.txt"
-                />
-                
-                {/* 可以在这里添加粘贴提示 */}
-                <span className="text-xs text-gray-400 hidden sm:inline-block">
-                  支持粘贴图片
-                </span>
               </div>
-
-              <Button
-                variant={query.trim() ? "default" : "ghost"}
-                size="icon"
-                className={cn(
-                  "h-8 w-8 rounded-md transition-all duration-300 border-0 hover:translate-y-[-1px]",
-                  query.trim()
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_10px_rgba(0,120,255,0.3)] hover:shadow-[0_6px_15px_rgba(0,120,255,0.4)]"
-                    : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground shadow-[0_4px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_12px_rgba(0,0,0,0.15)]"
-                )}
-                onClick={handleSubmitAndCollapse}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <ArrowUp className="h-5 w-5" />
-                )}
-              </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* 添加渐变动画样式 */}
-      <style jsx global>{`
-        .input-gradient-border {
-          margin: 15px;
-          position: relative;
-          padding: 1px;
-          background-origin: border-box;
-          background-clip: content-box, border-box;
-          overflow: visible;
-          transition: all 0.3s ease;
-        }
-
-        .input-gradient-border::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          border-radius: inherit;
-          padding: 3px;
-          background: linear-gradient(
-            45deg,
-            #80e5d8,
-            #bdb0ff,
-            #ffe28a,
-            #8ecffd,
-            #80e5d8
-          );
-          background-size: 400% 400%;
-          animation: animatedgradient 6s ease infinite;
-          -webkit-mask: linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          pointer-events: none;
-          transition: all 0.3s ease;
-        }
-
-        .input-gradient-border::after {
-          content: "";
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          right: -2px;
-          bottom: -2px;
-          border-radius: inherit;
-          background: linear-gradient(
-            45deg,
-            #80e5d8,
-            #bdb0ff,
-            #ffe28a,
-            #8ecffd,
-            #80e5d8
-          );
-          background-size: 400% 400%;
-          animation: animatedgradient 9s ease infinite;
-          filter: blur(8px);
-          opacity: 0.5;
-          z-index: -1;
-          transition: all 0.3s ease;
-        }
-
-        .input-gradient-border:hover::after {
-          filter: blur(12px);
-          opacity: 0.8;
-          top: -4px;
-          left: -4px;
-          right: -4px;
-          bottom: -4px;
-        }
-
-        .input-gradient-border:hover::before,
-        .input-gradient-border:hover::after {
-          animation: animatedgradient 9s ease infinite;
-        }
-
-        .result-border {
-          border: 1px solid #e5e7eb;
-          box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1),
-            0 1px 2px -1px rgb(0 0 0 / 0.1);
-          transition: all 0.2s ease;
-        }
-
-        .result-border:hover {
-          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
-            0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-
-        @keyframes animatedgradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-      `}</style>
+        )}
+      </div>
     </div>
   );
 }

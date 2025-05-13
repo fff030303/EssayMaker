@@ -19,4 +19,24 @@ export enum AgentType {
   APPLICATION_ADVISOR = "application_advisor",
   RESEARCH = "research",
   PROFESSOR_SEARCH = "professor_search",
-} 
+}
+
+// 添加Example接口定义
+export interface Example {
+  title: string;
+  content: string;
+  type?: AgentType;
+}
+
+// 添加StepContentResult接口定义
+export interface StepContentResult {
+  content: string;
+  isComplete: boolean;
+  timestamp: string;
+  steps?: string[];
+  currentStep?: string;
+  // 添加缺失的属性
+  type?: string; // 步骤类型: "search" | "web" | "generation" | "analysis" | "system" | "tool" | "default"
+  title?: string; // 步骤标题
+  details?: string; // 详细内容
+}
