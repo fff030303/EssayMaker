@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ResultDisplay } from "./ResultDisplay";
 import { DraftResultDisplay } from "./DraftResultDisplay";
 import { AssistantTips } from "./AssistantTips";
+import { CVAssistant } from "./CVAssistant";
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
 interface FirstStepProps {
@@ -669,11 +670,16 @@ export function FirstStep({
         setCurrentAssistantType={setCurrentAssistantType}
       />
 
-      {/* 只在初稿模式下显示提示组件 */}
-      {inputMode === "draft" && <AssistantTips type="draft" />}
+      {/* 根据当前助理类型渲染不同的提示组件 */}
+      {currentAssistantType === "draft" && <AssistantTips type="draft" />}
+      {currentAssistantType === "ps" && <AssistantTips type="ps" />}
+      {currentAssistantType === "custom" && <AssistantTips type="custom" />}
       
-      {/* 根据当前模式显示不同的输入区域 */}
-      {inputMode === "simple" || inputMode === "custom" ? (
+      {/* 根据当前助理类型渲染不同的组件 */}
+      {currentAssistantType === "cv" ? (
+        /* CV助理模式 - 渲染CV上传组件 */
+        <CVAssistant onStepChange={onStepChange} setResult={setResult} />
+      ) : inputMode === "simple" || inputMode === "custom" ? (
         /* 简单输入区域 - 现在也用于custom类型 */
         <InputArea
           query={simpleQuery}
@@ -713,10 +719,10 @@ export function FirstStep({
 
       {/* 结果区域 - 如果有结果 */}
       <div ref={resultRef}>
-        {/* 初稿模式下不再显示结果，因为已经移到DraftGeneration组件中 */}
+        {/* 初稿模式和CV模式下不显示结果 */}
         
         {/* 非初稿模式下的结果显示 - 添加shouldHideResult条件 */}
-        {inputMode !== "draft" && result && !shouldHideResult && (
+        {inputMode !== "draft" && currentAssistantType !== "cv" && result && !shouldHideResult && (
           <ResultSection
             result={result}
             expandedSteps={expandedSteps}

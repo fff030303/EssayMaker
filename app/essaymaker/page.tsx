@@ -23,6 +23,7 @@ import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { ButtonType } from "./components/QuickActionButtons";
+import { DraftResultDisplay } from "./components/DraftResultDisplay";
 // 移除侧边栏导入
 // import { useSidebar } from "@/components/ui/sidebar";
 
@@ -320,7 +321,35 @@ export default function EssayMakerPage() {
                   transcriptAnalysis={transcriptAnalysis}
                 />
               ) : isCVAssistant ? (
-                <CVAssistant />
+                <div className="flex flex-col items-start justify-start w-full pt-4 md:pt-8">
+                  {/* 使用DraftResultDisplay组件显示生成结果 */}
+                  {result ? (
+                    <div className="w-full max-w-[800px] mx-auto">
+                      <DraftResultDisplay 
+                        result={result} 
+                        title="简历优化报告" 
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full">
+                      <div className="text-center p-8 max-w-md">
+                        <h2 className="text-2xl font-bold mb-4">
+                          请先上传并提交简历
+                        </h2>
+                        <p className="text-muted-foreground mb-6">
+                          您需要在第一步中上传个人简历素材表并点击"提交简历"按钮，才能查看简历优化报告。
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleStepChange(1)}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          返回上传页面
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center p-8 max-w-md">

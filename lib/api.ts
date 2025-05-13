@@ -500,6 +500,98 @@ export const apiService = {
       throw error;
     }
   },
+
+  // 简历生成API
+  async generateResume(resumeMaterial: File, supportFiles: File[] = []) {
+    try {
+      const apiKey = getApiKey();
+      const apiUrl = getApiUrl();
+      
+      console.log("=============简历生成请求配置=============");
+      console.log("API URL:", `${apiUrl}/api/resume-writer/generate-resume`);
+      console.log("API Key存在:", !!apiKey);
+      console.log("简历素材文件:", resumeMaterial.name, `(${resumeMaterial.size} bytes)`);
+      console.log("支持文件数量:", supportFiles.length);
+      
+      // 创建FormData对象
+      const formData = new FormData();
+      formData.append('resume_material', resumeMaterial);
+      
+      // 添加支持文件
+      if (supportFiles.length > 0) {
+        supportFiles.forEach(file => {
+          formData.append('support_files', file);
+          console.log(`添加支持文件: ${file.name} (${file.size} bytes)`);
+        });
+      }
+      
+      console.log("=============FormData内容=============");
+      // 打印上传的表单数据
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+      console.log("======================================");
+      
+      const response = await fetch(`${apiUrl}/api/resume-writer/generate-resume`, {
+        method: "POST",
+        headers: {
+          // 不设置Content-Type，由浏览器自动处理FormData边界
+          "X-API-Key": apiKey,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        console.error("Resume Generator response status:", response.status);
+        console.error("Resume Generator response status text:", response.statusText);
+        console.error(
+          "Resume Generator response headers:",
+          Object.fromEntries(response.headers)
+        );
+        
+        const errorText = await response
+          .text()
+          .catch(() => "No error text available");
+        console.error("Resume Generator error details:", errorText);
+        
+        throw new Error(
+          `HTTP error! status: ${response.status}, details: ${errorText}`
+        );
+      }
+      
+      // 检查Content-Type以确定返回类型
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('text/event-stream')) {
+        // 流式响应
+        console.log("接收到流式响应，返回response.body");
+        return response.body;
+      } else if (contentType && contentType.includes('application/json')) {
+        // JSON响应
+        console.log("接收到JSON响应，解析JSON");
+        return await response.json();
+      } else {
+        // 默认作为普通文本处理
+        console.log("接收到其他格式响应，尝试作为文本处理");
+        const text = await response.text();
+        
+        // 尝试解析为JSON
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.log("无法解析为JSON，返回原始文本");
+          return { text };
+        }
+      }
+    } catch (error) {
+      console.error("Resume Generator API error:", error);
+      throw error;
+    }
+  },
 };
 
 export type { AxiosResponse, AxiosError } from "axios";
