@@ -9,9 +9,17 @@
 
 import { useState, useEffect, useRef } from "react";
 import { DisplayResult } from "../types"; // 导入DisplayResult类型
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 // 定义按钮类型
-export type ButtonType = "draft" | "custom" | "schoolProfessor" | "question" | "cv" | null;
+export type ButtonType =
+  | "draft"
+  | "custom"
+  | "schoolProfessor"
+  | "question"
+  | "cv"
+  | null;
 
 interface QuickActionButtonsProps {
   onDraftClick?: () => void;
@@ -54,15 +62,16 @@ export function QuickActionButtons({
       onButtonChange("draft");
     }
     setSelectedButton("draft");
-    
+
     // 自动设置为PS初稿助理并显示底边栏
     if (setIsPSAssistant) {
       setIsPSAssistant(true);
     }
+    // 移除自动显示导航栏的代码，默认不显示
     if (setShowStepNavigation) {
-      setShowStepNavigation(true);
+      setShowStepNavigation(false);
     }
-    
+
     // 自动聚焦到PS初稿助理按钮
     if (psAssistantButtonRef.current) {
       psAssistantButtonRef.current.focus();
@@ -74,7 +83,7 @@ export function QuickActionButtons({
     if (selectedButton !== type && onButtonChange) {
       onButtonChange(type);
     }
-    
+
     // 设置当前助理类型
     if (setCurrentAssistantType) {
       if (type === "draft") {
@@ -87,12 +96,12 @@ export function QuickActionButtons({
         setCurrentAssistantType("custom");
       }
     }
-    
+
     // 当点击任何按钮时，将result设为null
     if (setResult) {
       setResult(null);
     }
-    
+
     // 根据按钮类型设置相应的状态
     if (setIsPSAssistant) {
       setIsPSAssistant(type === "draft");
@@ -103,7 +112,7 @@ export function QuickActionButtons({
     if (setShowStepNavigation) {
       setShowStepNavigation(type === "draft" || type === "cv");
     }
-    
+
     // 清空个人陈述初稿
     setSelectedButton(type);
     callback && callback();
@@ -115,92 +124,77 @@ export function QuickActionButtons({
     }, 300);
   };
 
-  // 获取按钮样式 - 基于按钮类型返回不同的渐变色
-  const getButtonGradient = (type: ButtonType) => {
-    switch(type) {
-      case "draft":
-        return "from-blue-50 via-cyan-50 to-teal-50";
-      case "custom":
-        return "from-indigo-50 via-purple-50 to-pink-50";
-      case "schoolProfessor":
-        return "from-orange-50 via-amber-50 to-yellow-50";
-      case "question":
-        return "from-emerald-50 via-green-50 to-lime-50";
-      case "cv":
-        return "from-violet-50 via-purple-50 to-fuchsia-50";
-      default:
-        return "from-gray-50 via-gray-50 to-gray-50";
+  // 获取按钮变体和颜色 - 基于按钮类型
+  const getButtonVariant = (type: ButtonType) => {
+    if (type === selectedButton) {
+      return "default";
     }
-  };
-
-  // 获取按钮焦点环颜色
-  const getRingColor = (type: ButtonType) => {
-    switch(type) {
-      case "draft":
-        return "focus:ring-teal-300";
-      case "custom":
-        return "focus:ring-pink-300";
-      case "schoolProfessor":
-        return "focus:ring-yellow-300";
-      case "question":
-        return "focus:ring-lime-300";
-      case "cv":
-        return "focus:ring-fuchsia-300";
-      default:
-        return "focus:ring-gray-300";
-    }
+    return "outline";
   };
 
   return (
-    <div className="w-full max-w-[500px] mx-auto mb-6 mt-6 text-base font-normal">
-      <div className="grid grid-cols-3 gap-6">
-        {/* 第一行 */}
-        <button
-          ref={psAssistantButtonRef}
-          onClick={() => handleButtonClick("draft", onDraftClick)}
-          className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("draft")}
-              text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-              hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("draft")}`}
-        >
-          PS初稿助理
-        </button>
+    <Card className="w-full max-w-[650px] mx-auto my-2 border-0 shadow-none">
+      <CardContent className="p-2">
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            ref={psAssistantButtonRef}
+            onClick={() => handleButtonClick("draft", onDraftClick)}
+            variant={getButtonVariant("draft")}
+            size="sm"
+            className="font-medium"
+          >
+            PS初稿助理
+          </Button>
 
-        <button
-          onClick={() => handleButtonClick("custom", onCustomClick)}
-          className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("custom")}
-              text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-              hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("custom")}`}
-        >
-          PS分稿助理
-        </button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-medium text-gray-400 cursor-not-allowed relative group"
+            disabled
+          >
+            PS分稿助理
+            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
+              还在开发中，敬请期待
+            </span>
+          </Button>
 
-        <button
-          onClick={() => handleButtonClick("schoolProfessor", onSchoolProfessorClick)}
-          className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("schoolProfessor")}
-              text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-              hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("schoolProfessor")}`}
-        >
-          套瓷助理
-        </button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-medium text-gray-400 cursor-not-allowed relative group"
+            disabled
+          >
+            套瓷助理
+            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
+              还在开发中，敬请期待
+            </span>
+          </Button>
 
-        <button
-          onClick={() => handleButtonClick("question", onQuestionClick)}
-          className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("question")}
-              text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-              hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("question")}`}
-        >
-          随便问问
-        </button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-medium text-gray-400 cursor-not-allowed relative group"
+            disabled
+          >
+            随便问问
+            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
+              还在开发中，敬请期待
+            </span>
+          </Button>
 
-        <button
-          onClick={() => handleButtonClick("cv", onCvClick)}
-          className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${getButtonGradient("cv")}
-              text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-              hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 ${getRingColor("cv")}`}
-        >
-          CV助理
-        </button>
-      </div>
-    </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-medium text-gray-400 cursor-not-allowed relative group"
+            disabled
+          >
+            CV助理
+            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
+              还在开发中，敬请期待
+            </span>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
-} 
+}

@@ -6,7 +6,6 @@
 // - AgentType：代理类型枚举（决定处理流程）
 // - Example：示例项目类型
 
-
 // 定义API响应类型
 export interface WorkflowExecution {
   result: string;
@@ -20,8 +19,13 @@ export interface DisplayResult {
   timestamp: string;
   steps: string[];
   currentStep?: string;
-  isComplete: boolean;
-  _isStepContent?: boolean; // 标记内容是否来自步骤点击
+  isComplete?: boolean;
+  simplifiedContent?: string;
+  transcriptAnalysis?: string;
+  _isStepContent?: boolean; // 内部标记，指示此内容是步骤点击的结果而非主要内容
+  // 添加错误状态字段
+  isError?: boolean;
+  errorMessage?: string;
 }
 
 export interface QueryResponse {
