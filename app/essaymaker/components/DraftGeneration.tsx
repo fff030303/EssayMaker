@@ -128,8 +128,8 @@ export function DraftGeneration({
             // 有初稿时的布局
             <div className="flex flex-col lg:flex-row gap-6 xl:gap-10 justify-center">
               {/* 左侧 - 素材整理报告 */}
-              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6">
-                <div className="rounded-lg overflow-visible">
+              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
+                <div className="rounded-lg overflow-visible flex-grow h-full">
                   <DraftResultDisplay
                     result={result}
                     title="素材整理报告"
@@ -172,8 +172,8 @@ export function DraftGeneration({
               </div>
 
               {/* 右侧 - 个人陈述初稿 */}
-              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6">
-                <div className="rounded-lg overflow-visible">
+              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
+                <div className="rounded-lg overflow-visible flex-grow h-full">
                   <DraftResultDisplay
                     result={finalDraft || finalDraftResult!}
                     title="个人陈述初稿"

@@ -315,7 +315,35 @@ export function useFirstStep({
                     break;
 
                   case "error":
-                    // 处理错误类型的消息
+                    // 首先检查是否为"处理完成但结果为空"的错误，但实际有累积内容
+                    if (
+                      data.content === "处理完成但结果为空，请重试" &&
+                      accumulatedContent.trim()
+                    ) {
+                      // 使用info级别记录这种情况，避免在控制台显示错误
+                      console.info(
+                        "收到空结果错误，但实际内容已存在，长度:",
+                        accumulatedContent.length
+                      );
+
+                      // 如果已有内容，则认为处理成功，不显示错误
+                      // 更新UI，标记为完成
+                      setResult((prev) => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          content: accumulatedContent,
+                          isComplete: true,
+                          currentStep: undefined,
+                        };
+                      });
+
+                      // 停止加载状态
+                      setFirstStepLoading(false);
+                      break;
+                    }
+
+                    // 只有非特殊情况下才记录错误
                     console.error("API返回错误:", data.content);
 
                     // 停止加载状态

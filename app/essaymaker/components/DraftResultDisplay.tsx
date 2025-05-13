@@ -406,7 +406,7 @@ export function DraftResultDisplay({
 
   if (isGenerating) {
     return (
-      <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6">
+      <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full">
         <CardHeader className="flex flex-row items-center gap-2 pb-2 pt-4 px-5 flex-shrink-0">
           <div
             className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
@@ -425,7 +425,10 @@ export function DraftResultDisplay({
         </CardHeader>
 
         {/* 生成中状态显示 */}
-        <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+        <div
+          className="flex items-center justify-center flex-grow h-full text-muted-foreground"
+          style={{ minHeight: "400px" }}
+        >
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <Loader2
@@ -491,7 +494,7 @@ export function DraftResultDisplay({
     result.isComplete && displayedContent.length > previewLength;
 
   return (
-    <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6">
+    <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full">
       <CardHeader className="flex flex-row items-center gap-2 pb-2 pt-4 px-5 flex-shrink-0">
         <div
           className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
@@ -506,11 +509,6 @@ export function DraftResultDisplay({
         </div>
         <div className="flex-1">
           <CardTitle className="text-base font-medium">{title}</CardTitle>
-          {result && (
-            <p className="text-sm text-gray-500">
-              {new Date(result.timestamp).toLocaleString()}
-            </p>
-          )}
         </div>
 
         {/* 功能按钮区域 */}
@@ -565,12 +563,12 @@ export function DraftResultDisplay({
       </CardHeader>
 
       {/* 使用双层容器解决滚动条与圆角冲突问题 */}
-      <div className="relative flex-grow rounded-b-lg overflow-hidden">
+      <div className="relative flex-grow rounded-b-lg overflow-hidden h-full">
         {/* 内容区域 - 处理滚动但不处理圆角 */}
         <CardContent
           ref={contentRef}
-          className="px-5 py-4 h-full overflow-auto"
-          style={{ height: "70vh" }}
+          className="px-5 py-4 h-full overflow-auto custom-scrollbar flex-grow"
+          style={{ height: "calc(70vh - 100px)", minHeight: "400px" }}
         >
           <style jsx global>
             {scrollbarStyles}

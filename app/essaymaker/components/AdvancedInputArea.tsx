@@ -439,14 +439,18 @@ export function AdvancedInputArea({
         <div className="grid grid-cols-1 gap-3">
           {/* 申请方向输入框 - 全宽度 */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              申请方向 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center">
+              申请方向 <span className="text-red-500 ml-0.5">*</span>
+              <span className="ml-1 text-xs text-red-500">(必填)</span>
             </label>
             <Input
               value={direction}
               onChange={(e) => setDirection(e.target.value)}
               placeholder="例如: 计算机科学、经济学等"
-              className="placeholder:text-gray-400 w-full"
+              className={cn(
+                "placeholder:text-gray-400 w-full",
+                !direction.trim() && "border-red-300 focus-visible:ring-red-500"
+              )}
               disabled={isLoading || submitting}
             />
           </div>
@@ -482,14 +486,9 @@ export function AdvancedInputArea({
           <div className="grid grid-cols-2 gap-3 mt-1">
             {/* 左侧 - 个人陈述素材表文件上传 */}
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                {type === "draft" ? (
-                  <span>
-                    个人陈述素材表 <span className="text-red-500">*</span>
-                  </span>
-                ) : (
-                  "个人陈述素材表文件（选填）"
-                )}
+              <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center">
+                个人陈述素材表 <span className="text-red-500 ml-0.5">*</span>
+                <span className="ml-1 text-xs text-red-500">(必填)</span>
               </label>
               <div
                 ref={draftDropAreaRef}
@@ -499,6 +498,8 @@ export function AdvancedInputArea({
                     ? "border-primary bg-primary/5"
                     : draftFile
                     ? "border-green-500 bg-green-50"
+                    : !draftFile
+                    ? "border-red-300 hover:border-primary hover:bg-gray-50"
                     : "border-gray-300 hover:border-primary hover:bg-gray-50",
                   (isLoading || submitting) && "opacity-50 cursor-not-allowed"
                 )}
@@ -725,7 +726,9 @@ export function AdvancedInputArea({
             size="default"
             className="flex items-center gap-1"
             onClick={handleSubmit}
-            disabled={isLoading || submitting}
+            disabled={
+              isLoading || submitting || !direction.trim() || !draftFile
+            }
           >
             {isLoading || submitting ? (
               <>
