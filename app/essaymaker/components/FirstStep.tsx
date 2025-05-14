@@ -20,6 +20,7 @@ import { ResultDisplay } from "./ResultDisplay";
 import { DraftResultDisplay } from "./DraftResultDisplay";
 import { AssistantTips } from "./AssistantTips";
 import { Button } from "@/components/ui/button";
+import { CVAssistant } from "./CVAssistant";
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
 interface FirstStepProps {
@@ -699,6 +700,13 @@ export function FirstStep({
       if (setIsCVAssistant) {
         setIsCVAssistant(type === "cv");
       }
+      
+      // 同步更新inputMode，确保状态一致
+      if (type === "draft") {
+        setInputMode("draft");
+      } else {
+        setInputMode("simple");
+      }
     },
     [
       setQuery,
@@ -765,11 +773,28 @@ export function FirstStep({
         setCurrentAssistantType={setCurrentAssistantType}
       />
 
-      {/* 只在初稿模式下显示提示组件 */}
-      {inputMode === "draft" && <AssistantTips type="draft" />}
+      {/* 使用互斥条件显示提示组件，确保同时只显示一个提示 */}
+      {(() => {
+        // 按照优先级顺序显示提示
+        if (currentAssistantType === "cv") {
+          return <AssistantTips type="cv" />;
+        } else if (currentAssistantType === "ps") {
+          return <AssistantTips type="ps" />;
+        } else if (currentAssistantType === "custom" && inputMode === "simple") {
+          return <AssistantTips type="custom" />;
+        } else if (inputMode === "draft") {
+          return <AssistantTips type="draft" />;
+        }
+        return null;
+      })()}
 
-      {/* 根据当前模式显示不同的输入区域 */}
-      {inputMode === "simple" || inputMode === "custom" ? (
+      {/* 根据当前助理类型显示不同的输入区域 */}
+      {currentAssistantType === "cv" ? (
+        /* CV助理界面 */
+        <div className="w-full">
+          <CVAssistant />
+        </div>
+      ) : inputMode === "simple" ? (
         /* 简单输入区域 - 现在也用于custom类型 */
         <InputArea
           query={simpleQuery}
@@ -809,12 +834,10 @@ export function FirstStep({
         </div>
       )}
 
-      {/* 结果区域 - 如果有结果 */}
+      {/* 结果区域 - 如果有结果且不是CV助理模式 */}
       <div ref={resultRef}>
-        {/* 初稿模式下不再显示结果，因为已经移到DraftGeneration组件中 */}
-
-        {/* 非初稿模式下的结果显示 - 添加shouldHideResult条件 */}
-        {inputMode !== "draft" && result && !shouldHideResult && (
+        {/* 不在CV助理模式时才显示结果区域 */}
+        {currentAssistantType !== "cv" && inputMode !== "draft" && result && !shouldHideResult && (
           <ResultSection
             result={result}
             expandedSteps={expandedSteps}

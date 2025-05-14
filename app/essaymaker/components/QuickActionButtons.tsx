@@ -53,28 +53,31 @@ export function QuickActionButtons({
   // 创建一个ref用于PS初稿助理按钮
   const psAssistantButtonRef = useRef<HTMLButtonElement>(null);
 
-  // 在组件加载时自动触发初稿界面
+  // 在组件加载时自动触发CV助理界面
   useEffect(() => {
-    if (onDraftClick) {
-      onDraftClick();
+    if (onCvClick) {
+      onCvClick();
     }
     if (onButtonChange) {
-      onButtonChange("draft");
+      onButtonChange("cv");
     }
-    setSelectedButton("draft");
+    setSelectedButton("cv");
 
-    // 自动设置为PS初稿助理并显示底边栏
+    // 设置为CV助理
+    if (setIsCVAssistant) {
+      setIsCVAssistant(true);
+    }
     if (setIsPSAssistant) {
-      setIsPSAssistant(true);
+      setIsPSAssistant(false);
     }
-    // 移除自动显示导航栏的代码，默认不显示
+    // 显示导航栏
     if (setShowStepNavigation) {
-      setShowStepNavigation(false);
+      setShowStepNavigation(true);
     }
 
-    // 自动聚焦到PS初稿助理按钮
-    if (psAssistantButtonRef.current) {
-      psAssistantButtonRef.current.focus();
+    // 设置当前助理类型
+    if (setCurrentAssistantType) {
+      setCurrentAssistantType("cv");
     }
   }, []);
 
@@ -133,7 +136,7 @@ export function QuickActionButtons({
   };
 
   return (
-    <Card className="w-full max-w-[650px] mx-auto my-2 border-0 shadow-none">
+    <Card className="w-full max-w-[650px] mx-auto my-2 mt-7 border-0 shadow-none">
       <CardContent className="p-2">
         <div className="flex flex-wrap justify-center gap-2">
           <Button
@@ -147,51 +150,39 @@ export function QuickActionButtons({
           </Button>
 
           <Button
-            variant="outline"
+            onClick={() => handleButtonClick("custom", onCustomClick)}
+            variant={getButtonVariant("custom")}
             size="sm"
-            className="font-medium text-gray-400 cursor-not-allowed relative group"
-            disabled
+            className="font-medium"
           >
             PS分稿助理
-            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
-              还在开发中，敬请期待
-            </span>
           </Button>
 
           <Button
-            variant="outline"
+            onClick={() => handleButtonClick("schoolProfessor", onSchoolProfessorClick)}
+            variant={getButtonVariant("schoolProfessor")}
             size="sm"
-            className="font-medium text-gray-400 cursor-not-allowed relative group"
-            disabled
+            className="font-medium"
           >
             套瓷助理
-            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
-              还在开发中，敬请期待
-            </span>
           </Button>
 
           <Button
-            variant="outline"
+            onClick={() => handleButtonClick("question", onQuestionClick)}
+            variant={getButtonVariant("question")}
             size="sm"
-            className="font-medium text-gray-400 cursor-not-allowed relative group"
-            disabled
+            className="font-medium"
           >
             随便问问
-            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
-              还在开发中，敬请期待
-            </span>
           </Button>
 
           <Button
-            variant="outline"
+            onClick={() => handleButtonClick("cv", onCvClick)}
+            variant={getButtonVariant("cv")}
             size="sm"
-            className="font-medium text-gray-400 cursor-not-allowed relative group"
-            disabled
+            className="font-medium"
           >
             CV助理
-            <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">
-              还在开发中，敬请期待
-            </span>
           </Button>
         </div>
       </CardContent>

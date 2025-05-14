@@ -88,10 +88,10 @@ export default function EssayMakerPage() {
   const [isPSAssistant, setIsPSAssistant] = useState<boolean>(false);
 
   // 添加判断是否为CV助理
-  const [isCVAssistant, setIsCVAssistant] = useState<boolean>(false);
+  const [isCVAssistant, setIsCVAssistant] = useState<boolean>(true);
 
-  // 添加控制步骤导航显示状态，默认不显示
-  const [showStepNavigation, setShowStepNavigation] = useState<boolean>(false);
+  // 添加控制步骤导航显示状态，默认显示
+  const [showStepNavigation, setShowStepNavigation] = useState<boolean>(true);
 
   // 添加finalDraftResult状态用于初稿生成
   const [finalDraftResult, setFinalDraftResult] = useState<any>(null);

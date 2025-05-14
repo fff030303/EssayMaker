@@ -1,34 +1,20 @@
 import { cn } from "@/lib/utils";
 import { InfoIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { assistantTips } from "../config/tips";
 
 interface AssistantTipsProps {
   type: "draft" | "cv" | "ps" | "custom";
 }
 
 export function AssistantTips({ type }: AssistantTipsProps) {
-  const tips = {
-    draft: [
-      "AI存在幻觉，请仔细辨别创作内容",
-      "此工具仅用于PS初稿写作",
-      "不适用于限制字数/英文翻译任务",
-    ],
-    cv: [
-      "AI存在幻觉，请仔细辨别创作内容",
-      "此工具仅用于简历优化",
-      "建议上传证明材料以获得更准确建议",
-    ],
-    ps: [
-      "AI存在幻觉，请仔细辨别创作内容",
-      "此工具用于PS分稿写作",
-      "建议上传辅助材料以获得个性化建议",
-    ],
-    custom: [
-      "AI存在幻觉，请仔细辨别创作内容",
-      "提供清晰的问题描述以获得准确回答",
-      "上传文件需确保格式正确且内容相关",
-    ],
-  };
+  // 使用外部配置中的提示信息
+  const tips = assistantTips;
+  
+  // 如果当前类型的提示数组为空，则不渲染任何内容
+  if (!tips[type] || tips[type].length === 0) {
+    return null;
+  }
 
   return (
     <div className="w-full max-w-[800px] mx-auto my-2">

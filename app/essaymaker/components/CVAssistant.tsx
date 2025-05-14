@@ -3,9 +3,16 @@
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FileText, Upload, X, Loader2, ArrowUp } from "lucide-react";
+import { FileText, Upload, X, Loader2, ArrowUp, RefreshCcw, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 
 export function CVAssistant() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -216,19 +223,20 @@ export function CVAssistant() {
   }, []);
 
   return (
-    <div className="w-full max-w-[800px] mx-auto mb-8 mt-2">
-      <div className="input-gradient-border rounded-3xl">
-        <div className="w-full h-full flex flex-col bg-white rounded-[calc(1.5rem-3px)] p-4">
-          <div className="grid grid-cols-1 gap-4">
-            {/* 个人简历素材表上传区域 */}
+    <Card className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
+      <CardContent className="p-4 pt-4">
+        <div className="grid grid-cols-1 gap-3">
+          {/* 文件上传区域 - 更紧凑的布局 */}
+          <div className="grid grid-cols-2 gap-3 mt-1">
+            {/* 左侧 - 个人简历素材表上传 */}
             <div>
-              <label className="block text-base font-medium text-gray-600 mb-1">
+              <label className="block text-sm font-medium text-gray-600 mb-1">
                 个人简历素材表 <span className="text-red-500">*</span>
               </label>
               <div
                 ref={resumeDropAreaRef}
                 className={cn(
-                  "border-2 border-dashed rounded-md p-4 transition-colors text-center cursor-pointer h-[180px] flex flex-col justify-center",
+                  "border border-dashed rounded-md p-2 transition-colors text-center cursor-pointer h-[100px] flex flex-col justify-center",
                   isDraggingResume
                     ? "border-primary bg-primary/5"
                     : resumeFile
@@ -249,17 +257,19 @@ export function CVAssistant() {
 
                 {resumeFile ? (
                   <div className="flex flex-col items-center">
-                    <FileText className="h-8 w-8 text-green-500 mb-2" />
-                    <p className="text-base font-medium text-gray-600 mb-1 truncate max-w-full">
-                      {resumeFile.name}
-                    </p>
-                    <p className="text-base font-medium text-gray-600 mb-2">
+                    <div className="flex items-center gap-1 mb-1">
+                      <FileText className="h-4 w-4 text-green-500" />
+                      <p className="text-sm font-medium text-gray-600 truncate max-w-[150px]">
+                        {resumeFile.name}
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-1">
                       {(resumeFile.size / 1024).toFixed(1)} KB
                     </p>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="text-base h-7"
+                      className="text-xs h-6 px-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveResumeFile();
@@ -271,11 +281,11 @@ export function CVAssistant() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <FileText className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      上传个人简历素材表
+                    <FileText className="h-5 w-5 text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-600 mb-0.5">
+                      上传个人简历素材表（doc、docx）
                     </p>
-                    <p className="text-sm font-medium text-gray-600">
+                    <p className="text-xs text-gray-500">
                       点击或拖拽文件至此处
                     </p>
                   </div>
@@ -283,15 +293,15 @@ export function CVAssistant() {
               </div>
             </div>
 
-            {/* 支持文件上传区域 */}
+            {/* 右侧 - 支持文件上传 */}
             <div>
-              <label className="block text-base font-medium text-gray-600 mb-1">
+              <label className="block text-sm font-medium text-gray-600 mb-1">
                 支持文件（可多选）
               </label>
               <div
                 ref={supportDropAreaRef}
                 className={cn(
-                  "border-2 border-dashed rounded-md p-4 transition-colors text-center cursor-pointer h-[180px] flex flex-col justify-center",
+                  "border border-dashed rounded-md p-2 transition-colors text-center cursor-pointer h-[100px] flex flex-col justify-center",
                   isDraggingSupport
                     ? "border-primary bg-primary/5"
                     : supportFiles.length > 0
@@ -313,17 +323,19 @@ export function CVAssistant() {
 
                 {supportFiles.length > 0 ? (
                   <div className="flex flex-col items-center">
-                    <FileText className="h-8 w-8 text-green-500 mb-2" />
-                    <p className="text-base font-medium text-gray-600 mb-1">
-                      已选择 {supportFiles.length} 个支持文件
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-1 mb-2 max-h-[60px] overflow-y-auto">
+                    <div className="flex items-center gap-1 mb-1">
+                      <FileText className="h-4 w-4 text-green-500" />
+                      <p className="text-sm font-medium text-gray-600">
+                        已选择 {supportFiles.length} 个文件
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-1 mb-1 max-h-[30px] overflow-y-auto px-1">
                       {supportFiles.map((file, index) => (
                         <div
                           key={index}
-                          className="flex items-center bg-white rounded-md px-2 py-1 text-xs"
+                          className="flex items-center bg-white rounded-md px-1.5 py-0.5 text-xs border"
                         >
-                          <span className="truncate max-w-[120px]">
+                          <span className="truncate max-w-[80px]">
                             {file.name}
                           </span>
                           <button
@@ -334,16 +346,16 @@ export function CVAssistant() {
                             className="ml-1 text-red-500 hover:text-red-700"
                             disabled={isLoading}
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-2.5 w-2.5" />
                           </button>
                         </div>
                       ))}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="text-base h-7"
+                        className="text-xs h-6 px-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleClearAllSupportFiles();
@@ -353,180 +365,94 @@ export function CVAssistant() {
                         <X className="h-3 w-3 mr-1" /> 清空
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="text-base h-7"
+                        className="text-xs h-6 px-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           triggerSupportFileInput();
                         }}
                         disabled={isLoading}
                       >
-                        <Upload className="h-3 w-3 mr-1" /> 添加更多
+                        <Upload className="h-3 w-3 mr-1" /> 添加
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      上传支持文件
+                    <Upload className="h-5 w-5 text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-600 mb-0.5">
+                      上传支持文件（pdf、图片）
                     </p>
-                    <p className="text-sm font-medium text-gray-600">
+                    <p className="text-xs text-gray-500">
                       点击或拖拽文件至此处
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">支持多个文件</p>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* 提交按钮和清空按钮区域 */}
-          <div className="flex justify-between mt-4 space-x-3">
-            {/* 清空按钮 */}
-            <Button
-              onClick={() => {
-                // 清空所有内容
-                setResumeFile(null);
-                setSupportFiles([]);
-
-                // 如果有文件输入元素，重置它们
-                if (resumeInputRef.current) {
-                  resumeInputRef.current.value = "";
-                }
-                if (supportInputRef.current) {
-                  supportInputRef.current.value = "";
-                }
-
-                // 显示提示
-                toast({
-                  title: "内容已清空",
-                  description: "所有文件已重置",
-                });
-              }}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-gray-50 via-gray-50 to-gray-50
-                text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-                hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
-              disabled={isLoading}
-            >
-              <X className="h-4 w-4 mr-2" />
-              清空
-            </Button>
-
-            {/* 提交按钮 */}
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading || !resumeFile}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50
-                text-gray-700 font-semibold text-base shadow-lg transition-transform duration-50
-                hover:scale-105 active:scale-95 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-300"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  处理中...
-                </>
-              ) : (
-                <>
-                  <ArrowUp className="h-4 w-4 mr-2" />
-                  提交简历
-                </>
-              )}
-            </Button>
+          {/* 其他说明区域 */}
+          <div className="mt-2">
+            <p className="text-xs text-gray-500">
+              支持文件格式: PDF, DOC, DOCX。文件大小不超过10MB。
+            </p>
           </div>
         </div>
-      </div>
+      </CardContent>
 
-      {/* 添加渐变动画样式 */}
-      <style jsx global>{`
-        .input-gradient-border {
-          margin: 15px;
-          position: relative;
-          padding: 1px;
-          background-origin: border-box;
-          background-clip: content-box, border-box;
-          overflow: visible;
-          transition: all 0.3s ease;
-        }
+      {/* 控制按钮区域 - 放在Card底部 */}
+      <CardFooter className="px-4 py-3 flex justify-between">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs px-2 py-1 h-8"
+            onClick={() => {
+              // 清空所有输入和文件
+              setResumeFile(null);
+              setSupportFiles([]);
 
-        .input-gradient-border::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          border-radius: inherit;
-          padding: 3px;
-          background: linear-gradient(
-            45deg,
-            #80e5d8,
-            #bdb0ff,
-            #ffe28a,
-            #8ecffd,
-            #80e5d8
-          );
-          background-size: 400% 400%;
-          animation: animatedgradient 6s ease infinite;
-          -webkit-mask: linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          pointer-events: none;
-          transition: all 0.3s ease;
-        }
+              // 重置文件输入元素
+              if (resumeInputRef.current) {
+                resumeInputRef.current.value = "";
+              }
+              if (supportInputRef.current) {
+                supportInputRef.current.value = "";
+              }
 
-        .input-gradient-border::after {
-          content: "";
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          right: -2px;
-          bottom: -2px;
-          border-radius: inherit;
-          background: linear-gradient(
-            45deg,
-            #80e5d8,
-            #bdb0ff,
-            #ffe28a,
-            #8ecffd,
-            #80e5d8
-          );
-          background-size: 400% 400%;
-          animation: animatedgradient 9s ease infinite;
-          filter: blur(8px);
-          opacity: 0.5;
-          z-index: -1;
-          transition: all 0.3s ease;
-        }
+              // 显示清空提示
+              toast({
+                title: "已清空",
+                description: "所有内容已重置",
+              });
+            }}
+          >
+            <RefreshCcw className="h-3 w-3 mr-1" /> 清空所有内容
+          </Button>
+        </div>
 
-        .input-gradient-border:hover::after {
-          filter: blur(12px);
-          opacity: 0.8;
-          top: -4px;
-          left: -4px;
-          right: -4px;
-          bottom: -4px;
-        }
-
-        .input-gradient-border:hover::before,
-        .input-gradient-border:hover::after {
-          animation: animatedgradient 9s ease infinite;
-        }
-
-        @keyframes animatedgradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-      `}</style>
-    </div>
+        <div className="flex gap-2 justify-end items-center">
+          <Button
+            variant="default"
+            size="default"
+            className="flex items-center gap-1"
+            onClick={handleSubmit}
+            disabled={isLoading || !resumeFile}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> 处理中...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" /> 提交简历获取分析
+              </>
+            )}
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
