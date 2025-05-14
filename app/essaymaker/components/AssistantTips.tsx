@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { assistantTips } from "../config/tips";
 
 interface AssistantTipsProps {
-  type: "draft" | "cv" | "ps" | "custom";
+  type: "draft" | "cv" | "ps" | "custom" | "rl";
 }
 
 export function AssistantTips({ type }: AssistantTipsProps) {

@@ -21,6 +21,7 @@ import { DraftResultDisplay } from "./DraftResultDisplay";
 import { AssistantTips } from "./AssistantTips";
 import { Button } from "@/components/ui/button";
 import { CVAssistant } from "./CVAssistant";
+import { RLAssistant } from "./RLAssistant";
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
 interface FirstStepProps {
@@ -42,6 +43,8 @@ interface FirstStepProps {
   onStepChange?: (step: number) => void;
   isProfessorSearch?: boolean; // 添加这个属性
   isPSAssistant?: boolean; // 添加这个属性，表示当前是否为PS初稿助理模式
+  isCVAssistant?: boolean; // 添加这个属性，表示当前是否为CV助理模式
+  isRLAssistant?: boolean; // 添加这个属性，表示当前是否为RL助理模式
   files: File[]; // 添加文件状态
   setFiles: React.Dispatch<React.SetStateAction<File[]>>; // 添加文件状态设置函数
   // 添加最终初稿相关的属性
@@ -58,6 +61,8 @@ interface FirstStepProps {
   setFinalDraft?: (finalDraft: DisplayResult | null) => void;
   onButtonChange?: (type: ButtonType) => void; // 添加按钮切换处理函数
   setIsPSAssistant?: (isPS: boolean) => void; // 添加设置PS初稿助理状态
+  setIsCVAssistant?: (isCV: boolean) => void; // 添加设置CV助理状态
+  setIsRLAssistant?: (isRL: boolean) => void; // 添加设置RL助理状态
   setShowStepNavigation?: (show: boolean) => void; // 添加控制步骤导航显示
   onUserInputChange?: (
     direction: string,
@@ -71,7 +76,9 @@ interface FirstStepProps {
     materialFiles?: File[],
     transcriptFiles?: File[]
   ) => Promise<void>;
-  setIsCVAssistant?: (isCV: boolean) => void; // 添加设置CV助理状态
+  currentAssistantType?: string; // 添加当前助理类型属性
+  onCvClick?: () => void; // 添加CV助理按钮点击回调
+  onRlClick?: () => void; // 添加RL助理按钮点击回调
 }
 
 export function FirstStep({
@@ -93,6 +100,8 @@ export function FirstStep({
   onStepChange,
   isProfessorSearch = false, // 设置默认值
   isPSAssistant, // 使用外部传入的isPSAssistant
+  isCVAssistant, // 使用外部传入的isCVAssistant
+  isRLAssistant, // 使用外部传入的isRLAssistant
   files, // 使用外部传入的files
   setFiles, // 使用外部传入的setFiles
   finalDraft,
@@ -101,11 +110,15 @@ export function FirstStep({
   setFinalDraft,
   onButtonChange,
   setIsPSAssistant,
+  setIsCVAssistant,
+  setIsRLAssistant,
   setShowStepNavigation,
   onUserInputChange,
   onOtherFilesChange,
   handleStreamResponse,
-  setIsCVAssistant,
+  currentAssistantType,
+  onCvClick,
+  onRlClick,
 }: FirstStepProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -753,8 +766,8 @@ export function FirstStep({
   ]);
 
   // 添加状态来跟踪当前助理类型
-  const [currentAssistantType, setCurrentAssistantType] = useState<
-    "draft" | "cv" | "ps" | "custom"
+  const [internalAssistantType, setInternalAssistantType] = useState<
+    "draft" | "cv" | "ps" | "custom" | "rl"
   >("custom");
 
   return (
@@ -765,22 +778,27 @@ export function FirstStep({
         onSchoolProfessorClick={handleSchoolProfessorClick}
         onQuestionClick={handleQuestionClick}
         onCustomClick={handleCustomClick}
+        onCvClick={onCvClick}
+        onRlClick={onRlClick}
         onButtonChange={onButtonChange}
         setResult={setResult}
         setIsPSAssistant={setIsPSAssistant}
         setShowStepNavigation={setShowStepNavigation}
         setIsCVAssistant={setIsCVAssistant}
-        setCurrentAssistantType={setCurrentAssistantType}
+        setIsRLAssistant={setIsRLAssistant}
+        setCurrentAssistantType={setInternalAssistantType}
       />
 
       {/* 使用互斥条件显示提示组件，确保同时只显示一个提示 */}
       {(() => {
         // 按照优先级顺序显示提示
-        if (currentAssistantType === "cv") {
+        if (internalAssistantType === "cv") {
           return <AssistantTips type="cv" />;
-        } else if (currentAssistantType === "ps") {
+        } else if (internalAssistantType === "rl") {
+          return <AssistantTips type="rl" />;
+        } else if (internalAssistantType === "ps") {
           return <AssistantTips type="ps" />;
-        } else if (currentAssistantType === "custom" && inputMode === "simple") {
+        } else if (internalAssistantType === "custom" && inputMode === "simple") {
           return <AssistantTips type="custom" />;
         } else if (inputMode === "draft") {
           return <AssistantTips type="draft" />;
@@ -789,10 +807,21 @@ export function FirstStep({
       })()}
 
       {/* 根据当前助理类型显示不同的输入区域 */}
-      {currentAssistantType === "cv" ? (
+      {internalAssistantType === "cv" ? (
         /* CV助理界面 */
         <div className="w-full">
-          <CVAssistant />
+          <CVAssistant
+            onStepChange={onStepChange}
+            setResult={setResult}
+          />
+        </div>
+      ) : internalAssistantType === "rl" ? (
+        /* RL助理界面 */
+        <div className="w-full">
+          <RLAssistant
+            onStepChange={onStepChange}
+            setResult={setResult}
+          />
         </div>
       ) : inputMode === "simple" ? (
         /* 简单输入区域 - 现在也用于custom类型 */
@@ -834,10 +863,14 @@ export function FirstStep({
         </div>
       )}
 
-      {/* 结果区域 - 如果有结果且不是CV助理模式 */}
+      {/* 结果区域 - 如果有结果且不是CV助理或RL助理模式 */}
       <div ref={resultRef}>
-        {/* 不在CV助理模式时才显示结果区域 */}
-        {currentAssistantType !== "cv" && inputMode !== "draft" && result && !shouldHideResult && (
+        {/* 不在CV助理或RL助理模式时才显示结果区域 */}
+        {internalAssistantType !== "cv" && 
+         internalAssistantType !== "rl" && 
+         inputMode !== "draft" && 
+         result && 
+         !shouldHideResult && (
           <ResultSection
             result={result}
             expandedSteps={expandedSteps}

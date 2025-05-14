@@ -25,6 +25,7 @@ interface StepNavigationProps {
   isProfessorSearch: boolean;
   isPSAssistant: boolean;
   isCVAssistant: boolean;
+  isRLAssistant: boolean;
   hasSubmittedDraft?: boolean;
 }
 
@@ -39,27 +40,23 @@ export function StepNavigation({
   isProfessorSearch = false,
   isPSAssistant = false,
   isCVAssistant = false,
+  isRLAssistant = false,
   hasSubmittedDraft = false,
 }: StepNavigationProps) {
-  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理，则不显示导航
+  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理且不是RL助理，则不显示导航
   if (
     !shouldShowMultiStepFlow &&
     !isProfessorSearch &&
     !isPSAssistant &&
-    !isCVAssistant
+    !isCVAssistant &&
+    !isRLAssistant
   ) {
-    return null;
-  }
-
-  // 修改显示条件：如果是PS初稿助理但是在第一步且未提交过文件，不显示导航
-  if (isPSAssistant && currentStep === 1 && !hasSubmittedDraft) {
-    console.log("PS初稿助理在第一步，且未提交过文件，不显示导航栏");
     return null;
   }
 
   // 确定总步骤数
   const totalSteps =
-    shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant ? 3 : 2;
+    shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isRLAssistant ? 3 : 2;
 
   return (
     <div
@@ -97,6 +94,8 @@ export function StepNavigation({
                 ? "文件上传"
                 : isCVAssistant
                 ? "简历上传"
+                : isRLAssistant
+                ? "推荐信信息"
                 : "查询信息"}
             </div>
             {/* 当前步骤的下划线指示器 */}
@@ -117,7 +116,8 @@ export function StepNavigation({
                   !shouldShowMultiStepFlow &&
                   !isProfessorSearch &&
                   !isPSAssistant &&
-                  !isCVAssistant
+                  !isCVAssistant &&
+                  !isRLAssistant
                 )
               ) {
                 onStepChange(2);
@@ -133,7 +133,8 @@ export function StepNavigation({
                 !shouldShowMultiStepFlow &&
                 !isProfessorSearch &&
                 !isPSAssistant &&
-                !isCVAssistant
+                !isCVAssistant &&
+                !isRLAssistant
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             )}
@@ -145,6 +146,8 @@ export function StepNavigation({
                 ? "素材分析"
                 : isCVAssistant
                 ? "简历生成"
+                : isRLAssistant
+                ? "推荐信生成"
                 : "补充信息"}
             </div>
             {/* 当前步骤的下划线指示器 */}
@@ -154,7 +157,7 @@ export function StepNavigation({
           </div>
 
           {/* 如果是常规多步骤流程，显示第三步标签 */}
-          {shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && (
+          {shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isRLAssistant && (
             <>
               {/* 分隔符 */}
               <div className="text-muted-foreground/30 px-2">/</div>

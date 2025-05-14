@@ -19,6 +19,7 @@ export type ButtonType =
   | "schoolProfessor"
   | "question"
   | "cv"
+  | "rl"
   | null;
 
 interface QuickActionButtonsProps {
@@ -27,12 +28,14 @@ interface QuickActionButtonsProps {
   onQuestionClick?: () => void;
   onCustomClick?: () => void;
   onCvClick?: () => void; // 新增 CV 助理点击事件
+  onRlClick?: () => void; // 新增 RL 助理点击事件
   onButtonChange?: (type: ButtonType) => void;
   setResult?: (result: DisplayResult | null) => void; // 修改类型为DisplayResult | null
   setIsPSAssistant?: (isPS: boolean) => void; // 新增属性，设置是否为PS初稿助理
   setIsCVAssistant?: (isCV: boolean) => void; // 新增 CV 助理状态设置
+  setIsRLAssistant?: (isRL: boolean) => void; // 新增 RL 助理状态设置
   setShowStepNavigation?: (show: boolean) => void; // 新增属性，控制是否显示步骤导航
-  setCurrentAssistantType?: (type: "draft" | "cv" | "ps" | "custom") => void; // 添加新的属性
+  setCurrentAssistantType?: (type: "draft" | "cv" | "ps" | "custom" | "rl") => void; // 添加新的属性
 }
 
 export function QuickActionButtons({
@@ -41,10 +44,12 @@ export function QuickActionButtons({
   onQuestionClick,
   onCustomClick,
   onCvClick,
+  onRlClick,
   onButtonChange,
   setResult,
   setIsPSAssistant,
   setIsCVAssistant,
+  setIsRLAssistant,
   setShowStepNavigation,
   setCurrentAssistantType, // 添加新的属性
 }: QuickActionButtonsProps) {
@@ -70,6 +75,9 @@ export function QuickActionButtons({
     if (setIsPSAssistant) {
       setIsPSAssistant(false);
     }
+    if (setIsRLAssistant) {
+      setIsRLAssistant(false);
+    }
     // 显示导航栏
     if (setShowStepNavigation) {
       setShowStepNavigation(true);
@@ -93,6 +101,8 @@ export function QuickActionButtons({
         setCurrentAssistantType("draft");
       } else if (type === "cv") {
         setCurrentAssistantType("cv");
+      } else if (type === "rl") {
+        setCurrentAssistantType("rl");
       } else if (type === "custom") {
         setCurrentAssistantType("ps");
       } else if (type === "schoolProfessor" || type === "question") {
@@ -112,8 +122,13 @@ export function QuickActionButtons({
     if (setIsCVAssistant) {
       setIsCVAssistant(type === "cv");
     }
+    if (setIsRLAssistant) {
+      setIsRLAssistant(type === "rl");
+    }
+    // 修改导航栏显示逻辑：PS初稿助理和CV助理都默认显示导航栏
     if (setShowStepNavigation) {
-      setShowStepNavigation(type === "draft" || type === "cv");
+      // 对于PS初稿助理、CV助理和RL助理，始终显示导航栏
+      setShowStepNavigation(type === "draft" || type === "cv" || type === "rl");
     }
 
     // 清空个人陈述初稿
@@ -183,6 +198,15 @@ export function QuickActionButtons({
             className="font-medium"
           >
             CV助理
+          </Button>
+          
+          <Button
+            onClick={() => handleButtonClick("rl", onRlClick)}
+            variant={getButtonVariant("rl")}
+            size="sm"
+            className="font-medium"
+          >
+            推荐信助理
           </Button>
         </div>
       </CardContent>

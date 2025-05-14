@@ -17,6 +17,7 @@ import { ThirdStep } from "./components/ThirdStep";
 import { StepNavigation } from "./components/StepNavigation";
 import { DraftGeneration } from "./components/DraftGeneration";
 import { CVAssistant } from "./components/CVAssistant";
+import { RLAssistant } from "./components/RLAssistant";
 import { useEssayMaker } from "./hooks/useEssayMaker";
 import { AgentType, DisplayResult } from "./types";
 import { useState, useEffect, useCallback } from "react";
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { ButtonType } from "./components/QuickActionButtons";
 import { Card, CardHeader } from "@/components/ui/card";
+import { DraftResultDisplay } from "./components/DraftResultDisplay";
 // 移除侧边栏导入
 // import { useSidebar } from "@/components/ui/sidebar";
 
@@ -89,6 +91,9 @@ export default function EssayMakerPage() {
 
   // 添加判断是否为CV助理
   const [isCVAssistant, setIsCVAssistant] = useState<boolean>(true);
+  
+  // 添加判断是否为RL助理
+  const [isRLAssistant, setIsRLAssistant] = useState<boolean>(false);
 
   // 添加控制步骤导航显示状态，默认显示
   const [showStepNavigation, setShowStepNavigation] = useState<boolean>(true);
@@ -108,8 +113,8 @@ export default function EssayMakerPage() {
   // 添加otherFiles状态，用于存储辅助资料文件
   const [otherFiles, setOtherFiles] = useState<File[]>([]);
 
-  // 添加状态记录用户是否已经提交过文件
-  const [hasSubmittedDraft, setHasSubmittedDraft] = useState<boolean>(false);
+  // 添加控制是否已提交PS初稿的状态，默认为true以便和CV助理保持一致
+  const [hasSubmittedDraft, setHasSubmittedDraft] = useState<boolean>(true);
 
   // 监控文件状态
   useEffect(() => {
@@ -137,19 +142,29 @@ export default function EssayMakerPage() {
       if (type === "draft") {
         setIsPSAssistant(true);
         setIsCVAssistant(false);
-        // 默认不显示步骤导航，等待用户提交文件后再显示
-        setShowStepNavigation(false);
-        // 重置已提交文件状态
-        setHasSubmittedDraft(false);
+        setIsRLAssistant(false);
+        // 修改这里：PS初稿助理也需要立即显示步骤导航，不再等待用户提交文件
+        setShowStepNavigation(true);
+        // 同时设置hasSubmittedDraft为true，允许用户直接点击底边栏导航到第二步
+        setHasSubmittedDraft(true);
       } else if (type === "cv") {
         setIsPSAssistant(false);
         setIsCVAssistant(true);
+        setIsRLAssistant(false);
         setShowStepNavigation(true);
         // CV助理模式下不需要提交文件就显示导航
+        setHasSubmittedDraft(true);
+      } else if (type === "rl") {
+        setIsPSAssistant(false);
+        setIsCVAssistant(false);
+        setIsRLAssistant(true);
+        setShowStepNavigation(true);
+        // RL助理模式下也默认显示导航
         setHasSubmittedDraft(true);
       } else {
         setIsPSAssistant(false);
         setIsCVAssistant(false);
+        setIsRLAssistant(false);
         setShowStepNavigation(false);
         // 其他模式不需要提交文件
         setHasSubmittedDraft(false);
@@ -161,10 +176,11 @@ export default function EssayMakerPage() {
   // 创建一个函数，用于PS初稿助理提交文件后显示导航栏
   const handleDraftFileSubmitted = useCallback(() => {
     if (isPSAssistant) {
-      console.log("执行handleDraftFileSubmitted，处理文件提交后的导航显示");
-      setShowStepNavigation(true);
+      console.log("执行handleDraftFileSubmitted，处理文件提交后的切换步骤");
+      // 由于已经默认设置了hasSubmittedDraft为true，这里不需要再设置
+      // 但仍然需要确保它为true，以防万一
       setHasSubmittedDraft(true);
-      console.log("文件提交后设置导航栏显示状态和已提交文件状态为true");
+      console.log("确保已提交文件状态为true");
 
       // 自动切换到步骤2
       handleStepChange(2);
@@ -173,21 +189,18 @@ export default function EssayMakerPage() {
   }, [
     isPSAssistant,
     handleStepChange,
-    setShowStepNavigation,
     setHasSubmittedDraft,
   ]);
 
   // 创建高级提交处理函数，在原本的onSubmitClick基础上添加导航栏显示逻辑
   const handleAdvancedSubmit = useCallback(() => {
-    console.log("执行handleAdvancedSubmit，准备设置导航栏显示");
+    console.log("执行handleAdvancedSubmit，处理提交");
     handleSubmit();
-    // 如果是PS初稿助理，提交后显示导航栏并切换到步骤2
+    // 如果是PS初稿助理，提交后设置已提交状态并切换到步骤2
     if (isPSAssistant) {
-      // 立即设置导航栏为显示，确保状态更新
-      setShowStepNavigation(true);
-      // 设置已提交文件状态为true
+      // 设置已提交文件状态为true (这是冗余的，因为已经默认为true，但为安全起见保留)
       setHasSubmittedDraft(true);
-      console.log("已设置导航栏显示状态为true，已提交文件状态为true");
+      console.log("确认已提交文件状态为true");
 
       // 使用setTimeout确保步骤切换在提交完成后执行
       setTimeout(() => {
@@ -198,7 +211,6 @@ export default function EssayMakerPage() {
     handleSubmit,
     isPSAssistant,
     handleDraftFileSubmitted,
-    setShowStepNavigation,
     setHasSubmittedDraft,
   ]);
 
@@ -242,6 +254,38 @@ export default function EssayMakerPage() {
     setOtherFiles(files);
     console.log("辅助资料文件更新 - 文件数量:", files.length);
   }, []);
+
+  // 处理点击CV助理按钮
+  const handleCvClick = useCallback(() => {
+    // 清除查询和结果
+    setQuery("");
+    setResult(null);
+    
+    setIsCVAssistant(true);
+    setIsPSAssistant(false);
+    setIsRLAssistant(false);
+    
+    // 显示导航栏
+    setShowStepNavigation(true);
+    
+    console.log("切换到CV助理模式");
+  }, [setQuery, setResult, setIsCVAssistant, setIsPSAssistant, setIsRLAssistant, setShowStepNavigation]);
+  
+  // 处理点击RL助理按钮
+  const handleRlClick = useCallback(() => {
+    // 清除查询和结果
+    setQuery("");
+    setResult(null);
+    
+    setIsRLAssistant(true);
+    setIsCVAssistant(false);
+    setIsPSAssistant(false);
+    
+    // 显示导航栏
+    setShowStepNavigation(true);
+    
+    console.log("切换到RL助理模式");
+  }, [setQuery, setResult, setIsCVAssistant, setIsPSAssistant, setIsRLAssistant, setShowStepNavigation]);
 
   return (
     <div
@@ -316,11 +360,25 @@ export default function EssayMakerPage() {
                 onButtonChange={handleButtonChange}
                 setIsPSAssistant={setIsPSAssistant}
                 setIsCVAssistant={setIsCVAssistant}
+                setIsRLAssistant={setIsRLAssistant}
                 setShowStepNavigation={setShowStepNavigation}
                 onUserInputChange={handleUserInputChange}
                 onOtherFilesChange={handleOtherFilesChange}
                 handleStreamResponse={handleStreamResponse}
                 isPSAssistant={isPSAssistant}
+                isCVAssistant={isCVAssistant}
+                isRLAssistant={isRLAssistant}
+                onCvClick={handleCvClick}
+                onRlClick={handleRlClick}
+                currentAssistantType={
+                  isPSAssistant 
+                    ? "draft" 
+                    : isCVAssistant 
+                      ? "cv" 
+                      : isRLAssistant 
+                        ? "rl" 
+                        : "custom"
+                }
               />
             </div>
 
@@ -387,7 +445,65 @@ export default function EssayMakerPage() {
                   setHasSubmittedDraft={setHasSubmittedDraft}
                 />
               ) : isCVAssistant ? (
-                <CVAssistant />
+                <div className="flex flex-col items-start justify-start w-full pt-4 md:pt-8">
+                  {/* 使用DraftResultDisplay组件显示生成结果 */}
+                  {result ? (
+                    <div className="w-full max-w-[800px] mx-auto">
+                      <DraftResultDisplay 
+                        result={result} 
+                        title="简历优化报告" 
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full">
+                      <div className="text-center p-8 max-w-md">
+                        <h2 className="text-2xl font-bold mb-4">
+                          请先上传并提交简历
+                        </h2>
+                        <p className="text-muted-foreground mb-6">
+                          您需要在第一步中上传个人简历素材表并点击"提交简历"按钮，才能查看简历优化报告。
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleStepChange(1)}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          返回上传页面
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isRLAssistant ? (
+                <div className="flex flex-col items-start justify-start w-full pt-4 md:pt-8">
+                  {/* 使用DraftResultDisplay组件显示推荐信生成结果 */}
+                  {result ? (
+                    <div className="w-full max-w-[800px] mx-auto">
+                      <DraftResultDisplay 
+                        result={result} 
+                        title="推荐信生成结果" 
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full">
+                      <div className="text-center p-8 max-w-md">
+                        <h2 className="text-2xl font-bold mb-4">
+                          请先填写推荐信信息
+                        </h2>
+                        <p className="text-muted-foreground mb-6">
+                          您需要在第一步中上传简历并填写推荐人信息，才能生成推荐信。
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleStepChange(1)}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          返回信息填写页面
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center p-8 max-w-md">
@@ -452,6 +568,7 @@ export default function EssayMakerPage() {
         isProfessorSearch={isProfessorSearch}
         isPSAssistant={isPSAssistant}
         isCVAssistant={isCVAssistant}
+        isRLAssistant={isRLAssistant}
         hasSubmittedDraft={hasSubmittedDraft}
       />
     </div>

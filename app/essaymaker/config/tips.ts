@@ -17,4 +17,6 @@ export const assistantTips = {
   ],
   custom: [
   ],
+  rl: [
+  ],
 }; 

@@ -72,13 +72,7 @@ export function DraftGeneration({
       return;
     }
 
-    // 确保导航栏显示
-    if (setShowStepNavigation) {
-      console.log("点击生成初稿按钮，设置导航栏显示");
-      setShowStepNavigation(true);
-    }
-
-    // 设置已提交文件状态
+    // 确保已提交状态为true，这样用户在不同步骤间导航时不会有问题
     if (setHasSubmittedDraft) {
       console.log("点击生成初稿按钮，设置已提交文件状态为true");
       setHasSubmittedDraft(true);
