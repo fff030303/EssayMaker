@@ -513,7 +513,7 @@ export const apiService = {
 
       // 创建FormData对象用于上传文件
       const formData = new FormData();
-      formData.append('resume_file', resumeMaterial, resumeMaterial.name);
+      formData.append('resume_material', resumeMaterial, resumeMaterial.name);
       
       // 添加支持文件
       if (supportFiles.length > 0) {
@@ -570,17 +570,29 @@ export const apiService = {
         });
       }
 
-      // 发送请求到服务端
-      const response = await fetch(`${apiUrl}/api/cv-assistant/generate`, {
+      const response = await fetch(`${apiUrl}/api/resume-writer/generate-resume`, {
         method: 'POST',
         headers: {
           'X-API-Key': apiKey,
         },
         body: formData,
       });
+      // 发送请求到服务端
+      console.log('准备发送的FormData内容:');
+      for (const pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+      console.log('FormData keys:', Array.from(formData.keys()));
+      
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('请求失败详情:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
         throw new Error(`CV生成失败: ${response.status} ${response.statusText} - ${errorText}`);
       }
 

@@ -35,7 +35,7 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
   const [isComplete, setIsComplete] = useState(false);
   
   // 推荐人选择状态
-  const [recommenderType, setRecommenderType] = useState<"first" | "second" | null>(null);
+  const [recommenderNumber, setRecommenderNumber] = useState<1 | 2>(1);
   
   // 替换推荐信相关字段为写作需求
   const [writingRequirements, setWritingRequirements] = useState<string>("");
@@ -59,69 +59,15 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
   };
 
   // 添加按钮点击处理函数
-  const handleButtonClick = (text: string, type?: "first" | "second") => {
-    // 如果点击的是第一或第二推荐人按钮，需要互斥处理
-    if (type) {
-      if (recommenderType === type) {
-        // 如果点击的是已选中的按钮，取消选择
-        setRecommenderType(null);
-        
-        // 移除对应的文本
-        const textToRemove = type === "first" ? "请撰写第一位推荐人的推荐信" : "请撰写第二位推荐人的推荐信";
-        if (writingRequirements.includes(textToRemove)) {
-          setWritingRequirements(writingRequirements.replace(textToRemove, "").trim());
-        }
-        return;
-      } else if (recommenderType) {
-        // 如果已经选中了另一个推荐人，先移除原来的文本
-        const textToRemove = recommenderType === "first" ? "请撰写第一位推荐人的推荐信" : "请撰写第二位推荐人的推荐信";
-        if (writingRequirements.includes(textToRemove)) {
-          setWritingRequirements(writingRequirements.replace(textToRemove, "").trim());
-        }
-      }
-      
-      // 更新推荐人类型
-      setRecommenderType(type);
+  const handleButtonClick = (text: string) => {
+    // 处理推荐人按钮点击
+    if (text === "X位推荐人") {
+      setWritingRequirements(prev => prev + "请撰写第X位推荐人的推荐信\n");
+      return;
     }
     
-    // 在光标位置或末尾添加文本
-    const textarea = textareaRef.current;
-    if (textarea) {
-      const startPos = textarea.selectionStart || 0;
-      const endPos = textarea.selectionEnd || 0;
-      
-      // 确保添加的文本前后有空格
-      const prefix = startPos > 0 && writingRequirements[startPos - 1] !== ' ' && writingRequirements[startPos - 1] !== '\n' ? ' ' : '';
-      const suffix = endPos < writingRequirements.length && writingRequirements[endPos] !== ' ' && writingRequirements[endPos] !== '\n' ? ' ' : '';
-      
-      const newText = 
-        writingRequirements.substring(0, startPos) +
-        prefix + text + suffix +
-        writingRequirements.substring(endPos);
-      
-      setWritingRequirements(newText);
-      
-      // 聚焦到文本区域
-      setTimeout(() => {
-        if (textarea) {
-          textarea.focus();
-          const newCursorPos = startPos + prefix.length + text.length + suffix.length;
-          textarea.setSelectionRange(newCursorPos, newCursorPos);
-        }
-      }, 0);
-    } else {
-      // 如果无法获取到textarea元素，直接添加到末尾
-      const newText = writingRequirements.length > 0 
-        ? writingRequirements + ' ' + text 
-        : text;
-      setWritingRequirements(newText);
-    }
-    
-    // 提示添加成功
-    toast({
-      title: "添加成功",
-      description: `已添加"${text}"到写作需求`,
-    });
+    // 处理其他按钮点击
+    setWritingRequirements(prev => prev  + text);
   };
 
   // 处理支持文件上传
@@ -455,26 +401,18 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
                 
                 {/* 写作需求快速选择按钮 */}
                 <div className="flex flex-wrap gap-2 mb-2">
-                  <Button
-                    variant={recommenderType === "first" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleButtonClick("请撰写第一位推荐人的推荐信", "first")}
+                  <Badge 
+                    variant="outline" 
+                    className="cursor-pointer hover:bg-muted px-3 py-1"
+                    onClick={() => handleButtonClick("X位推荐人")}
                   >
-                    第一位推荐人
-                  </Button>
-                  
-                  <Button
-                    variant={recommenderType === "second" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleButtonClick("请撰写第二位推荐人的推荐信", "second")}
-                  >
-                    第二位推荐人
-                  </Button>
+                    X位推荐人
+                  </Badge>
                   
                   <Badge 
                     variant="outline" 
                     className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("被推荐人是男生")}
+                    onClick={() => handleButtonClick("被推荐人是男生\n")}
                   >
                     男生
                   </Badge>
@@ -482,7 +420,7 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
                   <Badge 
                     variant="outline" 
                     className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("被推荐人是女生")}
+                    onClick={() => handleButtonClick("被推荐人是女生\n")}
                   >
                     女生
                   </Badge>
@@ -490,7 +428,7 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
                   <Badge 
                     variant="outline" 
                     className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("请补充更多课堂互动细节")}
+                    onClick={() => handleButtonClick("请补充更多课堂互动细节\n")}
                   >
                     课堂互动细节
                   </Badge>
@@ -498,7 +436,7 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
                   <Badge 
                     variant="outline" 
                     className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("请补充更多科研项目细节")}
+                    onClick={() => handleButtonClick("请补充更多科研项目细节\n")}
                   >
                     科研项目细节
                   </Badge>
@@ -651,9 +589,39 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
               </div>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex justify-between">
             <Button 
-              className="w-full" 
+              variant="outline"
+              size="sm"
+              className="text-xs px-2 py-1 h-8"
+              onClick={() => {
+                // 清空写作需求
+                setWritingRequirements("");
+                
+                // 清空文件
+                setResumeFile(null);
+                setSupportFiles([]);
+                
+                // 重置文件输入元素
+                if (resumeInputRef.current) {
+                  resumeInputRef.current.value = "";
+                }
+                if (supportInputRef.current) {
+                  supportInputRef.current.value = "";
+                }
+                
+                // 显示清空提示
+                toast({
+                  title: "已清空",
+                  description: "所有内容已重置",
+                });
+              }}
+            >
+              <RefreshCcw className="h-3 w-3 mr-1" /> 清空所有内容
+            </Button>
+            
+            <Button 
+              className="w-full max-w-[200px]" 
               onClick={handleSubmit}
               disabled={isLoading}
             >

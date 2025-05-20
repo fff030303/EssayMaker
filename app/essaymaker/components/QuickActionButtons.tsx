@@ -58,22 +58,22 @@ export function QuickActionButtons({
   // 创建一个ref用于PS初稿助理按钮
   const psAssistantButtonRef = useRef<HTMLButtonElement>(null);
 
-  // 在组件加载时自动触发CV助理界面
+  // 在组件加载时自动触发PS初稿助理界面
   useEffect(() => {
-    if (onCvClick) {
-      onCvClick();
+    if (onDraftClick) {
+      onDraftClick();
     }
     if (onButtonChange) {
-      onButtonChange("cv");
+      onButtonChange("draft");
     }
-    setSelectedButton("cv");
+    setSelectedButton("draft");
 
-    // 设置为CV助理
-    if (setIsCVAssistant) {
-      setIsCVAssistant(true);
-    }
+    // 设置为PS初稿助理
     if (setIsPSAssistant) {
-      setIsPSAssistant(false);
+      setIsPSAssistant(true);
+    }
+    if (setIsCVAssistant) {
+      setIsCVAssistant(false);
     }
     if (setIsRLAssistant) {
       setIsRLAssistant(false);
@@ -85,7 +85,7 @@ export function QuickActionButtons({
 
     // 设置当前助理类型
     if (setCurrentAssistantType) {
-      setCurrentAssistantType("cv");
+      setCurrentAssistantType("draft");
     }
   }, []);
 
@@ -206,7 +206,7 @@ export function QuickActionButtons({
             size="sm"
             className="font-medium"
           >
-            推荐信助理
+            RL助理
           </Button>
         </div>
       </CardContent>

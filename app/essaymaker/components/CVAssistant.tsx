@@ -330,15 +330,16 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                 <div
                   ref={resumeDropAreaRef}
                   className={cn(
-                    "border border-dashed rounded-md p-3 transition-colors text-center cursor-pointer h-[120px] flex flex-col justify-center",
+                    "rounded-md p-3 transition-colors cursor-pointer",
+                    resumeFile 
+                      ? "border-0" 
+                      : "border border-dashed",
                     isDraggingResume
                       ? "border-primary bg-primary/5"
-                      : resumeFile
-                      ? "border-green-500 bg-green-50"
                       : "border-gray-300 hover:border-primary hover:bg-gray-50",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
-                  onClick={triggerResumeFileInput}
+                  onClick={resumeFile ? undefined : triggerResumeFileInput}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -377,37 +378,30 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                   />
                   
                   {resumeFile ? (
-                    <div className="flex flex-col items-center">
-                      <div className="flex items-center gap-1 mb-1">
-                        <FileText className="h-4 w-4 text-green-500" />
-                        <p className="text-sm font-medium text-gray-600 truncate max-w-[250px]">
-                          {resumeFile.name}
-                        </p>
-                      </div>
-                      <p className="text-xs text-gray-500 mb-1">
-                        {(resumeFile.size / 1024).toFixed(1)} KB
-                      </p>
+                    <div className="flex items-center p-2 border rounded bg-muted/50">
+                      <FileText className="h-4 w-4 mr-2 text-primary" />
+                      <span className="text-sm flex-1 truncate">{resumeFile.name}</span>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="text-xs h-6 px-2"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRemoveResumeFile();
                         }}
                         disabled={isLoading}
                       >
-                        <X className="h-3 w-3 mr-1" /> 删除
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center">
-                      <FileText className="h-5 w-5 text-gray-400 mb-1" />
-                      <p className="text-xs text-gray-600 mb-0.5">
-                        上传个人简历素材表（doc、docx）
+                    <div className="flex flex-col items-center justify-center h-[120px]">
+                      <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        点击或拖放文件到此处上传
                       </p>
-                      <p className="text-xs text-gray-500">
-                        点击或拖拽文件至此处
+                      <p className="text-xs text-muted-foreground mt-1">
+                        支持 PDF, Word, TXT 格式
                       </p>
                     </div>
                   )}
@@ -416,21 +410,34 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
 
               {/* 支持文件上传 */}
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  支持文件（可多选）
-                </label>
+                <div className="flex justify-between items-center">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    支持材料（可选）
+                  </label>
+                  {supportFiles.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={handleClearAllSupportFiles}
+                    >
+                      清空全部
+                    </Button>
+                  )}
+                </div>
                 <div
                   ref={supportDropAreaRef}
                   className={cn(
-                    "border border-dashed rounded-md p-3 transition-colors text-center cursor-pointer h-[120px] flex flex-col justify-center",
+                    "rounded-md p-3 transition-colors cursor-pointer",
+                    supportFiles.length > 0 
+                      ? "border-0" 
+                      : "border border-dashed",
                     isDraggingSupport
                       ? "border-primary bg-primary/5"
-                      : supportFiles.length > 0
-                      ? "border-green-500 bg-green-50"
                       : "border-gray-300 hover:border-primary hover:bg-gray-50",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
-                  onClick={triggerSupportFileInput}
+                  onClick={supportFiles.length > 0 ? undefined : triggerSupportFileInput}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -470,70 +477,48 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                   />
                   
                   {supportFiles.length > 0 ? (
-                    <div className="flex flex-col items-center">
-                      <div className="flex items-center gap-1 mb-1">
-                        <FileText className="h-4 w-4 text-green-500" />
-                        <p className="text-sm font-medium text-gray-600">
-                          已选择 {supportFiles.length} 个文件
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap justify-center gap-1 mb-1 max-h-[40px] overflow-y-auto px-1">
-                        {supportFiles.map((file, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center bg-white rounded-md px-1.5 py-0.5 text-xs border"
+                    <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                      {supportFiles.map((file, index) => (
+                        <div key={index} className="flex items-center p-2 border rounded bg-muted/50">
+                          <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                          <span className="text-sm flex-1 truncate">{file.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveSupportFile(index);
+                            }}
+                            disabled={isLoading}
                           >
-                            <span className="truncate max-w-[120px]">
-                              {file.name}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveSupportFile(index);
-                              }}
-                              className="ml-1 text-red-500 hover:text-red-700"
-                              disabled={isLoading}
-                            >
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs h-6 px-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleClearAllSupportFiles();
-                          }}
-                          disabled={isLoading}
-                        >
-                          <X className="h-3 w-3 mr-1" /> 清空
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs h-6 px-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            triggerSupportFileInput();
-                          }}
-                          disabled={isLoading}
-                        >
-                          <Upload className="h-3 w-3 mr-1" /> 添加
-                        </Button>
-                      </div>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerSupportFileInput();
+                        }}
+                        disabled={isLoading}
+                      >
+                        <ArrowUp className="h-3.5 w-3.5 mr-1" />
+                        添加更多文件
+                      </Button>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center">
-                      <Upload className="h-5 w-5 text-gray-400 mb-1" />
-                      <p className="text-xs text-gray-600 mb-0.5">
-                        上传支持文件（pdf、图片）
+                    <div className="flex flex-col items-center justify-center h-[120px]">
+                      <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        添加额外支持材料（可选）
                       </p>
-                      <p className="text-xs text-gray-500">
-                        点击或拖拽文件至此处
+                      <p className="text-xs text-muted-foreground mt-1">
+                        如成绩单、项目经历等
                       </p>
                     </div>
                   )}

@@ -493,17 +493,13 @@ export function AdvancedInputArea({
               <div
                 ref={draftDropAreaRef}
                 className={cn(
-                  "border border-dashed rounded-md p-2 transition-colors text-center cursor-pointer h-[100px] flex flex-col justify-center",
+                  "border border-dashed rounded-md p-3 transition-colors cursor-pointer",
                   isDraggingDraft
                     ? "border-primary bg-primary/5"
-                    : draftFile
-                    ? "border-green-500 bg-green-50"
-                    : !draftFile
-                    ? "border-red-300 hover:border-primary hover:bg-gray-50"
                     : "border-gray-300 hover:border-primary hover:bg-gray-50",
                   (isLoading || submitting) && "opacity-50 cursor-not-allowed"
                 )}
-                onClick={triggerDraftFileInput}
+                onClick={draftFile ? undefined : triggerDraftFileInput}
               >
                 <input
                   type="file"
@@ -515,37 +511,30 @@ export function AdvancedInputArea({
                 />
 
                 {draftFile ? (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1 mb-1">
-                      <FileText className="h-4 w-4 text-green-500" />
-                      <p className="text-sm font-medium text-gray-600 truncate max-w-[150px]">
-                        {draftFile.name}
-                      </p>
-                    </div>
-                    <p className="text-xs text-gray-500 mb-1">
-                      {(draftFile.size / 1024).toFixed(1)} KB
-                    </p>
+                  <div className="flex items-center p-2 border rounded bg-muted/50">
+                    <FileText className="h-4 w-4 mr-2 text-primary" />
+                    <span className="text-sm flex-1 truncate">{draftFile.name}</span>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className="text-xs h-6 px-2"
+                      size="icon"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveDraftFile();
                       }}
                       disabled={isLoading || submitting}
                     >
-                      <X className="h-3 w-3 mr-1" /> 删除
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center">
-                    <FileText className="h-5 w-5 text-gray-400 mb-1" />
-                    <p className="text-xs text-gray-600 mb-0.5">
-                      上传个人陈述素材表文件（doc、docx）
+                  <div className="flex flex-col items-center justify-center h-[120px]">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      点击或拖放文件到此处上传
                     </p>
-                    <p className="text-xs text-gray-500">
-                      点击或拖拽文件至此处
+                    <p className="text-xs text-muted-foreground mt-1">
+                      支持 PDF, Word, TXT 格式
                     </p>
                   </div>
                 )}
@@ -554,21 +543,31 @@ export function AdvancedInputArea({
 
             {/* 右侧 - 成绩单文件上传 */}
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                成绩单（选填）
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  成绩单（选填）
+                </label>
+                {otherFiles.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={handleClearAllOtherFiles}
+                  >
+                    清空全部
+                  </Button>
+                )}
+              </div>
               <div
                 ref={otherDropAreaRef}
                 className={cn(
-                  "border border-dashed rounded-md p-2 transition-colors text-center cursor-pointer h-[100px] flex flex-col justify-center",
+                  "border border-dashed rounded-md p-3 transition-colors cursor-pointer",
                   isDraggingOther
                     ? "border-primary bg-primary/5"
-                    : otherFiles.length > 0
-                    ? "border-green-500 bg-green-50"
                     : "border-gray-300 hover:border-primary hover:bg-gray-50",
                   (isLoading || submitting) && "opacity-50 cursor-not-allowed"
                 )}
-                onClick={triggerOtherFilesInput}
+                onClick={otherFiles.length > 0 ? undefined : triggerOtherFilesInput}
               >
                 <input
                   type="file"
@@ -581,70 +580,48 @@ export function AdvancedInputArea({
                 />
 
                 {otherFiles.length > 0 ? (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1 mb-1">
-                      <FileText className="h-4 w-4 text-green-500" />
-                      <p className="text-sm font-medium text-gray-600">
-                        已选择 {otherFiles.length} 个文件
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-1 mb-1 max-h-[30px] overflow-y-auto px-1">
-                      {otherFiles.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-white rounded-md px-1.5 py-0.5 text-xs border"
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                    {otherFiles.map((file, index) => (
+                      <div key={index} className="flex items-center p-2 border rounded bg-muted/50">
+                        <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                        <span className="text-sm flex-1 truncate">{file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveOtherFile(index);
+                          }}
+                          disabled={isLoading || submitting}
                         >
-                          <span className="truncate max-w-[80px]">
-                            {file.name}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveOtherFile(index);
-                            }}
-                            className="ml-1 text-red-500 hover:text-red-700"
-                            disabled={isLoading || submitting}
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs h-6 px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleClearAllOtherFiles();
-                        }}
-                        disabled={isLoading || submitting}
-                      >
-                        <X className="h-3 w-3 mr-1" /> 清空
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs h-6 px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerOtherFilesInput();
-                        }}
-                        disabled={isLoading || submitting}
-                      >
-                        <Upload className="h-3 w-3 mr-1" /> 添加
-                      </Button>
-                    </div>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerOtherFilesInput();
+                      }}
+                      disabled={isLoading || submitting}
+                    >
+                      <ArrowUp className="h-3.5 w-3.5 mr-1" />
+                      添加更多文件
+                    </Button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center">
-                    <Upload className="h-5 w-5 text-gray-400 mb-1" />
-                    <p className="text-xs text-gray-600 mb-0.5">
-                      上传成绩单（pdf、图片）
+                  <div className="flex flex-col items-center justify-center h-[120px]">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      添加额外支持材料（可选）
                     </p>
-                    <p className="text-xs text-gray-500">
-                      点击或拖拽文件至此处
+                    <p className="text-xs text-muted-foreground mt-1">
+                      如成绩单、项目经历等
                     </p>
                   </div>
                 )}
@@ -657,39 +634,39 @@ export function AdvancedInputArea({
       {/* 控制按钮区域 - 放在Card底部 */}
       <CardFooter className="px-4 py-3 flex justify-between">
         <div className="flex items-center gap-1">
-          {purifiedDraft && onClearGeneratedContent && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs px-2 py-1 h-8"
-              onClick={() => {
-                // 清空所有输入和文件
-                setDirection("");
-                setRequirements("");
-                setDraftFile(null);
-                setOtherFiles([]);
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs px-2 py-1 h-8"
+            onClick={() => {
+              // 清空所有输入和文件
+              setDirection("");
+              setRequirements("");
+              setDraftFile(null);
+              setOtherFiles([]);
 
-                // 重置文件输入元素
-                if (draftFileInputRef.current) {
-                  draftFileInputRef.current.value = "";
-                }
-                if (otherFilesInputRef.current) {
-                  otherFilesInputRef.current.value = "";
-                }
+              // 重置文件输入元素
+              if (draftFileInputRef.current) {
+                draftFileInputRef.current.value = "";
+              }
+              if (otherFilesInputRef.current) {
+                otherFilesInputRef.current.value = "";
+              }
 
-                // 清除生成内容
+              // 清除生成内容
+              if (onClearGeneratedContent) {
                 onClearGeneratedContent();
+              }
 
-                // 显示清空提示
-                toast({
-                  title: "已清空",
-                  description: "所有内容已重置",
-                });
-              }}
-            >
-              <RefreshCcw className="h-3 w-3 mr-1" /> 清空所有内容
-            </Button>
-          )}
+              // 显示清空提示
+              toast({
+                title: "已清空",
+                description: "所有内容已重置",
+              });
+            }}
+          >
+            <RefreshCcw className="h-3 w-3 mr-1" /> 清空所有内容
+          </Button>
         </div>
 
         <div className="flex gap-2 justify-end items-center">

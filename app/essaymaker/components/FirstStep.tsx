@@ -128,7 +128,7 @@ export function FirstStep({
 
   // 添加状态来跟踪当前输入模式
   const [inputMode, setInputMode] = useState<"simple" | "draft" | "custom">(
-    "simple"
+    "draft"
   );
 
   // 添加状态控制是否应该隐藏结果（用于清空初稿提纯结果）
@@ -656,7 +656,7 @@ export function FirstStep({
   const handleCustomClick = () => {
     setInputMode("simple");
     // 设置适合分稿的简洁提示文本
-    setPlaceholder("例如：南加州大学(USC) 经济学硕士");
+    setPlaceholder("例如：请提供南加州大学(USC) 经济学硕士课程的详细信息，包括核心课程、选修课程、学分要求、课程大纲和评估方式。");
     // 不清空simpleQuery，保留用户之前的输入 - 现在会在handleButtonChange中处理
     setIsInputExpanded(true);
   };
@@ -768,7 +768,7 @@ export function FirstStep({
   // 添加状态来跟踪当前助理类型
   const [internalAssistantType, setInternalAssistantType] = useState<
     "draft" | "cv" | "ps" | "custom" | "rl"
-  >("custom");
+  >("draft");
 
   return (
     <div className="w-full flex flex-col items-center">

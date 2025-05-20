@@ -568,7 +568,7 @@ export function DraftResultDisplay({
         <CardContent
           ref={contentRef}
           className="px-5 py-4 h-full overflow-auto custom-scrollbar flex-grow"
-          style={{ height: "calc(70vh - 100px)", minHeight: "400px" }}
+          style={{ height: "calc(90vh - 100px)", minHeight: "400px" }}
         >
           <style jsx global>
             {scrollbarStyles}
