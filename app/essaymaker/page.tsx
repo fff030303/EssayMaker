@@ -26,6 +26,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { ButtonType } from "./components/QuickActionButtons";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DraftResultDisplay } from "./components/DraftResultDisplay";
+import { CVGeneration } from "./components/CVGeneration";
+import { RLGeneration } from "./components/RLGeneration";
 // 移除侧边栏导入
 // import { useSidebar } from "@/components/ui/sidebar";
 
@@ -118,6 +120,12 @@ export default function EssayMakerPage() {
 
   // 添加控制是否已提交PS初稿的状态，默认为true以便和CV助理保持一致
   const [hasSubmittedDraft, setHasSubmittedDraft] = useState<boolean>(true);
+
+  // 添加formattedResume状态
+  const [formattedResume, setFormattedResume] = useState<DisplayResult | null>(null);
+
+  // 添加formattedLetter状态
+  const [formattedLetter, setFormattedLetter] = useState<DisplayResult | null>(null);
 
   // 监控文件状态
   useEffect(() => {
@@ -290,16 +298,21 @@ export default function EssayMakerPage() {
     // 清除查询和结果
     setQuery("");
     setResult(null);
+    setFormattedLetter(null); // 清除之前生成的推荐信
     
     setIsRLAssistant(true);
     setIsCVAssistant(false);
     setIsPSAssistant(false);
+    setIsDraftAssistant(false);
     
     // 显示导航栏
     setShowStepNavigation(true);
     
+    // 重置步骤到第一步
+    handleStepChange(1);
+    
     console.log("切换到RL助理模式");
-  }, [setQuery, setResult, setIsCVAssistant, setIsPSAssistant, setIsRLAssistant, setShowStepNavigation]);
+  }, [setQuery, setResult, setFormattedLetter, setIsRLAssistant, setIsCVAssistant, setIsPSAssistant, setIsDraftAssistant, setShowStepNavigation, handleStepChange]);
 
   return (
     <div
@@ -459,65 +472,39 @@ export default function EssayMakerPage() {
                   setHasSubmittedDraft={setHasSubmittedDraft}
                 />
               ) : isCVAssistant ? (
-                <div className="flex flex-col items-start justify-start w-full pt-4 md:pt-8">
-                  {/* 使用DraftResultDisplay组件显示生成结果 */}
-                  {result ? (
-                    <div className="w-full max-w-[800px] mx-auto">
-                      <DraftResultDisplay 
-                        result={result} 
-                        title="简历优化报告" 
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full w-full">
-                      <div className="text-center p-8 max-w-md">
-                        <h2 className="text-2xl font-bold mb-4">
-                          请先上传并提交简历
-                        </h2>
-                        <p className="text-muted-foreground mb-6">
-                          您需要在第一步中上传个人简历素材表并点击"提交简历"按钮，才能查看简历优化报告。
-                        </p>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleStepChange(1)}
-                        >
-                          <ArrowLeft className="h-4 w-4 mr-2" />
-                          返回上传页面
-                        </Button>
-                      </div>
-                    </div>
+                <>
+                  {currentStep === 1 && (
+                    <CVAssistant 
+                      onStepChange={handleStepChange}
+                      setResult={setResult}
+                    />
                   )}
-                </div>
+                  {currentStep === 2 && (
+                    <CVGeneration 
+                      result={result} 
+                      onStepChange={handleStepChange}
+                      formattedResume={formattedResume}
+                      onFormattedResumeChange={setFormattedResume}
+                    />
+                  )}
+                </>
               ) : isRLAssistant ? (
-                <div className="flex flex-col items-start justify-start w-full pt-4 md:pt-8">
-                  {/* 使用DraftResultDisplay组件显示推荐信生成结果 */}
-                  {result ? (
-                    <div className="w-full max-w-[800px] mx-auto">
-                      <DraftResultDisplay 
-                        result={result} 
-                        title="推荐信生成结果" 
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full w-full">
-                      <div className="text-center p-8 max-w-md">
-                        <h2 className="text-2xl font-bold mb-4">
-                          请先填写推荐信信息
-                        </h2>
-                        <p className="text-muted-foreground mb-6">
-                          您需要在第一步中上传简历并填写推荐人信息，才能生成推荐信。
-                        </p>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleStepChange(1)}
-                        >
-                          <ArrowLeft className="h-4 w-4 mr-2" />
-                          返回信息填写页面
-                        </Button>
-                      </div>
-                    </div>
+                <>
+                  {currentStep === 1 && (
+                    <CVAssistant 
+                      onStepChange={handleStepChange}
+                      setResult={setResult}
+                    />
                   )}
-                </div>
+                  {currentStep === 2 && (
+                    <RLGeneration 
+                      result={result}
+                      onStepChange={handleStepChange}
+                      formattedLetter={formattedLetter}
+                      onFormattedLetterChange={setFormattedLetter}
+                    />
+                  )}
+                </>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center p-8 max-w-md">

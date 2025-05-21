@@ -785,6 +785,142 @@ export const apiService = {
       console.error('生成推荐信时出错:', error);
       throw error;
     }
+  },
+
+  // 简历格式化API
+  async formatResume(
+    rawResume: string,
+    customRolePrompt: string = "",
+    customTaskPrompt: string = "",
+    customOutputFormatPrompt: string = ""
+  ) {
+    try {
+      const apiKey = getApiKey();
+      const apiUrl = getApiUrl();
+      
+      console.log("准备格式化简历, API地址:", apiUrl);
+      console.log("原始简历内容长度:", rawResume.length);
+      console.log("自定义提示词:", {
+        role: customRolePrompt,
+        task: customTaskPrompt,
+        outputFormat: customOutputFormatPrompt
+      });
+
+      // 创建FormData对象
+      const formData = new FormData();
+      formData.append('raw_resume', rawResume);
+      formData.append('custom_role_prompt', customRolePrompt);
+      formData.append('custom_task_prompt', customTaskPrompt);
+      formData.append('custom_output_format_prompt', customOutputFormatPrompt);
+
+      // 打印上传的表单数据
+      for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string' && value.length > 500) {
+          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+      const response = await fetch(`${apiUrl}/api/resume-writer/format-resume`, {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        console.error("Format Resume response status:", response.status);
+        console.error("Format Resume response status text:", response.statusText);
+        console.error(
+          "Format Resume response headers:",
+          Object.fromEntries(response.headers)
+        );
+        
+        const errorText = await response
+          .text()
+          .catch(() => "No error text available");
+        console.error("Format Resume error details:", errorText);
+        
+        throw new Error(
+          `HTTP error! status: ${response.status}, details: ${errorText}`
+        );
+      }
+
+      return response.body;
+    } catch (error) {
+      console.error("Format Resume API error:", error);
+      throw error;
+    }
+  },
+
+  // 推荐信格式化API
+  async formatRecommendationLetter(
+    rawLetter: string,
+    customRolePrompt: string = "",
+    customTaskPrompt: string = "",
+    customOutputFormatPrompt: string = ""
+  ): Promise<ReadableStream<Uint8Array>> {
+    try {
+      const apiKey = getApiKey();
+      const apiUrl = getApiUrl();
+      
+      console.log("准备格式化推荐信, API地址:", apiUrl);
+      console.log("原始推荐信内容长度:", rawLetter.length);
+      console.log("自定义提示词:", {
+        role: customRolePrompt,
+        task: customTaskPrompt,
+        outputFormat: customOutputFormatPrompt
+      });
+
+      // 创建FormData对象
+      const formData = new FormData();
+      formData.append('raw_letter', rawLetter);
+      formData.append('custom_role_prompt', customRolePrompt);
+      formData.append('custom_task_prompt', customTaskPrompt);
+      formData.append('custom_output_format_prompt', customOutputFormatPrompt);
+
+      // 打印上传的表单数据
+      for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string' && value.length > 500) {
+          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+      const response = await fetch(`${apiUrl}/api/recommendation-letter/format-letter`, {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        console.error("Format Letter response status:", response.status);
+        console.error("Format Letter response status text:", response.statusText);
+        console.error(
+          "Format Letter response headers:",
+          Object.fromEntries(response.headers)
+        );
+        
+        const errorText = await response
+          .text()
+          .catch(() => "No error text available");
+        console.error("Format Letter error details:", errorText);
+        
+        throw new Error(
+          `HTTP error! status: ${response.status}, details: ${errorText}`
+        );
+      }
+
+      return response.body as ReadableStream<Uint8Array>;
+    } catch (error) {
+      console.error("Format Letter API error:", error);
+      throw error;
+    }
   }
 };
 

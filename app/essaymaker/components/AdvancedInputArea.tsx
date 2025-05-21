@@ -35,6 +35,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface AdvancedInputAreaProps {
   isLoading: boolean;
@@ -460,25 +461,65 @@ export function AdvancedInputArea({
             <label className="block text-sm font-medium text-gray-600 mb-1">
               写作需求（选填）
             </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <Badge 
+                variant="outline" 
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements + "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n"
+                    : "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                弃用部分素材
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements + "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n"
+                    : "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                增加部分细节
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements + "禁止添加素材表中不存在的数据/操作步骤\n"
+                    : "禁止添加素材表中不存在的数据/操作步骤\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                保证内容真实
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements + "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n"
+                    : "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                其他写作需求
+              </Badge>
+            </div>
             <div className="relative">
               <Textarea
                 value={requirements}
                 onChange={(e) => setRequirements(e.target.value)}
                 placeholder="例如：内容要求、字数要求等"
-                className="text-sm placeholder:text-gray-400 w-full min-h-[36px] max-h-[80px] pr-[80px]"
+                className="text-sm placeholder:text-gray-400 w-full min-h-[36px] max-h-[80px] overflow-y-auto resize-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+                style={{ height: '100px' }}
                 disabled={isLoading || submitting}
               />
-              <div className="absolute bottom-1 right-1">
-                <TipsButton
-                  onSelect={(text: string) => {
-                    const newRequirements = requirements
-                      ? requirements + "\n" + text
-                      : text;
-                    setRequirements(newRequirements);
-                  }}
-                  className="h-7 px-2 py-0"
-                />
-              </div>
             </div>
           </div>
 

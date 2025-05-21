@@ -406,7 +406,7 @@ export function DraftResultDisplay({
 
   if (isGenerating) {
     return (
-      <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full">
+      <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full mt-[30px]">
         <CardHeader className="flex flex-row items-center gap-2 pb-2 pt-4 px-5 flex-shrink-0">
           <div
             className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
@@ -494,7 +494,7 @@ export function DraftResultDisplay({
     result.isComplete && displayedContent.length > previewLength;
 
   return (
-    <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full">
+    <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full mt-[30px]">
       <CardHeader className="flex flex-row items-center gap-2 pb-2 pt-4 px-5 flex-shrink-0">
         <div
           className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${

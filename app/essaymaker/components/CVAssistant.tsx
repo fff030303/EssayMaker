@@ -288,7 +288,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
       // 显示成功提示
       toast({
         title: "已提交",
-        description: "您的简历已提交成功",
+        description: "您的简历已分析完成",
       });
     } catch (error) {
       console.error('提交简历时出错:', error);
