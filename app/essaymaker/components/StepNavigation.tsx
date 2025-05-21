@@ -26,6 +26,7 @@ interface StepNavigationProps {
   isPSAssistant: boolean;
   isCVAssistant: boolean;
   isRLAssistant: boolean;
+  isDraftAssistant?: boolean;
   hasSubmittedDraft?: boolean;
 }
 
@@ -41,22 +42,24 @@ export function StepNavigation({
   isPSAssistant = false,
   isCVAssistant = false,
   isRLAssistant = false,
+  isDraftAssistant = false,
   hasSubmittedDraft = false,
 }: StepNavigationProps) {
-  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理且不是RL助理，则不显示导航
+  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理且不是RL助理且不是分稿助理，则不显示导航
   if (
     !shouldShowMultiStepFlow &&
     !isProfessorSearch &&
     !isPSAssistant &&
     !isCVAssistant &&
-    !isRLAssistant
+    !isRLAssistant &&
+    !isDraftAssistant
   ) {
     return null;
   }
 
   // 确定总步骤数
   const totalSteps =
-    shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isRLAssistant ? 3 : 2;
+    (shouldShowMultiStepFlow || isDraftAssistant) && !isProfessorSearch && !isPSAssistant && !isRLAssistant ? 3 : 2;
 
   return (
     <div
@@ -117,7 +120,8 @@ export function StepNavigation({
                   !isProfessorSearch &&
                   !isPSAssistant &&
                   !isCVAssistant &&
-                  !isRLAssistant
+                  !isRLAssistant &&
+                  !isDraftAssistant
                 )
               ) {
                 onStepChange(2);
@@ -134,7 +138,8 @@ export function StepNavigation({
                 !isProfessorSearch &&
                 !isPSAssistant &&
                 !isCVAssistant &&
-                !isRLAssistant
+                !isRLAssistant &&
+                !isDraftAssistant
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             )}
@@ -156,8 +161,8 @@ export function StepNavigation({
             )}
           </div>
 
-          {/* 如果是常规多步骤流程，显示第三步标签 */}
-          {shouldShowMultiStepFlow && !isProfessorSearch && !isPSAssistant && !isRLAssistant && (
+          {/* 如果是常规多步骤流程或分稿助理，显示第三步标签 */}
+          {(shouldShowMultiStepFlow || isDraftAssistant) && !isProfessorSearch && !isPSAssistant && !isRLAssistant && (
             <>
               {/* 分隔符 */}
               <div className="text-muted-foreground/30 px-2">/</div>

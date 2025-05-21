@@ -95,6 +95,9 @@ export default function EssayMakerPage() {
   // 添加判断是否为RL助理
   const [isRLAssistant, setIsRLAssistant] = useState<boolean>(false);
 
+  // 添加判断是否为分稿助理
+  const [isDraftAssistant, setIsDraftAssistant] = useState<boolean>(false);
+
   // 添加控制步骤导航显示状态，默认显示
   const [showStepNavigation, setShowStepNavigation] = useState<boolean>(true);
 
@@ -143,6 +146,7 @@ export default function EssayMakerPage() {
         setIsPSAssistant(true);
         setIsCVAssistant(false);
         setIsRLAssistant(false);
+        setIsDraftAssistant(false);
         // 修改这里：PS初稿助理也需要立即显示步骤导航，不再等待用户提交文件
         setShowStepNavigation(true);
         // 同时设置hasSubmittedDraft为true，允许用户直接点击底边栏导航到第二步
@@ -151,6 +155,7 @@ export default function EssayMakerPage() {
         setIsPSAssistant(false);
         setIsCVAssistant(true);
         setIsRLAssistant(false);
+        setIsDraftAssistant(false);
         setShowStepNavigation(true);
         // CV助理模式下不需要提交文件就显示导航
         setHasSubmittedDraft(true);
@@ -158,13 +163,22 @@ export default function EssayMakerPage() {
         setIsPSAssistant(false);
         setIsCVAssistant(false);
         setIsRLAssistant(true);
+        setIsDraftAssistant(false);
         setShowStepNavigation(true);
         // RL助理模式下也默认显示导航
+        setHasSubmittedDraft(true);
+      } else if (type === "custom") {
+        setIsPSAssistant(false);
+        setIsCVAssistant(false);
+        setIsRLAssistant(false);
+        setIsDraftAssistant(true);
+        setShowStepNavigation(true);
         setHasSubmittedDraft(true);
       } else {
         setIsPSAssistant(false);
         setIsCVAssistant(false);
         setIsRLAssistant(false);
+        setIsDraftAssistant(false);
         setShowStepNavigation(false);
         // 其他模式不需要提交文件
         setHasSubmittedDraft(false);
@@ -569,6 +583,7 @@ export default function EssayMakerPage() {
         isPSAssistant={isPSAssistant}
         isCVAssistant={isCVAssistant}
         isRLAssistant={isRLAssistant}
+        isDraftAssistant={isDraftAssistant}
         hasSubmittedDraft={hasSubmittedDraft}
       />
     </div>

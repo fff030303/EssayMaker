@@ -154,6 +154,26 @@ export function QuickActionButtons({
     <Card className="w-full max-w-[650px] mx-auto my-2 mt-7 border-0 shadow-none">
       <CardContent className="p-2">
         <div className="flex flex-wrap justify-center gap-2">
+
+        <Button
+            onClick={() => handleButtonClick("cv", onCvClick)}
+            variant={getButtonVariant("cv")}
+            size="sm"
+            className="font-medium"
+          >
+            CV助理
+          </Button>
+          
+          <Button
+            onClick={() => handleButtonClick("rl", onRlClick)}
+            variant={getButtonVariant("rl")}
+            size="sm"
+            className="font-medium"
+          >
+            RL助理
+          </Button>
+
+
           <Button
             ref={psAssistantButtonRef}
             onClick={() => handleButtonClick("draft", onDraftClick)}
@@ -182,6 +202,9 @@ export function QuickActionButtons({
             套瓷助理
           </Button>
 
+          
+
+
           <Button
             onClick={() => handleButtonClick("question", onQuestionClick)}
             variant={getButtonVariant("question")}
@@ -189,24 +212,6 @@ export function QuickActionButtons({
             className="font-medium"
           >
             随便问问
-          </Button>
-
-          <Button
-            onClick={() => handleButtonClick("cv", onCvClick)}
-            variant={getButtonVariant("cv")}
-            size="sm"
-            className="font-medium"
-          >
-            CV助理
-          </Button>
-          
-          <Button
-            onClick={() => handleButtonClick("rl", onRlClick)}
-            variant={getButtonVariant("rl")}
-            size="sm"
-            className="font-medium"
-          >
-            RL助理
           </Button>
         </div>
       </CardContent>
