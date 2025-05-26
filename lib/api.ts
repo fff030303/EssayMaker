@@ -793,7 +793,7 @@ export const apiService = {
     customRolePrompt: string = "",
     customTaskPrompt: string = "",
     customOutputFormatPrompt: string = ""
-  ) {
+  ): Promise<ReadableStream<Uint8Array>> {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
@@ -848,7 +848,7 @@ export const apiService = {
         );
       }
 
-      return response.body;
+      return response.body as ReadableStream<Uint8Array>;
     } catch (error) {
       console.error("Format Resume API error:", error);
       throw error;

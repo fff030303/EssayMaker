@@ -481,7 +481,7 @@ export default function EssayMakerPage() {
                   )}
                   {currentStep === 2 && (
                     <CVGeneration 
-                      result={result} 
+                        result={result} 
                       onStepChange={handleStepChange}
                       formattedResume={formattedResume}
                       onFormattedResumeChange={setFormattedResume}
@@ -498,7 +498,7 @@ export default function EssayMakerPage() {
                   )}
                   {currentStep === 2 && (
                     <RLGeneration 
-                      result={result}
+                        result={result} 
                       onStepChange={handleStepChange}
                       formattedLetter={formattedLetter}
                       onFormattedLetterChange={setFormattedLetter}

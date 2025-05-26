@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { useStreamResponse } from "../hooks/useStreamResponse";
 
 interface RLAssistantProps {
   onStepChange?: (step: number) => void;
@@ -47,6 +48,7 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { toast } = useToast();
+  const { processStream } = useStreamResponse();
 
   // 处理简历文件上传
   const handleResumeFile = (file: File) => {
@@ -154,12 +156,26 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
 
   // 处理提交函数
   const handleSubmit = async () => {
-    if (!validateForm()) {
+    if (!resumeFile) {
+      toast({
+        variant: "destructive",
+        title: "文件缺失",
+        description: "请上传个人简历素材表",
+      });
+      return;
+    }
+
+    if (!writingRequirements.trim()) {
+      toast({
+        variant: "destructive",
+        title: "要求缺失",
+        description: "请填写推荐信写作要求",
+      });
       return;
     }
 
     setIsLoading(true);
-    setStreamContent(""); // 清空之前的内容
+    setStreamContent("");
     setIsComplete(false);
     
     // 创建结果对象
@@ -188,107 +204,62 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
     }
     
     try {
-      // 确保resumeFile不为null (validateForm已经检查过，这里再次确认)
-      if (!resumeFile) {
-        throw new Error("推荐信素材表文件不能为空");
-      }
-      
       // 使用apiService中的generateRecommendationLetter方法
       const response = await apiService.generateRecommendationLetter(
-        resumeFile, 
+        resumeFile,
         writingRequirements,
         supportFiles
       );
       
       // 检查响应类型
       if (response instanceof ReadableStream) {
-        // 处理流式响应
+        // 使用统一的流式处理
         console.log('接收到流式响应，开始处理...');
         
-        // 使用流程器读取流
-        const reader = response.getReader();
-        const decoder = new TextDecoder();
-        let result = '';
-        // 添加一个Set用于存储已处理过的内容，避免重复
-        const processedContents = new Set<string>();
-        // 上一次处理的消息内容
-        let lastContent = '';
-        
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            // 解码二进制数据
-            const chunk = decoder.decode(value, { stream: true });
-            result += chunk;
-            
-            // 处理SSE格式的数据
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data:')) {
-                const jsonStr = line.slice(5).trim();
-                if (!jsonStr || jsonStr === '[DONE]') continue;
-                
-                try {
-                  // 尝试解析JSON
-                  const jsonData = JSON.parse(jsonStr);
-                  // 如果包含content字段，更新内容
-                  if (jsonData.content) {
-                    // 检查是否已处理过相同的内容以避免重复
-                    if (!processedContents.has(jsonData.content) && jsonData.content !== lastContent) {
-                      // 记录这条内容已处理
-                      processedContents.add(jsonData.content);
-                      lastContent = jsonData.content;
-                      
-                      // 更新界面内容
-                      setStreamContent(prev => prev + jsonData.content);
-                      
-                      // 更新结果对象
-                      resultObject.content = (resultObject.content || "") + jsonData.content;
-                      if (setResult) {
-                        setResult({...resultObject});
-                      }
-                    }
-                  }
-                } catch (e) {
-                  // 如果不是JSON，检查这段文本是否之前已处理过
-                  if (!processedContents.has(jsonStr) && jsonStr !== lastContent) {
-                    // 记录已处理
-                    processedContents.add(jsonStr);
-                    lastContent = jsonStr;
-                    
-                    // 更新界面内容
-                    setStreamContent(prev => prev + jsonStr);
-                    
-                    // 更新结果对象
-                    resultObject.content = (resultObject.content || "") + jsonStr;
-                    if (setResult) {
-                      setResult({...resultObject});
-                    }
-                  }
-                }
-              }
+        await processStream(response, {
+          onUpdate: (result) => {
+            setStreamContent(result.content);
+            if (setResult) {
+              setResult({
+                ...result,
+                currentStep: result.currentStep || "推荐信分析中"
+              });
             }
-          }
-          
-          console.log('流式响应接收完成，总长度:', result.length);
-          setIsComplete(true);
-          
-          // 更新结果完成状态
-          resultObject.isComplete = true;
-          if (setResult) {
-            setResult({...resultObject});
-          }
-          
-        } catch (error) {
-          console.error('处理流式响应时出错:', error);
-          toast({
-            variant: "destructive",
-            title: "处理错误",
-            description: "处理推荐信内容时出错",
-          });
-        }
+          },
+          onComplete: (result) => {
+            setStreamContent(result.content);
+            setIsComplete(true);
+            if (setResult) {
+              setResult({
+                ...result,
+                currentStep: "推荐信分析完成"
+              });
+            }
+            toast({
+              title: "已提交",
+              description: "您的推荐信已分析完成",
+            });
+          },
+          onError: (error) => {
+            console.error('处理推荐信时出错:', error);
+            toast({
+              variant: "destructive",
+              title: "处理失败",
+              description: "处理推荐信时发生错误，请重试",
+            });
+            if (setResult) {
+              setResult({
+                content: `生成推荐信时出错: ${error}`,
+                steps: [],
+                timestamp: new Date().toISOString(),
+                isComplete: true,
+                currentStep: "出错"
+              });
+            }
+          },
+          realtimeTypewriter: true, // 启用实时接收+逐字显示模式
+          charDelay: 5 // 字符显示间隔5毫秒
+        });
       } else {
         // 处理非流式响应
         console.log('接收到非流式响应');
@@ -315,39 +286,29 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
         }
         
         setIsComplete(true);
+        toast({
+          title: "已提交",
+          description: "您的推荐信已分析完成",
+        });
       }
-      
     } catch (error) {
-      console.error('提交推荐信请求时出错:', error);
-      
-      // 显示更详细的错误信息
-      let errorMessage = "生成推荐信时发生错误，请重试";
-      
-      if (error instanceof Error) {
-        // 如果错误信息包含404，提示API不存在
-        if (error.message.includes("404")) {
-          errorMessage = "推荐信生成API不存在，请联系管理员配置相应的接口";
-        } else if (error.message.includes("401")) {
-          errorMessage = "API密钥错误或无效，请检查配置";
-        } else if (error.message.includes("422")) {
-          // 处理表单字段验证错误
-          errorMessage = "请求参数错误，请检查上传的文件和表单字段";
-          if (error.message.includes("缺少必要字段")) {
-            errorMessage = error.message; // 使用服务器返回的详细错误信息
-          }
-        } else if (error.message.includes("timeout") || error.message.includes("Network Error")) {
-          errorMessage = "网络连接超时，请检查服务器状态";
-        } else {
-          // 显示原始错误信息
-          errorMessage = `错误详情: ${error.message}`;
-        }
-      }
-      
+      console.error('提交推荐信时出错:', error);
       toast({
         variant: "destructive",
-        title: "提交错误",
-        description: errorMessage,
+        title: "提交失败",
+        description: "上传推荐信时发生错误，请重试",
       });
+      
+      // 更新错误状态
+      if (setResult) {
+        setResult({
+          content: `生成推荐信时出错: ${error}`,
+          steps: [],
+          timestamp: new Date().toISOString(),
+          isComplete: true,
+          currentStep: "出错"
+        });
+      }
     } finally {
       setIsLoading(false);
     }

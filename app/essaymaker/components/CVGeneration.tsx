@@ -1,40 +1,39 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, FileText, Loader2, Send } from "lucide-react";
 import { DisplayResult } from "../types";
 import { DraftResultDisplay } from "./DraftResultDisplay";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { apiService } from "@/lib/api";
+import { useStreamResponse } from "../hooks/useStreamResponse";
 
 interface CVGenerationProps {
   result: DisplayResult | null;
-  onStepChange: (step: number) => void;
-  onGenerateResume?: () => void;
-  isGeneratingResume?: boolean;
   formattedResume: DisplayResult | null;
-  onFormattedResumeChange: (resume: DisplayResult | null) => void;
+  onFormattedResumeChange: (result: DisplayResult) => void;
+  onStepChange: (step: number) => void;
 }
 
 export function CVGeneration({
   result,
-  onStepChange,
-  onGenerateResume,
-  isGeneratingResume: initialIsGeneratingResume = false,
   formattedResume,
   onFormattedResumeChange,
+  onStepChange,
 }: CVGenerationProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
-  const [isGenerating, setIsGenerating] = useState(initialIsGeneratingResume);
-
-  useEffect(() => {
-    setIsGenerating(initialIsGeneratingResume);
-  }, [initialIsGeneratingResume]);
+  const { processStream } = useStreamResponse();
 
   // 处理生成简历
   const handleGenerateResume = async () => {
+    console.log("开始生成简历...");
+    console.log("当前结果:", result);
+    
     if (!result || !result.content) {
+      console.log("没有结果或内容，显示错误提示");
       toast({
         variant: "destructive",
         title: "生成失败",
@@ -45,65 +44,48 @@ export function CVGeneration({
 
     setIsGenerating(true);
     try {
+      console.log("调用格式化简历API...");
       // 调用格式化简历API
       const response = await apiService.formatResume(
         result.content,
-        "你是一位专业的简历优化专家",
+        "你是一位专业的简历写作专家",
         "请根据分析报告生成一份专业的简历",
-        "请按照标准的简历格式输出，包括个人信息、教育背景、工作经验、项目经历、技能等部分"
+        "请按照标准的简历格式输出，包括个人信息、教育背景、工作经验、技能等部分"
       );
 
-      // 处理流式响应
+      console.log("API响应:", response);
+
+      // 使用统一的流式处理
       if (response instanceof ReadableStream) {
-        const reader = response.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let formattedContent = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          // 解码二进制数据为UTF-8文本
-          const chunk = decoder.decode(value, { stream: true });
-          
-          // 处理SSE格式的数据
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const jsonStr = line.slice(6); // 移除 'data: ' 前缀
-                const data = JSON.parse(jsonStr);
-                if (data.type === 'content' && data.content) {
-                  formattedContent += data.content;
-                }
-              } catch (e) {
-                console.error('解析SSE数据失败:', e);
-              }
-            }
-          }
-
-          // 更新格式化后的简历内容
-          onFormattedResumeChange({
-            content: formattedContent,
-            steps: [],
-            timestamp: new Date().toISOString(),
-            isComplete: false,
-            currentStep: "简历生成中"
-          });
-        }
-
-        // 完成时更新状态
-        onFormattedResumeChange({
-          content: formattedContent,
-          steps: [],
-          timestamp: new Date().toISOString(),
-          isComplete: true,
-          currentStep: "简历生成完成"
-        });
-
-        toast({
-          title: "生成成功",
-          description: "简历已生成完成",
+        console.log("开始处理流式响应...");
+        
+        await processStream(response, {
+          onUpdate: (result) => {
+            onFormattedResumeChange({
+              ...result,
+              currentStep: result.currentStep || "简历生成中"
+            });
+          },
+          onComplete: (result) => {
+            onFormattedResumeChange({
+              ...result,
+              currentStep: "简历生成完成"
+            });
+            toast({
+              title: "生成成功",
+              description: "简历已生成完成",
+            });
+          },
+          onError: (error) => {
+            console.error('生成简历时出错:', error);
+            toast({
+              variant: "destructive",
+              title: "生成失败",
+              description: "生成简历时发生错误，请重试",
+            });
+          },
+          realtimeTypewriter: true, // 启用实时接收+逐字显示模式
+          charDelay: 2 // 字符显示间隔5毫秒
         });
       }
     } catch (error) {
@@ -123,9 +105,9 @@ export function CVGeneration({
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <div className="text-center p-8 max-w-md mb-8">
-          <h2 className="text-2xl font-bold mb-4">简历分析</h2>
+          <h2 className="text-2xl font-bold mb-4">简历生成</h2>
           <p className="text-muted-foreground mb-6">
-            基于您上传的简历文件，我们将为您生成简历分析报告。请先在第一步上传您的简历文件。
+            基于您上传的文件，我们将为您生成专业的简历。请先在第一步上传您的文件。
           </p>
           <div className="flex gap-4 justify-center">
             <Button variant="outline" onClick={() => onStepChange(1)}>
@@ -143,7 +125,7 @@ export function CVGeneration({
     <div className="flex flex-col items-center justify-start w-full px-0">
       <div className="w-full max-w-[1800px] mx-auto">
         <div className="p-2">
-          {/* 当有格式化后的简历时使用双列布局 */}
+          {/* 当有格式化简历时使用双列布局 */}
           {formattedResume ? (
             // 有格式化简历时的布局
             <div className="flex flex-col lg:flex-row gap-6 xl:gap-10 justify-center">
@@ -156,20 +138,29 @@ export function CVGeneration({
                     key="resume-analysis"
                     headerActions={
                       <Button
+                        disabled={
+                          isGenerating ||
+                          !result.content ||
+                          !result.isComplete
+                        }
+                        onClick={handleGenerateResume}
+                        title={
+                          !result.isComplete
+                            ? "请等待内容创作完成后再生成简历"
+                            : ""
+                        }
                         variant="default"
                         size="sm"
                         className="mr-2"
-                        onClick={handleGenerateResume}
-                        disabled={isGenerating || !result.content || !result.isComplete}
                       >
                         {isGenerating ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                             生成中...
                           </>
                         ) : (
                           <>
-                            <Send className="h-4 w-4 mr-2" />
+                            <Send className="h-3 w-3 mr-1" />
                             生成简历
                           </>
                         )}
@@ -179,12 +170,12 @@ export function CVGeneration({
                 </div>
               </div>
 
-              {/* 右侧 - 生成的简历 */}
+              {/* 右侧 - 格式化简历 */}
               <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
                 <div className="rounded-lg overflow-visible flex-grow h-full">
                   <DraftResultDisplay
                     result={formattedResume}
-                    title="生成的简历"
+                    title="专业简历"
                     key="formatted-resume"
                   />
                 </div>
@@ -200,20 +191,29 @@ export function CVGeneration({
                   key="resume-analysis"
                   headerActions={
                     <Button
+                      disabled={
+                        isGenerating ||
+                        !result.content ||
+                        !result.isComplete
+                      }
+                      onClick={handleGenerateResume}
+                      title={
+                        !result.isComplete
+                          ? "请等待内容创作完成后再生成简历"
+                          : ""
+                      }
                       variant="default"
                       size="sm"
                       className="mr-2"
-                      onClick={handleGenerateResume}
-                      disabled={isGenerating || !result.content || !result.isComplete}
                     >
                       {isGenerating ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                           生成中...
                         </>
                       ) : (
                         <>
-                          <Send className="h-4 w-4 mr-2" />
+                          <Send className="h-3 w-3 mr-1" />
                           生成简历
                         </>
                       )}

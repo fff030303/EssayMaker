@@ -16,6 +16,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { useStreamResponse } from "../hooks/useStreamResponse";
 
 interface CVAssistantProps {
   onStepChange?: (step: number) => void;
@@ -37,6 +38,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
   const supportDropAreaRef = useRef<HTMLDivElement>(null);
 
   const { toast } = useToast();
+  const { processStream } = useStreamResponse();
 
   // 处理简历文件上传
   const handleResumeFile = (file: File) => {
@@ -163,103 +165,53 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
       
       // 检查响应类型
       if (response instanceof ReadableStream) {
-        // 处理流式响应
+        // 使用统一的流式处理
         console.log('接收到流式响应，开始处理...');
         
-        // 使用流程器读取流
-        const reader = response.getReader();
-        const decoder = new TextDecoder();
-        let result = '';
-        // 添加一个Set用于存储已处理过的内容，避免重复
-        const processedContents = new Set<string>();
-        // 上一次处理的消息内容
-        let lastContent = '';
-        
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            // 解码二进制数据
-            const chunk = decoder.decode(value, { stream: true });
-            result += chunk;
-            
-            // 处理SSE格式的数据
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data:')) {
-                const jsonStr = line.slice(5).trim();
-                if (!jsonStr || jsonStr === '[DONE]') continue;
-                
-                try {
-                  // 尝试解析JSON
-                  const jsonData = JSON.parse(jsonStr);
-                  // 如果包含content字段，更新内容
-                  if (jsonData.content) {
-                    // 检查是否已处理过相同的内容以避免重复
-                    if (!processedContents.has(jsonData.content) && jsonData.content !== lastContent) {
-                      // 记录这条内容已处理
-                      processedContents.add(jsonData.content);
-                      lastContent = jsonData.content;
-                      
-                      // 更新界面内容
-                      setStreamContent(prev => prev + jsonData.content);
-                      
-                      // 更新结果对象，直接设置内容而不是追加
-                      // 这样可以避免重复内容问题
-                      resultObject.content = (resultObject.content || "") + jsonData.content;
-                      if (setResult) {
-                        setResult({...resultObject});
-                      }
-                    }
-                  }
-                } catch (e) {
-                  // 如果不是JSON，检查这段文本是否之前已处理过
-                  if (!processedContents.has(jsonStr) && jsonStr !== lastContent) {
-                    // 记录已处理
-                    processedContents.add(jsonStr);
-                    lastContent = jsonStr;
-                    
-                    // 更新界面内容
-                    setStreamContent(prev => prev + jsonStr);
-                    
-                    // 更新结果对象
-                    resultObject.content = (resultObject.content || "") + jsonStr;
-                    if (setResult) {
-                      setResult({...resultObject});
-                    }
-                  }
-                }
-              }
+        await processStream(response, {
+          onUpdate: (result) => {
+            setStreamContent(result.content);
+            if (setResult) {
+              setResult({
+                ...result,
+                currentStep: result.currentStep || "简历分析中"
+              });
             }
-            
-            console.log('接收到数据片段:', chunk.substring(0, 50) + '...');
-          }
-          
-          console.log('流式响应接收完成，总长度:', result.length);
-          setIsComplete(true);
-          
-          // 更新结果完成状态
-          resultObject.isComplete = true;
-          if (setResult) {
-            setResult({...resultObject});
-          }
-          
-          // 尝试解析最终结果
-          try {
-            // 可能包含多个JSON对象，尝试解析最后一个完整的JSON
-            const jsonMatch = result.match(/\{.*\}/g);
-            if (jsonMatch) {
-              const lastJson = jsonMatch[jsonMatch.length - 1];
-              const parsedData = JSON.parse(lastJson);
-              console.log('解析成功的JSON数据:', parsedData);
+          },
+          onComplete: (result) => {
+            setStreamContent(result.content);
+            setIsComplete(true);
+            if (setResult) {
+              setResult({
+                ...result,
+                currentStep: "简历分析完成"
+              });
             }
-          } catch (parseError) {
-            console.error('解析JSON失败:', parseError);
-          }
-        } catch (streamError) {
-          console.error('读取流时发生错误:', streamError);
-        }
+            toast({
+              title: "已提交",
+              description: "您的简历已分析完成",
+            });
+          },
+          onError: (error) => {
+            console.error('处理简历时出错:', error);
+            toast({
+              variant: "destructive",
+              title: "处理失败",
+              description: "处理简历时发生错误，请重试",
+            });
+            if (setResult) {
+              setResult({
+                content: `生成简历时出错: ${error}`,
+                steps: [],
+                timestamp: new Date().toISOString(),
+                isComplete: true,
+                currentStep: "出错"
+              });
+            }
+          },
+          realtimeTypewriter: true, // 启用实时接收+逐字显示模式
+          charDelay: 2 // 字符显示间隔5毫秒
+        });
       } else {
         // 普通JSON响应
         console.log('API响应数据:', response);
@@ -284,12 +236,6 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
           }
         }
       }
-
-      // 显示成功提示
-      toast({
-        title: "已提交",
-        description: "您的简历已分析完成",
-      });
     } catch (error) {
       console.error('提交简历时出错:', error);
       toast({

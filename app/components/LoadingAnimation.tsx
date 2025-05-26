@@ -34,7 +34,7 @@ export function LoadingAnimation({
       transition: {
         duration: 0.5,
         repeat: Infinity,
-        repeatType: "reverse"
+        repeatType: "reverse" as const
       }
     }
   };

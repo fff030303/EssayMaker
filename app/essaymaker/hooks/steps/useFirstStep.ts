@@ -94,7 +94,7 @@ export function useFirstStep({
         {
           timestamp: new Date().toISOString(),
           source: "web",
-          userId: session?.user?.id,
+          userId: session?.user?.id || undefined,
         },
         files,
         transcriptFiles
