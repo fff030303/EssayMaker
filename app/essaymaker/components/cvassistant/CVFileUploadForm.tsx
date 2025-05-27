@@ -3,12 +3,18 @@
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FileText, Upload, X, Loader2, ArrowUp, RefreshCcw, Send } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  X,
+  Loader2,
+  ArrowUp,
+  RefreshCcw,
+  Send,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { apiService } from "@/lib/api";
-import { DisplayResult } from "../types";
-import { AssistantTips } from "./AssistantTips";
+import { DisplayResult } from "../../types";
 import {
   Card,
   CardHeader,
@@ -17,24 +23,25 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { useStreamResponse } from "../hooks/useStreamResponse";
+import { useCVReport } from "./hooks/useCVReport";
 
-interface CVAssistantProps {
+interface CVFileUploadFormProps {
   onStepChange?: (step: number) => void;
   setResult?: (result: DisplayResult | null) => void;
 }
 
-export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) {
+export function CVFileUploadForm({
+  onStepChange,
+  setResult,
+}: CVFileUploadFormProps = {}) {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
   const [customRolePrompt, setCustomRolePrompt] = useState<string>("");
   const [customTaskPrompt, setCustomTaskPrompt] = useState<string>("");
-  const [customOutputFormatPrompt, setCustomOutputFormatPrompt] = useState<string>("");
+  const [customOutputFormatPrompt, setCustomOutputFormatPrompt] =
+    useState<string>("");
   const [isDraggingResume, setIsDraggingResume] = useState(false);
   const [isDraggingSupport, setIsDraggingSupport] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamContent, setStreamContent] = useState<string>("");
-  const [isComplete, setIsComplete] = useState(false);
 
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const supportInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +49,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
   const supportDropAreaRef = useRef<HTMLDivElement>(null);
 
   const { toast } = useToast();
-  const { processStream } = useStreamResponse();
+  const { generateReport, isGeneratingReport } = useCVReport();
 
   // 处理简历文件上传
   const handleResumeFile = (file: File) => {
@@ -122,157 +129,15 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
     }
   };
 
-  // 修改处理提交函数
+  // 使用 useCVReport hook 处理提交
   const handleSubmit = async () => {
-    if (!resumeFile) {
-      toast({
-        variant: "destructive",
-        title: "文件缺失",
-        description: "请上传个人简历素材表",
-      });
-      return;
-    }
+    if (!resumeFile || !setResult) return;
 
-    setIsLoading(true);
-    setStreamContent(""); // 清空之前的内容
-    setIsComplete(false);
-    
-    // 创建结果对象
-    const resultObject: DisplayResult = {
-      content: "",
-      steps: [],
-      timestamp: new Date().toISOString(),
-      isComplete: false,
-      currentStep: "生成简历内容"
-    };
-    
-    // 更新结果状态
-    if (setResult) {
-      setResult(resultObject);
-    }
-    
-    // 显示处理中提示
-    toast({
-      title: "正在处理",
-      description: "简历正在生成中...",
-    });
-    
-    // 立即跳转到第二步
-    if (onStepChange) {
-      onStepChange(2);
-    }
-    
-    try {
-      // 使用apiService中的generateResume方法
-      const response = await apiService.generateResume(
-        resumeFile, 
-        supportFiles,
-        customRolePrompt,
-        customTaskPrompt,
-        customOutputFormatPrompt
-      );
-      console.log('API响应类型:', typeof response);
-      
-      // 检查响应类型
-      if (response instanceof ReadableStream) {
-        // 使用统一的流式处理
-        console.log('接收到流式响应，开始处理...');
-        
-        await processStream(response, {
-          onUpdate: (result) => {
-            setStreamContent(result.content);
-            if (setResult) {
-              setResult({
-                ...result,
-                currentStep: result.currentStep || "简历分析中"
-              });
-            }
-          },
-          onComplete: (result) => {
-            setStreamContent(result.content);
-            setIsComplete(true);
-            if (setResult) {
-              setResult({
-                ...result,
-                currentStep: "简历分析完成"
-              });
-            }
-            toast({
-              title: "已提交",
-              description: "您的简历已分析完成",
-            });
-          },
-          onError: (error) => {
-            console.error('处理简历时出错:', error);
-            toast({
-              variant: "destructive",
-              title: "处理失败",
-              description: "处理简历时发生错误，请重试",
-            });
-            if (setResult) {
-              setResult({
-                content: `生成简历时出错: ${error}`,
-                steps: [],
-                timestamp: new Date().toISOString(),
-                isComplete: true,
-                currentStep: "出错"
-              });
-            }
-          },
-          realtimeTypewriter: true, // 启用实时接收+逐字显示模式
-          charDelay: 1 // 字符显示间隔1毫秒
-        });
-      } else {
-        // 普通JSON响应
-        console.log('API响应数据:', response);
-        
-        // 如果有响应内容，创建结果对象
-        if (response && typeof response === 'object') {
-          // 使用类型断言和可选链访问content属性
-          const responseObj = response as any;
-          const content = responseObj?.text || JSON.stringify(response);
-          setStreamContent(content);
-          setIsComplete(true);
-          
-          // 创建并更新结果对象
-          if (setResult) {
-            setResult({
-              content,
-              steps: [],
-              timestamp: new Date().toISOString(),
-              isComplete: true,
-              currentStep: "简历生成完成"
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('提交简历时出错:', error);
-      toast({
-        variant: "destructive",
-        title: "提交失败",
-        description: "上传简历时发生错误，请重试",
-      });
-      
-      // 更新错误状态
-      if (setResult) {
-        setResult({
-          content: `生成简历时出错: ${error}`,
-          steps: [],
-          timestamp: new Date().toISOString(),
-          isComplete: true,
-          currentStep: "出错"
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    await generateReport(resumeFile, supportFiles, setResult, onStepChange);
   };
 
   return (
     <div className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
-      
-      
       <Card className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
         <CardContent className="p-4 pt-4">
           <div className="grid grid-cols-1 gap-3">
@@ -287,13 +152,11 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                   ref={resumeDropAreaRef}
                   className={cn(
                     "rounded-md p-3 transition-colors cursor-pointer",
-                    resumeFile 
-                      ? "border-0" 
-                      : "border border-dashed",
+                    resumeFile ? "border-0" : "border border-dashed",
                     isDraggingResume
                       ? "border-primary bg-primary/5"
                       : "border-gray-300 hover:border-primary hover:bg-gray-50",
-                    isLoading && "opacity-50 cursor-not-allowed"
+                    isGeneratingReport && "opacity-50 cursor-not-allowed"
                   )}
                   onClick={resumeFile ? undefined : triggerResumeFileInput}
                   onDragOver={(e) => {
@@ -315,10 +178,13 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                     e.preventDefault();
                     e.stopPropagation();
                     setIsDraggingResume(false);
-                    
+
                     console.log("简历文件拖放事件触发", e.dataTransfer?.files);
-                    
-                    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+
+                    if (
+                      e.dataTransfer?.files &&
+                      e.dataTransfer.files.length > 0
+                    ) {
                       const file = e.dataTransfer.files[0];
                       handleResumeFile(file);
                     }
@@ -330,13 +196,15 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                     onChange={handleResumeFileChange}
                     className="hidden"
                     accept=".pdf,.doc,.docx,.txt,.md"
-                    disabled={isLoading}
+                    disabled={isGeneratingReport}
                   />
-                  
+
                   {resumeFile ? (
                     <div className="flex items-center p-2 border rounded bg-muted/50">
                       <FileText className="h-4 w-4 mr-2 text-primary" />
-                      <span className="text-sm flex-1 truncate">{resumeFile.name}</span>
+                      <span className="text-sm flex-1 truncate">
+                        {resumeFile.name}
+                      </span>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -345,7 +213,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                           e.stopPropagation();
                           handleRemoveResumeFile();
                         }}
-                        disabled={isLoading}
+                        disabled={isGeneratingReport}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -385,15 +253,19 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                   ref={supportDropAreaRef}
                   className={cn(
                     "rounded-md p-3 transition-colors cursor-pointer",
-                    supportFiles.length > 0 
-                      ? "border-0" 
+                    supportFiles.length > 0
+                      ? "border-0"
                       : "border border-dashed",
                     isDraggingSupport
                       ? "border-primary bg-primary/5"
                       : "border-gray-300 hover:border-primary hover:bg-gray-50",
-                    isLoading && "opacity-50 cursor-not-allowed"
+                    isGeneratingReport && "opacity-50 cursor-not-allowed"
                   )}
-                  onClick={supportFiles.length > 0 ? undefined : triggerSupportFileInput}
+                  onClick={
+                    supportFiles.length > 0
+                      ? undefined
+                      : triggerSupportFileInput
+                  }
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -413,10 +285,13 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                     e.preventDefault();
                     e.stopPropagation();
                     setIsDraggingSupport(false);
-                    
+
                     console.log("支持文件拖放事件触发", e.dataTransfer?.files);
-                    
-                    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+
+                    if (
+                      e.dataTransfer?.files &&
+                      e.dataTransfer.files.length > 0
+                    ) {
                       const fileList = Array.from(e.dataTransfer.files);
                       handleSupportFiles(fileList);
                     }
@@ -429,15 +304,20 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                     className="hidden"
                     accept=".pdf,.doc,.docx,.txt,.md"
                     multiple
-                    disabled={isLoading}
+                    disabled={isGeneratingReport}
                   />
-                  
+
                   {supportFiles.length > 0 ? (
                     <div className="space-y-2 max-h-[120px] overflow-y-auto">
                       {supportFiles.map((file, index) => (
-                        <div key={index} className="flex items-center p-2 border rounded bg-muted/50">
+                        <div
+                          key={index}
+                          className="flex items-center p-2 border rounded bg-muted/50"
+                        >
                           <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                          <span className="text-sm flex-1 truncate">{file.name}</span>
+                          <span className="text-sm flex-1 truncate">
+                            {file.name}
+                          </span>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -446,13 +326,13 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                               e.stopPropagation();
                               handleRemoveSupportFile(index);
                             }}
-                            disabled={isLoading}
+                            disabled={isGeneratingReport}
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
-                      
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -461,7 +341,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                           e.stopPropagation();
                           triggerSupportFileInput();
                         }}
-                        disabled={isLoading}
+                        disabled={isGeneratingReport}
                       >
                         <ArrowUp className="h-3.5 w-3.5 mr-1" />
                         添加更多文件
@@ -493,7 +373,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                   className="min-h-[80px] resize-y"
                   value={customRolePrompt}
                   onChange={(e) => setCustomRolePrompt(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isGeneratingReport}
                 />
               </div>
 
@@ -506,7 +386,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                   className="min-h-[80px] resize-y"
                   value={customTaskPrompt}
                   onChange={(e) => setCustomTaskPrompt(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isGeneratingReport}
                 />
               </div>
 
@@ -519,7 +399,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                   className="min-h-[80px] resize-y"
                   value={customOutputFormatPrompt}
                   onChange={(e) => setCustomOutputFormatPrompt(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isGeneratingReport}
                 />
               </div>
             </div>
@@ -547,7 +427,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                 setCustomRolePrompt("");
                 setCustomTaskPrompt("");
                 setCustomOutputFormatPrompt("");
-                
+
                 // 重置文件输入元素
                 if (resumeInputRef.current) {
                   resumeInputRef.current.value = "";
@@ -555,7 +435,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                 if (supportInputRef.current) {
                   supportInputRef.current.value = "";
                 }
-                
+
                 // 显示清空提示
                 toast({
                   title: "已清空",
@@ -573,9 +453,9 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
               size="default"
               className="flex items-center gap-1"
               onClick={handleSubmit}
-              disabled={isLoading || !resumeFile}
+              disabled={isGeneratingReport || !resumeFile}
             >
-              {isLoading ? (
+              {isGeneratingReport ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" /> 处理中...
                 </>

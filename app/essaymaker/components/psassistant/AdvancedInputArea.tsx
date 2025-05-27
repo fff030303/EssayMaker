@@ -119,15 +119,16 @@ export function AdvancedInputArea({
     if (!isLoading && submitting) {
       setSubmitting(false);
 
+      // 移除自动跳转逻辑，现在由PSAssistant组件统一处理
       // 当加载完成且之前处于提交状态，自动跳转到第二步
-      if (onStepChange && type === "draft") {
-        // 延迟300ms再跳转，确保状态更新完成
-        setTimeout(() => {
-          onStepChange(2);
-        }, 300);
-      }
+      // if (onStepChange && type === "draft") {
+      //   // 延迟300ms再跳转，确保状态更新完成
+      //   setTimeout(() => {
+      //     onStepChange(2);
+      //   }, 300);
+      // }
     }
-  }, [isLoading, submitting, onStepChange, type]);
+  }, [isLoading, submitting]);
 
   // 设置个人陈述素材表文件区域的拖放事件
   useEffect(() => {
@@ -293,8 +294,15 @@ export function AdvancedInputArea({
     // 防止重复提交，设置提交状态
     setSubmitting(true);
 
-    // 直接调用父组件提交函数，不在这里构建queryText
-    onSubmitClick();
+    try {
+      // 直接调用父组件提交函数，不在这里构建queryText
+      onSubmitClick();
+    } finally {
+      // 重置提交状态，确保按钮不会一直禁用
+      setTimeout(() => {
+        setSubmitting(false);
+      }, 1000); // 1秒后重置状态，给用户一个短暂的反馈
+    }
   };
 
   // 监听最终初稿生成状态
@@ -462,32 +470,34 @@ export function AdvancedInputArea({
               写作需求（选填）
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className="cursor-pointer hover:bg-muted px-3 py-1"
                 onClick={() => {
                   const newRequirements = requirements
-                    ? requirements + "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n"
+                    ? requirements +
+                      "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n"
                     : "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n";
                   setRequirements(newRequirements);
                 }}
               >
                 弃用部分素材
               </Badge>
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className="cursor-pointer hover:bg-muted px-3 py-1"
                 onClick={() => {
                   const newRequirements = requirements
-                    ? requirements + "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n"
+                    ? requirements +
+                      "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n"
                     : "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n";
                   setRequirements(newRequirements);
                 }}
               >
                 增加部分细节
               </Badge>
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className="cursor-pointer hover:bg-muted px-3 py-1"
                 onClick={() => {
                   const newRequirements = requirements
@@ -498,12 +508,13 @@ export function AdvancedInputArea({
               >
                 保证内容真实
               </Badge>
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className="cursor-pointer hover:bg-muted px-3 py-1"
                 onClick={() => {
                   const newRequirements = requirements
-                    ? requirements + "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n"
+                    ? requirements +
+                      "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n"
                     : "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n";
                   setRequirements(newRequirements);
                 }}
@@ -517,7 +528,7 @@ export function AdvancedInputArea({
                 onChange={(e) => setRequirements(e.target.value)}
                 placeholder="例如：内容要求、字数要求等"
                 className="text-sm placeholder:text-gray-400 w-full min-h-[36px] max-h-[80px] overflow-y-auto resize-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
-                style={{ height: '100px' }}
+                style={{ height: "100px" }}
                 disabled={isLoading || submitting}
               />
             </div>
@@ -554,7 +565,9 @@ export function AdvancedInputArea({
                 {draftFile ? (
                   <div className="flex items-center p-2 border rounded bg-muted/50">
                     <FileText className="h-4 w-4 mr-2 text-primary" />
-                    <span className="text-sm flex-1 truncate">{draftFile.name}</span>
+                    <span className="text-sm flex-1 truncate">
+                      {draftFile.name}
+                    </span>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -608,7 +621,9 @@ export function AdvancedInputArea({
                     : "border-gray-300 hover:border-primary hover:bg-gray-50",
                   (isLoading || submitting) && "opacity-50 cursor-not-allowed"
                 )}
-                onClick={otherFiles.length > 0 ? undefined : triggerOtherFilesInput}
+                onClick={
+                  otherFiles.length > 0 ? undefined : triggerOtherFilesInput
+                }
               >
                 <input
                   type="file"
@@ -623,9 +638,14 @@ export function AdvancedInputArea({
                 {otherFiles.length > 0 ? (
                   <div className="space-y-2 max-h-[120px] overflow-y-auto">
                     {otherFiles.map((file, index) => (
-                      <div key={index} className="flex items-center p-2 border rounded bg-muted/50">
+                      <div
+                        key={index}
+                        className="flex items-center p-2 border rounded bg-muted/50"
+                      >
                         <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                        <span className="text-sm flex-1 truncate">{file.name}</span>
+                        <span className="text-sm flex-1 truncate">
+                          {file.name}
+                        </span>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -640,7 +660,7 @@ export function AdvancedInputArea({
                         </Button>
                       </div>
                     ))}
-                    
+
                     <Button
                       variant="outline"
                       size="sm"

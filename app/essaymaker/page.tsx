@@ -15,9 +15,10 @@ import { FirstStep } from "./components/FirstStep";
 import { SecondStep } from "./components/SecondStep";
 import { ThirdStep } from "./components/ThirdStep";
 import { StepNavigation } from "./components/StepNavigation";
-import { DraftGeneration } from "./components/DraftGeneration";
-import { CVAssistant } from "./components/CVAssistant";
-import { RLAssistant } from "./components/RLAssistant";
+import { PSReportAndDraftDisplay } from "./components/psassistant";
+import { CVAssistantMain } from "./components/cvassistant/CVAssistantMain";
+import { CVReportAndResumeDisplay } from "./components/cvassistant/CVReportAndResumeDisplay";
+import { RLAssistantMain } from "./components/rlassistant/RLAssistantMain";
 import { useEssayMaker } from "./hooks/useEssayMaker";
 import { AgentType, DisplayResult } from "./types";
 import { useState, useEffect, useCallback } from "react";
@@ -26,10 +27,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { ButtonType } from "./components/QuickActionButtons";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DraftResultDisplay } from "./components/DraftResultDisplay";
-import { CVGeneration } from "./components/CVGeneration";
-import { RLGeneration } from "./components/RLGeneration";
+import { RLGeneration } from "./components/rlassistant";
 // 移除侧边栏导入
 // import { useSidebar } from "@/components/ui/sidebar";
+import { toast } from "@/components/ui/use-toast";
 
 export default function EssayMakerPage() {
   // 移除侧边栏状态
@@ -92,8 +93,8 @@ export default function EssayMakerPage() {
   const [isPSAssistant, setIsPSAssistant] = useState<boolean>(false);
 
   // 添加判断是否为CV助理
-  const [isCVAssistant, setIsCVAssistant] = useState<boolean>(true);
-  
+  const [isCVAssistant, setIsCVAssistant] = useState<boolean>(false);
+
   // 添加判断是否为RL助理
   const [isRLAssistant, setIsRLAssistant] = useState<boolean>(false);
 
@@ -122,18 +123,39 @@ export default function EssayMakerPage() {
   const [hasSubmittedDraft, setHasSubmittedDraft] = useState<boolean>(true);
 
   // 添加formattedResume状态
-  const [formattedResume, setFormattedResume] = useState<DisplayResult | null>(null);
+  const [formattedResume, setFormattedResume] = useState<DisplayResult | null>(
+    null
+  );
 
   // 添加formattedLetter状态
-  const [formattedLetter, setFormattedLetter] = useState<DisplayResult | null>(null);
+  const [formattedLetter, setFormattedLetter] = useState<DisplayResult | null>(
+    null
+  );
 
-  // 监控文件状态
+  // 监控文件状态变化
   useEffect(() => {
-    console.log(
-      "EssayMakerPage - files状态更新 - 文件数量:",
-      files?.length || 0
-    );
+    console.log("[PAGE] 📁 文件数量:", files.length);
   }, [files]);
+
+  // 监控助理状态变化
+  useEffect(() => {
+    console.log("[PAGE] 🤖 助理状态变化:", {
+      isPSAssistant,
+      isCVAssistant,
+      isRLAssistant,
+      isDraftAssistant,
+      currentStep,
+      isGeneratingFinalDraft,
+      timestamp: new Date().toLocaleTimeString(),
+    });
+  }, [
+    isPSAssistant,
+    isCVAssistant,
+    isRLAssistant,
+    isDraftAssistant,
+    currentStep,
+    isGeneratingFinalDraft,
+  ]);
 
   // 添加清除步骤内容的函数
   const clearSteps = useCallback(() => {
@@ -147,82 +169,135 @@ export default function EssayMakerPage() {
   // 修改handleButtonChange函数
   const handleButtonChange = useCallback(
     (type: ButtonType) => {
-      clearSteps();
+      // 如果正在生成初稿，不允许切换助理状态
+      if (isGeneratingFinalDraft && isPSAssistant) {
+        console.log("[PAGE] 🚫 正在生成初稿，拒绝状态切换");
+        toast({
+          title: "提示",
+          description: "正在生成初稿，请稍后再切换",
+          variant: "default",
+        });
+        return;
+      }
 
-      // 当用户点击PS初稿助理按钮时，设置isPSAssistant为true
+      console.log("[PAGE] 按钮状态切换:", type);
+
+      // 通用状态清理函数
+      const clearAllStates = () => {
+        setQuery("");
+        setResult(null);
+        setFinalDraft(null);
+        setFinalDraftResult(null);
+        setUserDirection("");
+        setUserRequirements("");
+        setTranscriptAnalysis(null);
+        setOtherFiles([]);
+        setFormattedResume(null);
+        setFormattedLetter(null);
+      };
+
       if (type === "draft") {
+        clearAllStates();
         setIsPSAssistant(true);
         setIsCVAssistant(false);
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
-        // 修改这里：PS初稿助理也需要立即显示步骤导航，不再等待用户提交文件
         setShowStepNavigation(true);
-        // 同时设置hasSubmittedDraft为true，允许用户直接点击底边栏导航到第二步
         setHasSubmittedDraft(true);
+        handleStepChange(1);
+        console.log("[PAGE] 切换到PS助理模式，已清理所有相关状态");
       } else if (type === "cv") {
-        setIsPSAssistant(false);
+        clearAllStates();
         setIsCVAssistant(true);
+        setIsPSAssistant(false);
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
         setShowStepNavigation(true);
-        // CV助理模式下不需要提交文件就显示导航
         setHasSubmittedDraft(true);
+        handleStepChange(1);
+        console.log("[PAGE] 切换到CV助理模式，已清理所有相关状态");
       } else if (type === "rl") {
+        clearAllStates();
+        setIsRLAssistant(true);
         setIsPSAssistant(false);
         setIsCVAssistant(false);
-        setIsRLAssistant(true);
         setIsDraftAssistant(false);
         setShowStepNavigation(true);
-        // RL助理模式下也默认显示导航
         setHasSubmittedDraft(true);
+        handleStepChange(1);
+        console.log("[PAGE] 切换到RL助理模式，已清理所有相关状态");
       } else if (type === "custom") {
+        clearAllStates();
         setIsPSAssistant(false);
         setIsCVAssistant(false);
         setIsRLAssistant(false);
         setIsDraftAssistant(true);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
+        handleStepChange(1);
+        console.log("[PAGE] 切换到自定义助理模式，已清理所有相关状态");
       } else {
+        clearAllStates();
         setIsPSAssistant(false);
         setIsCVAssistant(false);
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
         setShowStepNavigation(false);
-        // 其他模式不需要提交文件
         setHasSubmittedDraft(false);
+        handleStepChange(1);
+        console.log("[PAGE] 切换到其他模式，已清理所有相关状态");
       }
     },
-    [clearSteps, setShowStepNavigation, setHasSubmittedDraft]
+    [
+      isGeneratingFinalDraft,
+      isPSAssistant,
+      toast,
+      setQuery,
+      setResult,
+      setFinalDraft,
+      setFinalDraftResult,
+      setUserDirection,
+      setUserRequirements,
+      setTranscriptAnalysis,
+      setOtherFiles,
+      setFormattedResume,
+      setFormattedLetter,
+      setIsPSAssistant,
+      setIsCVAssistant,
+      setIsRLAssistant,
+      setIsDraftAssistant,
+      setShowStepNavigation,
+      setHasSubmittedDraft,
+      handleStepChange,
+    ]
   );
 
   // 创建一个函数，用于PS初稿助理提交文件后显示导航栏
   const handleDraftFileSubmitted = useCallback(() => {
     if (isPSAssistant) {
-      console.log("执行handleDraftFileSubmitted，处理文件提交后的切换步骤");
+      console.log(
+        "[PAGE] 执行handleDraftFileSubmitted，处理文件提交后的切换步骤"
+      );
       // 由于已经默认设置了hasSubmittedDraft为true，这里不需要再设置
       // 但仍然需要确保它为true，以防万一
       setHasSubmittedDraft(true);
-      console.log("确保已提交文件状态为true");
+      console.log("[PAGE] 确保已提交文件状态为true");
 
       // 自动切换到步骤2
       handleStepChange(2);
-      console.log("已切换到步骤2");
+      console.log("[PAGE] 已切换到步骤2");
     }
-  }, [
-    isPSAssistant,
-    handleStepChange,
-    setHasSubmittedDraft,
-  ]);
+  }, [isPSAssistant, handleStepChange, setHasSubmittedDraft]);
 
   // 创建高级提交处理函数，在原本的onSubmitClick基础上添加导航栏显示逻辑
   const handleAdvancedSubmit = useCallback(() => {
-    console.log("执行handleAdvancedSubmit，处理提交");
+    console.log("[PAGE] 执行handleAdvancedSubmit，处理提交");
     handleSubmit();
     // 如果是PS初稿助理，提交后设置已提交状态并切换到步骤2
     if (isPSAssistant) {
       // 设置已提交文件状态为true (这是冗余的，因为已经默认为true，但为安全起见保留)
       setHasSubmittedDraft(true);
-      console.log("确认已提交文件状态为true");
+      console.log("[PAGE] 确认已提交文件状态为true");
 
       // 使用setTimeout确保步骤切换在提交完成后执行
       setTimeout(() => {
@@ -246,12 +321,17 @@ export default function EssayMakerPage() {
       if (transcript) {
         setTranscriptAnalysis(transcript);
         console.log(
-          "成绩单解析结果更新(从用户输入):",
+          "[PAGE] 成绩单解析结果更新(从用户输入):",
           transcript.substring(0, 100) + "..."
         );
       }
 
-      console.log("用户输入更新 - 方向:", direction, "要求:", requirements);
+      console.log(
+        "[PAGE] 用户输入更新 - 方向:",
+        direction,
+        "要求:",
+        requirements
+      );
     },
     []
   );
@@ -264,7 +344,7 @@ export default function EssayMakerPage() {
         transcriptAnalysis: string;
       };
       console.log(
-        "从result中检测到transcriptAnalysis，长度:",
+        "[PAGE] 从result中检测到transcriptAnalysis，长度:",
         resultWithTranscript.transcriptAnalysis.length
       );
       setTranscriptAnalysis(resultWithTranscript.transcriptAnalysis);
@@ -274,7 +354,7 @@ export default function EssayMakerPage() {
   // 添加用于接收辅助资料文件的回调函数
   const handleOtherFilesChange = useCallback((files: File[]) => {
     setOtherFiles(files);
-    console.log("辅助资料文件更新 - 文件数量:", files.length);
+    console.log("[PAGE] 辅助资料文件更新 - 文件数量:", files.length);
   }, []);
 
   // 处理点击CV助理按钮
@@ -282,37 +362,102 @@ export default function EssayMakerPage() {
     // 清除查询和结果
     setQuery("");
     setResult(null);
-    
+
+    // 清除PS助理相关状态
+    setFinalDraft(null);
+    setFinalDraftResult(null);
+    setUserDirection("");
+    setUserRequirements("");
+    setTranscriptAnalysis(null);
+    setOtherFiles([]);
+
+    // 清除CV助理相关状态
+    setFormattedResume(null);
+
+    // 清除RL助理相关状态
+    setFormattedLetter(null);
+
     setIsCVAssistant(true);
     setIsPSAssistant(false);
     setIsRLAssistant(false);
-    
+    setIsDraftAssistant(false);
+
     // 显示导航栏
     setShowStepNavigation(true);
-    
-    console.log("切换到CV助理模式");
-  }, [setQuery, setResult, setIsCVAssistant, setIsPSAssistant, setIsRLAssistant, setShowStepNavigation]);
-  
+
+    // 重置步骤到第一步
+    handleStepChange(1);
+
+    console.log("[PAGE] 切换到CV助理模式，已清理所有相关状态");
+  }, [
+    setQuery,
+    setResult,
+    setFinalDraft,
+    setFinalDraftResult,
+    setUserDirection,
+    setUserRequirements,
+    setTranscriptAnalysis,
+    setOtherFiles,
+    setFormattedResume,
+    setFormattedLetter,
+    setIsCVAssistant,
+    setIsPSAssistant,
+    setIsRLAssistant,
+    setIsDraftAssistant,
+    setShowStepNavigation,
+    handleStepChange,
+  ]);
+
   // 处理点击RL助理按钮
   const handleRlClick = useCallback(() => {
     // 清除查询和结果
     setQuery("");
     setResult(null);
+
+    // 清除PS助理相关状态
+    setFinalDraft(null);
+    setFinalDraftResult(null);
+    setUserDirection("");
+    setUserRequirements("");
+    setTranscriptAnalysis(null);
+    setOtherFiles([]);
+
+    // 清除CV助理相关状态
+    setFormattedResume(null);
+
+    // 清除RL助理相关状态
     setFormattedLetter(null); // 清除之前生成的推荐信
-    
+
     setIsRLAssistant(true);
     setIsCVAssistant(false);
     setIsPSAssistant(false);
     setIsDraftAssistant(false);
-    
+
     // 显示导航栏
     setShowStepNavigation(true);
-    
+
     // 重置步骤到第一步
     handleStepChange(1);
-    
-    console.log("切换到RL助理模式");
-  }, [setQuery, setResult, setFormattedLetter, setIsRLAssistant, setIsCVAssistant, setIsPSAssistant, setIsDraftAssistant, setShowStepNavigation, handleStepChange]);
+
+    console.log("[PAGE] 切换到RL助理模式，已清理所有相关状态");
+  }, [
+    setQuery,
+    setResult,
+    setFinalDraft,
+    setFinalDraftResult,
+    setUserDirection,
+    setUserRequirements,
+    setTranscriptAnalysis,
+    setOtherFiles,
+    setFormattedResume,
+    setFormattedLetter,
+    setIsRLAssistant,
+    setIsCVAssistant,
+    setIsPSAssistant,
+    setIsDraftAssistant,
+    setShowStepNavigation,
+    handleStepChange,
+  ]);
 
   return (
     <div
@@ -398,13 +543,13 @@ export default function EssayMakerPage() {
                 onCvClick={handleCvClick}
                 onRlClick={handleRlClick}
                 currentAssistantType={
-                  isPSAssistant 
-                    ? "draft" 
-                    : isCVAssistant 
-                      ? "cv" 
-                      : isRLAssistant 
-                        ? "rl" 
-                        : "custom"
+                  isPSAssistant
+                    ? "draft"
+                    : isCVAssistant
+                    ? "cv"
+                    : isRLAssistant
+                    ? "rl"
+                    : "custom"
                 }
               />
             </div>
@@ -414,116 +559,199 @@ export default function EssayMakerPage() {
               ref={secondStepRef}
               className="min-w-full h-auto overflow-hidden"
             >
-              {shouldShowMultiStepFlow ? (
-                <SecondStep
-                  secondStepInput={secondStepInput}
-                  setSecondStepInput={(input) => {}}
-                  secondStepLoading={secondStepLoading}
-                  secondStepResult={secondStepResult}
-                  thirdStepLoading={thirdStepLoading}
-                  handleSecondStepSubmit={handleSecondStepSubmit}
-                  handleFinalGeneration={handleFinalGeneration}
-                  handleSecondStepInputChange={handleSecondStepInputChange}
-                  onStepChange={handleStepChange}
-                />
-              ) : isProfessorSearch ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center p-8 max-w-md">
-                    <h2 className="text-2xl font-bold mb-4">教授信息查询</h2>
-                    <p className="text-muted-foreground mb-6">
-                      您可以查询更多关于教授的详细信息。
-                    </p>
-                    <div className="flex gap-4 justify-center">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleStepChange(1)}
-                      >
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        返回查询结果
-                      </Button>
+              {(() => {
+                console.log("[PAGE] 🔍 第二步渲染状态检查:", {
+                  shouldShowMultiStepFlow,
+                  isProfessorSearch,
+                  isPSAssistant,
+                  isCVAssistant,
+                  isRLAssistant,
+                  isDraftAssistant,
+                  currentStep,
+                  isGeneratingFinalDraft,
+                  hasResult: !!result,
+                  hasSubmittedDraft,
+                  showStepNavigation,
+                  timestamp: new Date().toISOString(),
+                });
+
+                console.log("[PAGE] 第二步渲染条件检查:", {
+                  shouldShowMultiStepFlow,
+                  isProfessorSearch,
+                  isPSAssistant,
+                  isCVAssistant,
+                  isRLAssistant,
+                  isDraftAssistant,
+                  detectedAgentType,
+                  "AgentType.COURSE_INFO": AgentType.COURSE_INFO,
+                  "AgentType.PROFESSOR_SEARCH": AgentType.PROFESSOR_SEARCH,
+                });
+
+                console.log("[PAGE] 🔍 详细条件分析:", {
+                  shouldShowMultiStepFlow: shouldShowMultiStepFlow,
+                  isProfessorSearch: isProfessorSearch,
+                  isPSAssistant: isPSAssistant,
+                  isCVAssistant: isCVAssistant,
+                  isRLAssistant: isRLAssistant,
+                  detectedAgentType: detectedAgentType,
+                  "AgentType.COURSE_INFO": AgentType.COURSE_INFO,
+                  "AgentType.PROFESSOR_SEARCH": AgentType.PROFESSOR_SEARCH,
+                });
+
+                if (shouldShowMultiStepFlow) {
+                  console.log("[PAGE] ✅ 渲染 SecondStep - 多步骤流程");
+                  return (
+                    <SecondStep
+                      secondStepInput={secondStepInput}
+                      setSecondStepInput={(input) => {}}
+                      secondStepLoading={secondStepLoading}
+                      secondStepResult={secondStepResult}
+                      thirdStepLoading={thirdStepLoading}
+                      handleSecondStepSubmit={handleSecondStepSubmit}
+                      handleFinalGeneration={handleFinalGeneration}
+                      handleSecondStepInputChange={handleSecondStepInputChange}
+                      onStepChange={handleStepChange}
+                    />
+                  );
+                } else if (isProfessorSearch) {
+                  console.log("[PAGE] ✅ 渲染教授信息查询");
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center p-8 max-w-md">
+                        <h2 className="text-2xl font-bold mb-4">
+                          教授信息查询
+                        </h2>
+                        <p className="text-muted-foreground mb-6">
+                          您可以查询更多关于教授的详细信息。
+                        </p>
+                        <div className="flex gap-4 justify-center">
+                          <Button
+                            variant="outline"
+                            onClick={() => handleStepChange(1)}
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            返回查询结果
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ) : isPSAssistant ? (
-                <DraftGeneration
-                  result={result}
-                  finalDraft={finalDraft}
-                  finalDraftResult={finalDraftResult}
-                  onStepChange={handleStepChange}
-                  onGenerateFinalDraft={
-                    handleFinalDraftSubmit
-                      ? () =>
-                          handleFinalDraftSubmit(
-                            "生成个人陈述初稿",
-                            [], // 不再传递文件
-                            result?.content || "",
-                            userDirection,
-                            userRequirements,
-                            transcriptAnalysis
-                          )
-                      : undefined
-                  }
-                  isGeneratingFinalDraft={isGeneratingFinalDraft}
-                  userDirection={userDirection}
-                  userRequirements={userRequirements}
-                  otherFiles={otherFiles}
-                  transcriptAnalysis={transcriptAnalysis}
-                  setShowStepNavigation={setShowStepNavigation}
-                  setHasSubmittedDraft={setHasSubmittedDraft}
-                />
-              ) : isCVAssistant ? (
-                <>
-                  {currentStep === 1 && (
-                    <CVAssistant 
+                  );
+                } else if (isPSAssistant) {
+                  console.log(
+                    "[PAGE] ✅ 渲染 PSReportAndDraftDisplay (PS助理)"
+                  );
+                  console.log("[PAGE] 🔍 PSReportAndDraftDisplay Props检查:", {
+                    result: result,
+                    hasResult: !!result,
+                    resultContent: result?.content ? "有内容" : "无内容",
+                    finalDraft: finalDraft,
+                    hasFinalDraft: !!finalDraft,
+                    userDirection: userDirection,
+                    userRequirements: userRequirements,
+                    onGenerateFinalDraft: !!handleFinalDraftSubmit,
+                    isGeneratingFinalDraft: isGeneratingFinalDraft,
+                  });
+                  return (
+                    <PSReportAndDraftDisplay
+                      result={result}
+                      finalDraft={finalDraft}
+                      finalDraftResult={finalDraftResult}
                       onStepChange={handleStepChange}
-                      setResult={setResult}
+                      onGenerateFinalDraft={
+                        handleFinalDraftSubmit
+                          ? () =>
+                              handleFinalDraftSubmit(
+                                "生成个人陈述初稿",
+                                [], // 不再传递文件
+                                result?.content || "",
+                                userDirection,
+                                userRequirements,
+                                transcriptAnalysis
+                              )
+                          : undefined
+                      }
+                      isGeneratingFinalDraft={isGeneratingFinalDraft}
+                      userDirection={userDirection}
+                      userRequirements={userRequirements}
+                      otherFiles={otherFiles}
+                      transcriptAnalysis={transcriptAnalysis}
+                      setShowStepNavigation={setShowStepNavigation}
+                      setHasSubmittedDraft={setHasSubmittedDraft}
                     />
-                  )}
-                  {currentStep === 2 && (
-                    <CVGeneration 
-                        result={result} 
-                      onStepChange={handleStepChange}
-                      formattedResume={formattedResume}
-                      onFormattedResumeChange={setFormattedResume}
-                    />
-                  )}
-                </>
-              ) : isRLAssistant ? (
-                <>
-                  {currentStep === 1 && (
-                    <CVAssistant 
-                      onStepChange={handleStepChange}
-                      setResult={setResult}
-                    />
-                  )}
-                  {currentStep === 2 && (
-                    <RLGeneration 
-                        result={result} 
-                      onStepChange={handleStepChange}
-                      formattedLetter={formattedLetter}
-                      onFormattedLetterChange={setFormattedLetter}
-                    />
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center p-8 max-w-md">
-                    <h2 className="text-2xl font-bold mb-4">
-                      此查询不需要后续步骤
-                    </h2>
-                    <p className="text-muted-foreground mb-6">
-                      当前查询类型不需要多步骤处理。请返回第一步查看结果。
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleStepChange(1)}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      返回第一步
-                    </Button>
-                  </div>
-                </div>
-              )}
+                  );
+                } else if (isCVAssistant) {
+                  console.log("[PAGE] ✅ 渲染 CV助理");
+                  return (
+                    <>
+                      {currentStep === 1 && (
+                        <CVAssistantMain
+                          onStepChange={handleStepChange}
+                          setResult={setResult}
+                        />
+                      )}
+                      {currentStep === 2 && (
+                        <CVReportAndResumeDisplay
+                          result={result}
+                          onStepChange={handleStepChange}
+                          formattedResume={formattedResume}
+                          onFormattedResumeChange={setFormattedResume}
+                        />
+                      )}
+                    </>
+                  );
+                } else if (isRLAssistant) {
+                  console.log("[PAGE] ✅ 渲染 RL助理");
+                  return (
+                    <>
+                      {currentStep === 1 && (
+                        <RLAssistantMain
+                          onStepChange={handleStepChange}
+                          setResult={setResult}
+                        />
+                      )}
+                      {currentStep === 2 && (
+                        <RLGeneration
+                          result={result}
+                          onStepChange={handleStepChange}
+                          formattedLetter={formattedLetter}
+                          onFormattedLetterChange={setFormattedLetter}
+                        />
+                      )}
+                    </>
+                  );
+                } else {
+                  console.log(
+                    "[PAGE] ❌ 进入默认分支 - 显示'此查询不需要后续步骤'"
+                  );
+                  console.log("[PAGE] ❌ 所有条件检查结果:", {
+                    shouldShowMultiStepFlow: "false",
+                    isProfessorSearch: "false",
+                    isPSAssistant: "false",
+                    isCVAssistant: "false",
+                    isRLAssistant: "false",
+                    这意味着: "所有助理状态都被重置了",
+                  });
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center p-8 max-w-md">
+                        <h2 className="text-2xl font-bold mb-4">
+                          此查询不需要后续步骤
+                        </h2>
+                        <p className="text-muted-foreground mb-6">
+                          当前查询类型不需要多步骤处理。请返回第一步查看结果。
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleStepChange(1)}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          返回第一步
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
             </div>
 
             {/* 第三步界面 - 条件渲染内容 */}

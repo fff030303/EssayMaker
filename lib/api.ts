@@ -34,7 +34,9 @@ export interface SearchResponse {
 // 创建axios实例
 const getApiKey = () => {
   // 尝试从不同的环境变量获取API Key
-  const key = process.env.NEXT_PUBLIC_AGENT_FORGE_KEY || process.env.NEXT_PUBLIC_NEWKB_API_KEY;
+  const key =
+    process.env.NEXT_PUBLIC_AGENT_FORGE_KEY ||
+    process.env.NEXT_PUBLIC_NEWKB_API_KEY;
   if (!key) {
     console.warn("API Key not found in environment variables");
     return "";
@@ -97,10 +99,7 @@ api.interceptors.request.use(
 
 // API方法封装
 export const apiService = {
-  /**
-   * 通用查询API - 用于基础的文本查询功能
-   * 适用场景：简单的问答查询
-   */
+  // 普通查询
   async query(queryText: string, metadata?: any) {
     try {
       const response = await api.post("/api/query", {
@@ -119,12 +118,13 @@ export const apiService = {
     }
   },
 
-  /**
-   * 流式查询API - 用于需要实时响应的查询功能
-   * 适用场景：长文本生成、实时对话等需要流式输出的场景
-   * 支持文件上传功能
-   */
-  async streamQuery(queryText: string, metadata?: any, files?: File[], transcriptFiles?: File[]) {
+  // 流式查询
+  async streamQuery(
+    queryText: string,
+    metadata?: any,
+    files?: File[],
+    transcriptFiles?: File[]
+  ) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
@@ -139,73 +139,93 @@ export const apiService = {
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
 
       // 检查是否有文件需要上传
-      const hasFiles = (files && files.length > 0) || (transcriptFiles && transcriptFiles.length > 0);
-      
+      const hasFiles =
+        (files && files.length > 0) ||
+        (transcriptFiles && transcriptFiles.length > 0);
+
       // 根据是否有文件选择不同的请求方式
       let response;
-      
+
       if (hasFiles) {
         try {
           // 准备文件上传所需的FormData
           const formData = new FormData();
-          
+
           // 添加元数据（需要转换为JSON字符串）
           if (metadata) {
-            formData.append('metadata', JSON.stringify(metadata));
+            formData.append("metadata", JSON.stringify(metadata));
           }
-          
+
           // 添加查询文本
-          formData.append('query', queryText);
-          
+          formData.append("query", queryText);
+
           // 添加初稿文件 - 只添加第一个文件作为material_file
           if (files && files.length > 0) {
-            formData.append('material_file', files[0], files[0].name);
-            console.log(`添加初稿文件: ${files[0].name} (${files[0].size} bytes)`);
+            formData.append("material_file", files[0], files[0].name);
+            console.log(
+              `添加初稿文件: ${files[0].name} (${files[0].size} bytes)`
+            );
           }
-          
+
           // 添加成绩单文件 - 可以有多个
           if (transcriptFiles && transcriptFiles.length > 0) {
             transcriptFiles.forEach((file) => {
-              formData.append('transcript_files', file, file.name);
+              formData.append("transcript_files", file, file.name);
               console.log(`添加成绩单文件: ${file.name} (${file.size} bytes)`);
             });
           }
-          
+
           // 尝试使用文件上传专用端点
-          console.log("正在使用文件上传端点:", `${apiUrl}/api/ps-initial-draft/simplify-material`);
-          
+          console.log(
+            "正在使用文件上传端点:",
+            `${apiUrl}/api/ps-initial-draft/simplify-material`
+          );
+
           // 打印上传的表单数据
           for (let [key, value] of formData.entries()) {
             if (value instanceof File) {
-              console.log(`FormData: ${key}: File - ${value.name} (${value.size} bytes)`);
+              console.log(
+                `FormData: ${key}: File - ${value.name} (${value.size} bytes)`
+              );
             } else {
               console.log(`FormData: ${key}: ${value}`);
             }
           }
-          
-          response = await fetch(`${apiUrl}/api/ps-initial-draft/simplify-material`, {
-            method: "POST",
-            headers: {
-              // 不需要设置Content-Type，浏览器会自动添加正确的Content-Type和boundary
-              "X-API-Key": apiKey,
-            },
-            body: formData,
-            signal: controller.signal,
-          });
+
+          response = await fetch(
+            `${apiUrl}/api/ps-initial-draft/simplify-material`,
+            {
+              method: "POST",
+              headers: {
+                // 不需要设置Content-Type，浏览器会自动添加正确的Content-Type和boundary
+                "X-API-Key": apiKey,
+              },
+              body: formData,
+              signal: controller.signal,
+            }
+          );
         } catch (error) {
           console.error("文件上传端点请求失败，尝试使用标准端点...", error);
-          
+
           // 如果文件上传端点请求失败，添加警告日志
           const fileNamesInfo = [];
           if (files && files.length > 0) {
-            fileNamesInfo.push(`初稿文件: ${files.map(f => f.name).join(', ')}`);
+            fileNamesInfo.push(
+              `初稿文件: ${files.map((f) => f.name).join(", ")}`
+            );
           }
           if (transcriptFiles && transcriptFiles.length > 0) {
-            fileNamesInfo.push(`成绩单文件: ${transcriptFiles.map(f => f.name).join(', ')}`);
+            fileNamesInfo.push(
+              `成绩单文件: ${transcriptFiles.map((f) => f.name).join(", ")}`
+            );
           }
-          
-          console.warn(`⚠️ 服务器可能不支持文件上传，将忽略以下文件: ${fileNamesInfo.join('; ')}`);
-          
+
+          console.warn(
+            `⚠️ 服务器可能不支持文件上传，将忽略以下文件: ${fileNamesInfo.join(
+              "; "
+            )}`
+          );
+
           // 退回到标准JSON请求
           response = await fetch(`${apiUrl}/api/stream`, {
             method: "POST",
@@ -214,7 +234,9 @@ export const apiService = {
               "X-API-Key": apiKey,
             },
             body: JSON.stringify({
-              query: `${queryText} [上传文件失败，服务器不支持文件上传。${fileNamesInfo.join('; ')}]`,
+              query: `${queryText} [上传文件失败，服务器不支持文件上传。${fileNamesInfo.join(
+                "; "
+              )}]`,
               metadata,
             }),
             signal: controller.signal,
@@ -281,12 +303,7 @@ export const apiService = {
     }
   },
 
-  /**
-   * 个人陈述修改流式API - PS助理第二步
-   * 功能：基于原始个人陈述和项目信息，生成修改建议和策略
-   * 输入：原始个人陈述文本 + 项目信息
-   * 输出：修改建议和重写策略
-   */
+  // 个人陈述修改流式API
   async streamPSRevision(data: { original_ps: string; program_info: string }) {
     try {
       const apiKey = getApiKey();
@@ -335,12 +352,7 @@ export const apiService = {
     }
   },
 
-  /**
-   * 最终个人陈述生成流式API - PS助理第三步
-   * 功能：基于项目信息、原始个人陈述和重写策略，生成最终的个人陈述
-   * 输入：项目信息 + 原始个人陈述 + 重写策略
-   * 输出：最终优化后的个人陈述
-   */
+  // 最终文章生成流式API
   async streamFinalPS(data: {
     program_info: string;
     original_ps: string;
@@ -394,12 +406,7 @@ export const apiService = {
     }
   },
 
-  /**
-   * 初稿生成流式API - PS助理第一步的最终生成
-   * 功能：基于简化的素材、成绩单解析和申请需求，生成个人陈述初稿
-   * 输入：简化素材 + 成绩单解析（可选）+ 申请需求
-   * 输出：个人陈述初稿
-   */
+  // 添加一个新的最终初稿生成流式API，适应新的API格式
   async streamFinalDraftWithFiles(params: {
     simplified_material: string;
     transcript_analysis?: string; // 修改为成绩单解析文本而不是文件
@@ -408,55 +415,72 @@ export const apiService = {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
-      
+
       console.log("=============初稿生成请求配置=============");
-      console.log("API URL:", `${apiUrl}/api/ps-initial-draft/generate-content`);
+      console.log(
+        "API URL:",
+        `${apiUrl}/api/ps-initial-draft/generate-content`
+      );
       console.log("API Key存在:", !!apiKey);
       console.log("简化素材长度:", params.simplified_material.length);
       console.log("成绩单解析长度:", params.transcript_analysis?.length || 0);
       console.log("需求信息长度:", params.combined_requirements.length);
-      
+
       // 使用FormData格式提交
       const formData = new FormData();
-      
+
       // 添加简化的素材
-      formData.append('simplified_material', params.simplified_material);
-      console.log("【素材内容前200字符】:", params.simplified_material.substring(0, 200) + "...");
-      
+      formData.append("simplified_material", params.simplified_material);
+      console.log(
+        "【素材内容前200字符】:",
+        params.simplified_material.substring(0, 200) + "..."
+      );
+
       // 添加申请方向+定制需求
-      formData.append('combined_requirements', params.combined_requirements);
+      formData.append("combined_requirements", params.combined_requirements);
       console.log("【申请需求完整内容】:", params.combined_requirements);
-      
+
       // 添加成绩单解析结果（如果有）
       if (params.transcript_analysis) {
-        formData.append('transcript_analysis', params.transcript_analysis);
-        console.log("【成绩单解析前200字符】:", params.transcript_analysis.substring(0, 200) + "...");
+        formData.append("transcript_analysis", params.transcript_analysis);
+        console.log(
+          "【成绩单解析前200字符】:",
+          params.transcript_analysis.substring(0, 200) + "..."
+        );
       } else {
         console.log("【未提供成绩单解析】");
       }
-      
+
       console.log("=============FormData内容=============");
       // 打印上传的表单数据
       for (let [key, value] of formData.entries()) {
         if (value instanceof File) {
           console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
-        } else if (typeof value === 'string' && value.length > 500) {
-          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        } else if (typeof value === "string" && value.length > 500) {
+          console.log(
+            `${key}: String - ${value.length} 字符 (前50字符: ${value.substring(
+              0,
+              50
+            )}...)`
+          );
         } else {
           console.log(`${key}: ${value}`);
         }
       }
       console.log("======================================");
-      
-      const response = await fetch(`${apiUrl}/api/ps-initial-draft/generate-content`, {
-        method: "POST",
-        headers: {
-          // 不设置Content-Type，由浏览器自动处理FormData边界
-          "X-API-Key": apiKey,
-        },
-        body: formData,
-      });
-      
+
+      const response = await fetch(
+        `${apiUrl}/api/ps-initial-draft/generate-content`,
+        {
+          method: "POST",
+          headers: {
+            // 不设置Content-Type，由浏览器自动处理FormData边界
+            "X-API-Key": apiKey,
+          },
+          body: formData,
+        }
+      );
+
       if (!response.ok) {
         console.error("Final Draft response status:", response.status);
         console.error("Final Draft response status text:", response.statusText);
@@ -464,17 +488,17 @@ export const apiService = {
           "Final Draft response headers:",
           Object.fromEntries(response.headers)
         );
-        
+
         const errorText = await response
           .text()
           .catch(() => "No error text available");
         console.error("Final Draft error details:", errorText);
-        
+
         throw new Error(
           `HTTP error! status: ${response.status}, details: ${errorText}`
         );
       }
-      
+
       return response.body;
     } catch (error) {
       console.error("Final Draft API error:", error);
@@ -482,105 +506,72 @@ export const apiService = {
     }
   },
 
-  /**
-   * 简历生成API - CV助理第一步
-   * 功能：基于简历素材文件和支持文件，生成优化的简历内容
-   * 输入：简历素材文件 + 支持文件（可选）+ 自定义提示词（可选）
-   * 输出：优化后的简历内容和建议
-   */
-  async generateResume(
-    resumeMaterial: File, 
-    supportFiles: File[] = [],
-    customRolePrompt: string = "",
-    customTaskPrompt: string = "",
-    customOutputFormatPrompt: string = ""
-  ) {
+  // 简历生成API
+  async generateResume(resumeMaterial: File, supportFiles: File[] = []) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
-      
+
       console.log("准备生成简历, API地址:", apiUrl);
-      console.log("简历素材文件:", resumeMaterial.name);
+      console.log("简历材料文件:", resumeMaterial.name);
       console.log("支持文件数量:", supportFiles.length);
-      console.log("自定义提示词:", {
-        role: customRolePrompt,
-        task: customTaskPrompt,
-        outputFormat: customOutputFormatPrompt
-      });
 
-      // 创建FormData对象用于上传文件
+      // 创建FormData对象
       const formData = new FormData();
-      formData.append('resume_material', resumeMaterial, resumeMaterial.name);
-      
+      formData.append("resume_material", resumeMaterial);
+
       // 添加支持文件
-      if (supportFiles.length > 0) {
-        supportFiles.forEach((file, index) => {
-          formData.append('support_files', file, file.name);
-          console.log(`添加支持文件${index+1}: ${file.name}`);
-        });
-      }
-
-      // 添加自定义提示词
-      formData.append('custom_role_prompt', customRolePrompt);
-      formData.append('custom_task_prompt', customTaskPrompt);
-      formData.append('custom_output_format_prompt', customOutputFormatPrompt);
-
-      const response = await fetch(`${apiUrl}/api/resume-writer/generate-resume`, {
-        method: 'POST',
-        headers: {
-          'X-API-Key': apiKey,
-        },
-        body: formData,
+      supportFiles.forEach((file, index) => {
+        formData.append(`support_files`, file);
+        console.log(`支持文件 ${index + 1}:`, file.name);
       });
-      // 发送请求到服务端
-      console.log('准备发送的FormData内容:');
-      for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-      console.log('FormData keys:', Array.from(formData.keys()));
-      
+
+      const response = await fetch(
+        `${apiUrl}/api/resume-writer/generate-resume`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('请求失败详情:', {
+        console.error("请求失败详情:", {
           status: response.status,
           statusText: response.statusText,
           errorText,
-          headers: Object.fromEntries(response.headers.entries())
+          headers: Object.fromEntries(response.headers.entries()),
         });
-        throw new Error(`CV生成失败: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `CV生成失败: ${response.status} ${response.statusText} - ${errorText}`
+        );
       }
 
       // 判断响应类型
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('text/event-stream')) {
-        console.log('接收到流式响应');
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("text/event-stream")) {
+        console.log("接收到流式响应");
         return response.body;
       } else {
-        console.log('接收到普通响应');
+        console.log("接收到普通响应");
         const text = await response.text();
         return text;
       }
     } catch (error) {
-      console.error('生成简历时出错:', error);
+      console.error("生成简历时出错:", error);
       throw error;
     }
   },
 
-  /**
-   * 推荐信生成API - 推荐信助理第一步
-   * 功能：基于推荐信素材文件、写作需求和支持文件，生成推荐信内容
-   * 输入：推荐信素材文件 + 写作需求 + 支持文件（可选）+ 自定义提示词（可选）
-   * 输出：生成的推荐信内容（中英文版本）
-   */
+  // 生成推荐信
   async generateRecommendationLetter(
-    resumeMaterial: File, 
+    resumeMaterial: File,
     writingRequirements: string,
-    supportFiles: File[] = [],
-    customRolePrompt: string = "",
-    customTaskPrompt: string = "",
-    customOutputFormatPrompt: string = ""
+    supportFiles: File[] = []
   ) {
     try {
       const apiKey = getApiKey();
@@ -590,55 +581,38 @@ export const apiService = {
       console.log("推荐信素材文件:", resumeMaterial.name);
       console.log("支持文件数量:", supportFiles.length);
       console.log("写作需求:", writingRequirements);
-      console.log("自定义提示词:", {
-        role: customRolePrompt,
-        task: customTaskPrompt,
-        outputFormat: customOutputFormatPrompt
-      });
 
       // 创建FormData对象用于上传文件
       const formData = new FormData();
-      formData.append('recommendation_material', resumeMaterial, resumeMaterial.name);
-      
-      // 添加支持文件
+      // 使用recommendation_material作为推荐信素材文件字段名
+      formData.append(
+        "recommendation_material",
+        resumeMaterial,
+        resumeMaterial.name
+      );
+
+      // 添加支持文件，使用support_files作为字段名
       if (supportFiles.length > 0) {
         supportFiles.forEach((file, index) => {
-          formData.append('support_files', file, file.name);
-          console.log(`添加支持文件${index+1}: ${file.name}`);
+          formData.append("support_files", file, file.name);
+          console.log(`添加支持文件${index + 1}: ${file.name}`);
         });
       }
-      
-      // 添加写作需求和自定义提示词
-      formData.append('writing_requirements', writingRequirements);
-      formData.append('custom_role_prompt', customRolePrompt);
-      formData.append('custom_task_prompt', customTaskPrompt);
-      formData.append('custom_output_format_prompt', customOutputFormatPrompt);
 
-      // 清空本地模拟数据支持后添加详细日志
-      console.log("准备发送推荐信生成请求...");
-      console.log("完整API地址:", `${apiUrl}/api/recommendation-letter/generate-letter`);
-      console.log("请求方法:", "POST");
-      console.log("请求头:", { "X-API-Key": apiKey ? "有效" : "无效" });
-      
-      // 打印表单数据内容
-      console.log("===== FormData 字段详情 =====");
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File类型 - 名称: ${value.name}, 大小: ${value.size} bytes, 类型: ${value.type}`);
-        } else {
-          console.log(`${key}: 字符串类型 - 值: ${value}`);
-        }
-      }
-      console.log("===========================");
+      // 使用writing_requirements作为写作需求字段名
+      formData.append("writing_requirements", writingRequirements);
 
       // 使用正确的API端点路径
-      const response = await fetch(`${apiUrl}/api/recommendation-letter/generate-letter`, {
-        method: 'POST',
-        headers: {
-          'X-API-Key': apiKey,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${apiUrl}/api/recommendation-letter/generate-letter`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -650,204 +624,220 @@ export const apiService = {
               .filter((err: any) => err.type === "missing")
               .map((err: any) => err.loc[err.loc.length - 1])
               .join(", ");
-            
+
             if (missingFields) {
-              throw new Error(`推荐信生成失败: 请求缺少必要字段 - ${missingFields}`);
+              throw new Error(
+                `推荐信生成失败: 请求缺少必要字段 - ${missingFields}`
+              );
             }
           } catch (parseError) {
             // JSON解析失败，使用原始错误信息
             console.error("解析错误响应失败:", parseError);
           }
         }
-        throw new Error(`推荐信生成失败: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `推荐信生成失败: ${response.status} ${response.statusText} - ${errorText}`
+        );
       }
 
       // 判断响应类型
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('text/event-stream')) {
-        console.log('接收到流式响应');
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("text/event-stream")) {
+        console.log("接收到流式响应");
         return response.body;
       } else {
-        console.log('接收到普通响应');
+        console.log("接收到普通响应");
         const text = await response.text();
         return text;
       }
     } catch (error) {
-      console.error('生成推荐信时出错:', error);
+      console.error("生成推荐信时出错:", error);
       throw error;
     }
   },
 
-  /**
-   * 简历格式化API - CV助理第二步
-   * 功能：对原始简历文本进行格式化和优化
-   * 输入：原始简历文本 + 自定义提示词（可选）
-   * 输出：格式化后的简历
-   */
+  // 简历格式化API
   async formatResume(
     rawResume: string,
     customRolePrompt: string = "",
     customTaskPrompt: string = "",
     customOutputFormatPrompt: string = ""
-  ): Promise<ReadableStream<Uint8Array>> {
+  ) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
-      
-      console.log("=============简历格式化请求配置=============");
-      console.log("API URL:", `${apiUrl}/api/resume-writer/format-resume`);
-      console.log("API Key存在:", !!apiKey);
+
+      console.log("准备格式化简历, API地址:", apiUrl);
       console.log("原始简历内容长度:", rawResume.length);
       console.log("自定义提示词:", {
         role: customRolePrompt,
         task: customTaskPrompt,
-        outputFormat: customOutputFormatPrompt
+        outputFormat: customOutputFormatPrompt,
       });
 
       // 创建FormData对象
       const formData = new FormData();
-      formData.append('raw_resume', rawResume);
-      formData.append('custom_role_prompt', customRolePrompt);
-      formData.append('custom_task_prompt', customTaskPrompt);
-      formData.append('custom_output_format_prompt', customOutputFormatPrompt);
+      formData.append("raw_resume", rawResume);
+      formData.append("custom_role_prompt", customRolePrompt);
+      formData.append("custom_task_prompt", customTaskPrompt);
+      formData.append("custom_output_format_prompt", customOutputFormatPrompt);
 
       // 打印上传的表单数据
-      console.log("=============FormData内容=============");
       for (let [key, value] of formData.entries()) {
-        if (typeof value === 'string' && value.length > 500) {
-          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        if (typeof value === "string" && value.length > 500) {
+          console.log(
+            `${key}: String - ${value.length} 字符 (前50字符: ${value.substring(
+              0,
+              50
+            )}...)`
+          );
         } else {
           console.log(`${key}: ${value}`);
         }
       }
-      console.log("======================================");
 
-      const response = await fetch(`${apiUrl}/api/resume-writer/format-resume`, {
-        method: "POST",
-        headers: {
-          "X-API-Key": apiKey,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${apiUrl}/api/resume-writer/format-resume`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         console.error("Format Resume response status:", response.status);
-        console.error("Format Resume response status text:", response.statusText);
+        console.error(
+          "Format Resume response status text:",
+          response.statusText
+        );
         console.error(
           "Format Resume response headers:",
           Object.fromEntries(response.headers)
         );
-        
+
         const errorText = await response
           .text()
           .catch(() => "No error text available");
         console.error("Format Resume error details:", errorText);
-        
+
         throw new Error(
           `HTTP error! status: ${response.status}, details: ${errorText}`
         );
       }
 
-      // 检查响应类型
-      const contentType = response.headers.get('content-type');
-      console.log("响应Content-Type:", contentType);
-      
-      if (contentType && contentType.includes('text/event-stream')) {
-        console.log("检测到SSE流式响应");
-      } else {
-        console.log("检测到普通响应");
-      }
+      // 判断响应类型
+      const contentType = response.headers.get("content-type");
 
-      return response.body as ReadableStream<Uint8Array>;
+      if (contentType && contentType.includes("text/event-stream")) {
+        console.log("接收到流式响应");
+        return response.body;
+      } else {
+        console.log("接收到普通响应");
+        const text = await response.text();
+        return text;
+      }
     } catch (error) {
       console.error("Format Resume API error:", error);
       throw error;
     }
   },
 
-  /**
-   * 推荐信格式化API - 推荐信助理第二步
-   * 功能：对原始推荐信文本进行格式化和优化
-   * 输入：原始推荐信文本 + 自定义提示词（可选）
-   * 输出：格式化后的推荐信
-   */
+  // 推荐信格式化API
   async formatRecommendationLetter(
     rawLetter: string,
     customRolePrompt: string = "",
     customTaskPrompt: string = "",
     customOutputFormatPrompt: string = ""
-  ): Promise<ReadableStream<Uint8Array>> {
+  ) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
-      
+
       console.log("准备格式化推荐信, API地址:", apiUrl);
       console.log("原始推荐信内容长度:", rawLetter.length);
       console.log("自定义提示词:", {
         role: customRolePrompt,
         task: customTaskPrompt,
-        outputFormat: customOutputFormatPrompt
+        outputFormat: customOutputFormatPrompt,
       });
 
       // 创建FormData对象
       const formData = new FormData();
-      formData.append('raw_letter', rawLetter);
-      formData.append('custom_role_prompt', customRolePrompt);
-      formData.append('custom_task_prompt', customTaskPrompt);
-      formData.append('custom_output_format_prompt', customOutputFormatPrompt);
+      formData.append("raw_letter", rawLetter);
+      formData.append("custom_role_prompt", customRolePrompt);
+      formData.append("custom_task_prompt", customTaskPrompt);
+      formData.append("custom_output_format_prompt", customOutputFormatPrompt);
 
       // 打印上传的表单数据
       for (let [key, value] of formData.entries()) {
-        if (typeof value === 'string' && value.length > 500) {
-          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        if (typeof value === "string" && value.length > 500) {
+          console.log(
+            `${key}: String - ${value.length} 字符 (前50字符: ${value.substring(
+              0,
+              50
+            )}...)`
+          );
         } else {
           console.log(`${key}: ${value}`);
         }
       }
 
-      const response = await fetch(`${apiUrl}/api/recommendation-letter/format-letter`, {
-        method: "POST",
-        headers: {
-          "X-API-Key": apiKey,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${apiUrl}/api/recommendation-letter/format-letter`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         console.error("Format Letter response status:", response.status);
-        console.error("Format Letter response status text:", response.statusText);
+        console.error(
+          "Format Letter response status text:",
+          response.statusText
+        );
         console.error(
           "Format Letter response headers:",
           Object.fromEntries(response.headers)
         );
-        
+
         const errorText = await response
           .text()
           .catch(() => "No error text available");
         console.error("Format Letter error details:", errorText);
-        
+
         throw new Error(
           `HTTP error! status: ${response.status}, details: ${errorText}`
         );
       }
 
-      return response.body as ReadableStream<Uint8Array>;
+      // 判断响应类型
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("text/event-stream")) {
+        console.log("接收到流式响应");
+        return response.body;
+      } else {
+        console.log("接收到普通响应");
+        const text = await response.text();
+        return text;
+      }
     } catch (error) {
       console.error("Format Letter API error:", error);
       throw error;
     }
-  }
+  },
 };
 
 export type { AxiosResponse, AxiosError } from "axios";
 
-/**
- * 学习计划分析API - 学习规划助理
- * 功能：基于用户背景信息分析并生成学习计划建议
- * 输入：用户背景信息 + 提示词类型
- * 输出：学习计划分析结果和学校推荐
- */
 export async function analyzePlan(
   background: string,
   promptType: "default" | "comprehensive" = "default"

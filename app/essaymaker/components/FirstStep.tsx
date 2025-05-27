@@ -14,14 +14,19 @@ import { InputArea } from "./InputArea";
 import { ResultSection } from "./ResultSection";
 import { debounce } from "../utils/helpers";
 import { QuickActionButtons, ButtonType } from "./QuickActionButtons";
-import { AdvancedInputArea } from "./AdvancedInputArea";
 import { useToast } from "@/hooks/use-toast";
 import { ResultDisplay } from "./ResultDisplay";
 import { DraftResultDisplay } from "./DraftResultDisplay";
 import { AssistantTips } from "./AssistantTips";
 import { Button } from "@/components/ui/button";
-import { CVAssistant } from "./CVAssistant";
-import { RLAssistant } from "./RLAssistant";
+import { CVAssistantMain } from "./cvassistant";
+import { PSAssistantMain } from "./psassistant/index";
+import { RLAssistantMain } from "./rlassistant/RLAssistantMain";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Sparkles, User, FileText, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/use-toast";
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
 interface FirstStepProps {
@@ -166,30 +171,15 @@ export function FirstStep({
   const [simpleQuery, setSimpleQuery] = useState<string>("");
   const [simpleFiles, setSimpleFiles] = useState<File[]>([]);
 
-  // 为复杂输入区域添加专用状态
-  const [direction, setDirection] = useState<string>("");
-  const [requirements, setRequirements] = useState<string>("");
-  const [draftFile, setDraftFile] = useState<File | null>(null);
-  const [otherFiles, setOtherFiles] = useState<File[]>([]);
-
   // 添加提示文本状态
   const [placeholder, setPlaceholder] =
     useState<string>("你可以在这里输入问题或要求...");
-
-  // 新增: 保存提纯版内容的状态
-  const [purifiedDraft, setPurifiedDraft] = useState<string | null>(null);
-  const [isPurifying, setIsPurifying] = useState<boolean>(false);
 
   // 新增: 最终初稿生成状态
   const [finalDraftResult, setFinalDraftResult] =
     useState<DisplayResult | null>(null);
   const [localIsGeneratingFinalDraft, setLocalIsGeneratingFinalDraft] =
     useState<boolean>(false);
-
-  // 新增：保存成绩单解析结果
-  const [transcriptAnalysis, setTranscriptAnalysis] = useState<string | null>(
-    null
-  );
 
   // 跟踪files状态变化
   useEffect(() => {
@@ -203,22 +193,6 @@ export function FirstStep({
       setFiles(simpleFiles);
     }
   }, [inputMode, simpleQuery, simpleFiles, setQuery, setFiles]);
-
-  // 监听result变化，保存提纯版内容
-  useEffect(() => {
-    if (
-      result &&
-      result.isComplete &&
-      inputMode === "draft" &&
-      !localIsGeneratingFinalDraft &&
-      purifiedDraft !== result.content // 添加条件避免重复设置相同的值
-    ) {
-      // 只有当不是在生成最终初稿时，才更新提纯版内容
-      setPurifiedDraft(result.content);
-      setIsPurifying(false);
-      console.log("保存提纯版内容:", result.content.substring(0, 100) + "...");
-    }
-  }, [result, inputMode, localIsGeneratingFinalDraft, purifiedDraft]);
 
   // 从步骤中检测agent类型
   const detectAgentTypeFromSteps = (steps: string[]): AgentType => {
@@ -312,42 +286,6 @@ export function FirstStep({
   // 为跟踪上一次的输入值添加ref
   const prevInputValueRef = useRef<string>("");
 
-  // 监听direction和requirements变化，同步到父组件
-  useEffect(() => {
-    if (onUserInputChange) {
-      // 防止循环更新：只有在值真正变化时才触发更新
-      const newValue = `${direction}|${requirements}|${transcriptAnalysis}`;
-
-      if (newValue !== prevInputValueRef.current) {
-        prevInputValueRef.current = newValue;
-        // 添加成绩单解析结果作为第三个参数
-        onUserInputChange(direction, requirements, transcriptAnalysis);
-      }
-    }
-  }, [direction, requirements, transcriptAnalysis, onUserInputChange]);
-
-  // 为跟踪上一次的文件列表添加ref
-  const prevOtherFilesRef = useRef<File[]>([]);
-
-  // 监听otherFiles变化，同步到父组件
-  useEffect(() => {
-    if (onOtherFilesChange) {
-      // 比较文件列表是否有变化
-      const filesChanged =
-        prevOtherFilesRef.current.length !== otherFiles.length ||
-        otherFiles.some(
-          (file, index) =>
-            prevOtherFilesRef.current[index]?.name !== file.name ||
-            prevOtherFilesRef.current[index]?.size !== file.size
-        );
-
-      if (filesChanged) {
-        prevOtherFilesRef.current = [...otherFiles];
-        onOtherFilesChange(otherFiles);
-      }
-    }
-  }, [otherFiles, onOtherFilesChange]);
-
   // 处理简单输入区域的提交
   const handleSimpleSubmit = useCallback(() => {
     // 验证输入
@@ -394,257 +332,6 @@ export function FirstStep({
     placeholder,
   ]);
 
-  // 处理高级输入提交 - 修改为与简单输入相同的模式
-  const handleAdvancedSubmit = async () => {
-    console.log("FirstStep - handleAdvancedSubmit - 准备数据");
-
-    // 验证必填项
-    // 初稿模式下验证文件
-    if (inputMode === "draft" && !draftFile) {
-      toast({
-        title: "文件缺失",
-        description: "请上传初稿文件",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // 设置提纯中状态
-    setIsPurifying(true);
-    // 清除之前的提纯结果
-    setPurifiedDraft(null);
-    // 清除最终初稿结果
-    setFinalDraftResult(null);
-    // 清除之前的成绩单解析结果
-    setTranscriptAnalysis(null);
-
-    // 构建查询文本
-    let queryText = `请提取该文件中重要的内容`;
-
-    // 分开处理初稿文件和成绩单文件
-    // 记录文件信息到控制台
-    if (draftFile) {
-      console.log(
-        `初稿文件(material_file): ${draftFile.name} (${(
-          draftFile.size / 1024
-        ).toFixed(1)} KB)`
-      );
-    }
-
-    // 记录成绩单文件信息
-    if (otherFiles.length > 0) {
-      console.log(
-        `成绩单文件(transcript_files): ${otherFiles.length}个文件:`,
-        otherFiles.map((file) => file.name).join(", ")
-      );
-    }
-
-    // 使用状态更新回调和Promise来确保状态更新完成
-    await new Promise<void>((resolve) => {
-      // 先设置查询文本
-      setQuery(queryText);
-
-      // 只设置初稿文件，不再合并所有文件
-      if (draftFile) {
-        // 只传递初稿文件到files状态
-        setFiles([draftFile]);
-      } else {
-        setFiles([]);
-      }
-
-      // 先通知父组件关于成绩单文件的变化
-      if (onOtherFilesChange) {
-        // 传递otherFiles后要确保状态已更新再继续
-        onOtherFilesChange(otherFiles);
-      }
-
-      setShowExamples(false);
-      setIsInputExpanded(false);
-
-      // 使用更长的延迟确保所有状态更新完成
-      setTimeout(resolve, 100);
-    });
-
-    // 延迟再次确保状态更新已完成
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
-
-    console.log("状态更新完成，准备调用handleSubmit");
-    console.log("当前初稿文件:", draftFile ? draftFile.name : "无");
-    console.log("当前成绩单文件数量:", otherFiles.length);
-
-    // 重要修改：直接将当前组件内的otherFiles传递给handleSubmit，不依赖于父组件状态更新
-    // 修改handleSubmit的调用方式，传递本地的otherFiles
-    if (typeof handleSubmit === "function" && handleSubmit.length === 0) {
-      // 原始handleSubmit没有参数，我们需要特殊处理
-      // 为了确保成绩单文件能传递到后端，我们需要临时修改一下files状态
-      if (draftFile && otherFiles.length > 0) {
-        console.log("直接使用本地文件调用API");
-        // 直接调用API而不是通过handleSubmit
-        await handleStreamResponse?.(queryText, [draftFile], otherFiles);
-      } else {
-        // 没有成绩单文件或初稿文件，正常调用handleSubmit
-        handleSubmit();
-      }
-    } else {
-      // handleSubmit可以接受参数或者有特殊实现
-      handleSubmit();
-    }
-  };
-
-  // 添加监听器处理结果中的成绩单解析部分
-  useEffect(() => {
-    if (result && result.isComplete && inputMode === "draft") {
-      try {
-        // 尝试从结果中提取成绩单解析部分
-        const content = result.content || "";
-
-        // 检查是否包含成绩单解析部分
-        if (
-          content.includes("成绩单解析") ||
-          content.includes("成绩分析") ||
-          content.includes("GPA分析")
-        ) {
-          console.log("检测到成绩单解析结果");
-
-          // 尝试提取成绩单解析部分
-          // 寻找常见的分隔标记
-          const markers = [
-            "## 成绩单解析",
-            "### 成绩单解析",
-            "## 成绩分析",
-            "### 成绩分析",
-            "## GPA分析",
-            "### GPA分析",
-          ];
-
-          let transcriptSection = "";
-
-          // 尝试找到并提取成绩单解析部分
-          for (const marker of markers) {
-            if (content.includes(marker)) {
-              const startIdx = content.indexOf(marker);
-              let endIdx = content.length;
-
-              // 寻找下一个同级或更高级标题作为结束点
-              const nextHeadingMatch = content
-                .slice(startIdx + marker.length)
-                .match(/^#{1,3}\s/m);
-              if (nextHeadingMatch && nextHeadingMatch.index !== undefined) {
-                endIdx = startIdx + marker.length + nextHeadingMatch.index;
-              }
-
-              transcriptSection = content.slice(startIdx, endIdx).trim();
-              break;
-            }
-          }
-
-          if (transcriptSection) {
-            console.log(
-              "成功提取成绩单解析结果:",
-              transcriptSection.substring(0, 100) + "..."
-            );
-            setTranscriptAnalysis(transcriptSection);
-          }
-        }
-      } catch (error) {
-        console.error("提取成绩单解析失败:", error);
-      }
-    }
-  }, [result, inputMode]);
-
-  // 新增：处理生成最终初稿
-  const handleGenerateFinalDraft = async () => {
-    if (!purifiedDraft) {
-      toast({
-        title: "错误",
-        description: "请先提交初稿文件获取提纯版内容",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!direction.trim()) {
-      toast({
-        title: "错误",
-        description: "请填写申请方向",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log("准备生成最终初稿");
-    console.log(
-      "成绩单解析状态:",
-      transcriptAnalysis ? `存在 (${transcriptAnalysis.length}字节)` : "不存在"
-    );
-
-    try {
-      // 构建查询
-      const finalDraftQuery = `生成最终初稿`;
-
-      // 使用otherFiles作为成绩单文件上传 (已废弃，保留兼容)
-      const transcriptFiles = otherFiles || [];
-
-      if (transcriptFiles.length > 0) {
-        console.log(
-          `上传${transcriptFiles.length}个成绩单文件作为辅助资料:`,
-          transcriptFiles.map((file) => file.name).join(", ")
-        );
-      } else {
-        console.log("没有上传成绩单文件");
-      }
-
-      // 调用函数进行处理，传递所有必要的参数
-      await handleFinalDraftSubmit!(
-        finalDraftQuery,
-        transcriptFiles, // 传递成绩单文件 (已废弃，保留兼容)
-        purifiedDraft, // 传递提纯后的内容
-        direction, // 传递申请方向
-        requirements, // 传递具体要求
-        transcriptAnalysis || undefined // 传递成绩单解析结果，确保类型正确
-      );
-
-      // 结果会自动更新到finalDraft状态
-    } catch (error) {
-      console.error("生成最终初稿时出错:", error);
-      toast({
-        title: "生成失败",
-        description: "生成最终初稿时出现错误，请重试",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // 新增：处理输入变化的函数
-  const handleAdvancedInputChange = useCallback(() => {
-    // 构建查询文本
-    let queryText = `请提取该文件中重要的内容`;
-
-    // 实时更新query
-    console.log("FirstStep - 输入变化，更新查询文本:", queryText);
-    setQuery(queryText);
-  }, [direction, requirements, setQuery]);
-
-  // 新增：处理文件变化的函数
-  const handleAdvancedFileChange = useCallback(() => {
-    // 根据当前阶段处理不同的文件
-    // 如果已经有提纯版内容，意味着我们在第二步，此时要包含其他文件
-    if (purifiedDraft) {
-      // 第二步上传，包含其他辅助文件
-      console.log("FileStep - 第二步文件变化，更新其他辅助文件");
-      const secondStepFiles = otherFiles || [];
-      // 不需要setFiles，因为这些文件会在handleGenerateFinalDraft中使用
-    } else {
-      // 第一步只考虑初稿文件
-      const firstStepFiles = draftFile ? [draftFile] : [];
-      console.log(
-        "FirstStep - 第一步文件变化，更新初稿文件数量:",
-        firstStepFiles.length
-      );
-      setFiles(firstStepFiles);
-    }
-  }, [draftFile, otherFiles, purifiedDraft, setFiles]);
-
   // 处理快速操作按钮点击事件
   const handleDraftClick = () => {
     // 切换到初稿高级输入模式
@@ -656,7 +343,9 @@ export function FirstStep({
   const handleCustomClick = () => {
     setInputMode("simple");
     // 设置适合分稿的简洁提示文本
-    setPlaceholder("例如：请提供南加州大学(USC) 经济学硕士课程的详细信息，包括核心课程、选修课程、学分要求、课程大纲和评估方式。");
+    setPlaceholder(
+      "例如：请提供南加州大学(USC) 经济学硕士课程的详细信息，包括核心课程、选修课程、学分要求、课程大纲和评估方式。"
+    );
     // 不清空simpleQuery，保留用户之前的输入 - 现在会在handleButtonChange中处理
     setIsInputExpanded(true);
   };
@@ -687,12 +376,6 @@ export function FirstStep({
       // 清空所有输入和文件
       setSimpleQuery("");
       setSimpleFiles([]);
-      setDirection("");
-      setRequirements("");
-      setDraftFile(null);
-      setOtherFiles([]);
-      setPurifiedDraft(null); // 清空提纯版内容
-      setFinalDraftResult(null); // 清空最终初稿结果
 
       // 同时清空父组件的状态
       setQuery("");
@@ -713,7 +396,7 @@ export function FirstStep({
       if (setIsCVAssistant) {
         setIsCVAssistant(type === "cv");
       }
-      
+
       // 同步更新inputMode，确保状态一致
       if (type === "draft") {
         setInputMode("draft");
@@ -733,37 +416,21 @@ export function FirstStep({
 
   // 新增：处理清空生成内容
   const handleClearGeneratedContent = useCallback(() => {
-    // 清空提纯版内容
-    setPurifiedDraft(null);
     // 清空最终初稿结果
     setFinalDraftResult(null);
     // 清空父组件的result
     setResult(null);
 
-    // 清空个人陈述初稿
-    if (setFinalDraft) {
-      setFinalDraft(null);
-    }
-
     // 新增：清空用户输入和上传的文件
-    setDirection("");
-    setRequirements("");
-    setDraftFile(null);
-    setOtherFiles([]);
+    setSimpleQuery("");
+    setSimpleFiles([]);
 
     // 显示清空成功提示
     toast({
       title: "已清空",
       description: "所有内容已重置",
     });
-  }, [
-    setResult,
-    setFinalDraft,
-    setDirection,
-    setRequirements,
-    setDraftFile,
-    setOtherFiles,
-  ]);
+  }, [setResult, setFinalDraftResult, setSimpleQuery, setSimpleFiles]);
 
   // 添加状态来跟踪当前助理类型
   const [internalAssistantType, setInternalAssistantType] = useState<
@@ -796,12 +463,9 @@ export function FirstStep({
           return <AssistantTips type="cv" />;
         } else if (internalAssistantType === "rl") {
           return <AssistantTips type="rl" />;
-        } else if (internalAssistantType === "ps") {
-          return <AssistantTips type="ps" />;
-        } else if (internalAssistantType === "custom" && inputMode === "simple") {
-          return <AssistantTips type="custom" />;
-        } else if (inputMode === "draft") {
-          return <AssistantTips type="draft" />;
+        } else if (internalAssistantType === "draft") {
+          // PS助理的提示现在由PSAssistant组件内部处理，这里不再显示
+          return null;
         }
         return null;
       })()}
@@ -810,17 +474,30 @@ export function FirstStep({
       {internalAssistantType === "cv" ? (
         /* CV助理界面 */
         <div className="w-full">
-          <CVAssistant
-            onStepChange={onStepChange}
+          <CVAssistantMain
+            onStepChange={onStepChange || (() => {})}
             setResult={setResult}
           />
         </div>
       ) : internalAssistantType === "rl" ? (
         /* RL助理界面 */
         <div className="w-full">
-          <RLAssistant
+          <RLAssistantMain onStepChange={onStepChange} setResult={setResult} />
+        </div>
+      ) : internalAssistantType === "draft" ? (
+        /* PS助理界面 - 使用新的PSAssistant组件 */
+        <div className="w-full">
+          <PSAssistantMain
             onStepChange={onStepChange}
             setResult={setResult}
+            result={result}
+            finalDraft={finalDraft}
+            setFinalDraft={setFinalDraft}
+            isGeneratingFinalDraft={isGeneratingFinalDraft}
+            handleFinalDraftSubmit={handleFinalDraftSubmit}
+            handleStreamResponse={handleStreamResponse}
+            isLoading={isLoading}
+            onUserInputChange={onUserInputChange}
           />
         </div>
       ) : inputMode === "simple" ? (
@@ -837,47 +514,23 @@ export function FirstStep({
           setFiles={setSimpleFiles}
           placeholder={placeholder} // 传递提示文本
         />
-      ) : (
-        /* 高级输入区域 - 现在只用于draft类型 */
-        <div className="w-full px-4 py-2 overflow-visible">
-          <AdvancedInputArea
-            isLoading={isLoading}
-            type="draft" // 固定为draft类型
-            direction={direction}
-            requirements={requirements}
-            setDirection={setDirection}
-            setRequirements={setRequirements}
-            draftFile={draftFile}
-            otherFiles={otherFiles}
-            setDraftFile={setDraftFile}
-            setOtherFiles={setOtherFiles}
-            onSubmitClick={handleAdvancedSubmit}
-            onInputChange={handleAdvancedInputChange}
-            onFileChange={handleAdvancedFileChange}
-            purifiedDraft={purifiedDraft}
-            isPurifying={isPurifying}
-            onGenerateFinalDraft={handleGenerateFinalDraft}
-            onClearGeneratedContent={handleClearGeneratedContent}
-            onStepChange={onStepChange} // 添加跳转步骤的回调
-          />
-        </div>
-      )}
+      ) : null}
 
       {/* 结果区域 - 如果有结果且不是CV助理或RL助理模式 */}
       <div ref={resultRef}>
-        {/* 不在CV助理或RL助理模式时才显示结果区域 */}
-        {internalAssistantType !== "cv" && 
-         internalAssistantType !== "rl" && 
-         inputMode !== "draft" && 
-         result && 
-         !shouldHideResult && (
-          <ResultSection
-            result={result}
-            expandedSteps={expandedSteps}
-            setExpandedSteps={setExpandedSteps}
-            handleStepClick={handleStepClick}
-          />
-        )}
+        {/* 不在CV助理、RL助理或PS助理模式时才显示结果区域 */}
+        {internalAssistantType !== "cv" &&
+          internalAssistantType !== "rl" &&
+          internalAssistantType !== "draft" &&
+          result &&
+          !shouldHideResult && (
+            <ResultSection
+              result={result}
+              expandedSteps={expandedSteps}
+              setExpandedSteps={setExpandedSteps}
+              handleStepClick={handleStepClick}
+            />
+          )}
       </div>
     </div>
   );

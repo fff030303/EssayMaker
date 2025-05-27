@@ -2,14 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, Loader2, Send, File } from "lucide-react";
-import { DisplayResult } from "../types";
-import { DraftResultDisplay } from "./DraftResultDisplay";
+import { DisplayResult } from "../../types";
+import { DraftResultDisplay } from "../DraftResultDisplay";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 
-interface DraftGenerationProps {
+interface PSReportAndDraftDisplayProps {
   result: DisplayResult | null;
   finalDraft: DisplayResult | null;
   finalDraftResult: DisplayResult | null;
@@ -24,7 +24,7 @@ interface DraftGenerationProps {
   setHasSubmittedDraft?: (hasSubmitted: boolean) => void;
 }
 
-export function DraftGeneration({
+export function PSReportAndDraftDisplay({
   result,
   finalDraft,
   finalDraftResult,
@@ -37,7 +37,7 @@ export function DraftGeneration({
   transcriptAnalysis = null,
   setShowStepNavigation,
   setHasSubmittedDraft,
-}: DraftGenerationProps) {
+}: PSReportAndDraftDisplayProps) {
   const [generatingFinalDraft, setGeneratingFinalDraft] = useState(false);
   const { toast } = useToast();
 
@@ -52,7 +52,17 @@ export function DraftGeneration({
   }, [finalDraft]);
 
   const handleGenerateFinalDraft = () => {
+    console.log("[DRAFT-GEN] 🎯 handleGenerateFinalDraft 被调用");
+    console.log("[DRAFT-GEN] 🎯 检查条件:", {
+      hasResult: !!result,
+      hasResultContent: !!result?.content,
+      userDirection: userDirection,
+      userDirectionTrim: userDirection.trim(),
+      onGenerateFinalDraftExists: !!onGenerateFinalDraft,
+    });
+
     if (!result || !result.content) {
+      console.log("[DRAFT-GEN] ❌ 缺少result或content");
       toast({
         variant: "destructive",
         title: "生成失败",
@@ -63,6 +73,7 @@ export function DraftGeneration({
     }
 
     if (!userDirection.trim()) {
+      console.log("[DRAFT-GEN] ❌ 缺少userDirection");
       toast({
         variant: "destructive",
         title: "生成失败",
@@ -74,19 +85,27 @@ export function DraftGeneration({
 
     // 确保已提交状态为true，这样用户在不同步骤间导航时不会有问题
     if (setHasSubmittedDraft) {
-      console.log("点击生成初稿按钮，设置已提交文件状态为true");
+      console.log("[DRAFT-GEN] ✅ 设置已提交文件状态为true");
       setHasSubmittedDraft(true);
     }
 
     // 设置本地生成状态
+    console.log("[DRAFT-GEN] 🔄 设置本地生成状态为true");
     setGeneratingFinalDraft(true);
 
     // 调用生成函数
     if (onGenerateFinalDraft) {
-      console.log("开始生成个人陈述初稿，使用现有的素材整理报告");
-      onGenerateFinalDraft();
+      console.log("[DRAFT-GEN] 🚀 调用onGenerateFinalDraft");
+      console.log("[DRAFT-GEN] 🚀 使用现有的素材整理报告");
+      try {
+        onGenerateFinalDraft();
+        console.log("[DRAFT-GEN] ✅ onGenerateFinalDraft调用成功");
+      } catch (error) {
+        console.error("[DRAFT-GEN] ❌ onGenerateFinalDraft调用出错:", error);
+        setGeneratingFinalDraft(false);
+      }
     } else {
-      console.error("未提供onGenerateFinalDraft回调函数");
+      console.error("[DRAFT-GEN] ❌ 未提供onGenerateFinalDraft回调函数");
       setGeneratingFinalDraft(false);
     }
   };

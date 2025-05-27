@@ -14,6 +14,7 @@ import { useStepHandlers } from "./handlers/useStepHandlers";
 import { useFirstStep } from "./steps/useFirstStep";
 import { useSecondStep } from "./steps/useSecondStep";
 import { useThirdStep } from "./steps/useThirdStep";
+import { usePSDraft } from "../components/psassistant/hooks/usePSDraft";
 
 export function useEssayMaker(session: Session | null) {
   const { toast } = useToast();
@@ -86,18 +87,25 @@ export function useEssayMaker(session: Session | null) {
 
   // 添加最终初稿状态
   const [finalDraft, setFinalDraft] = useState<DisplayResult | null>(null);
-  const [isGeneratingFinalDraft, setIsGeneratingFinalDraft] = useState<boolean>(false);
+  const [isGeneratingFinalDraft, setIsGeneratingFinalDraft] =
+    useState<boolean>(false);
 
   // 跟踪files状态变化
   useEffect(() => {
-    console.log("useEssayMaker - files状态更新 - 文件数量:", files.length);
+    console.log("[ESSAY-MAKER] files状态更新 - 文件数量:", files.length);
   }, [files]);
 
   // 跟踪otherFiles状态变化
   useEffect(() => {
-    console.log("useEssayMaker - otherFiles状态更新 - 文件数量:", otherFiles.length);
+    console.log(
+      "[ESSAY-MAKER] otherFiles状态更新 - 文件数量:",
+      otherFiles.length
+    );
     if (otherFiles.length > 0) {
-      console.log("useEssayMaker - otherFiles包含文件:", otherFiles.map(f => f.name).join(", "));
+      console.log(
+        "[ESSAY-MAKER] otherFiles包含文件:",
+        otherFiles.map((f) => f.name).join(", ")
+      );
     }
   }, [otherFiles]);
 
@@ -132,6 +140,20 @@ export function useEssayMaker(session: Session | null) {
     toast,
   });
 
+  // 使用PS初稿生成钩子
+  const { isGenerating: isDraftGenerating, handleDraftGeneration } = usePSDraft(
+    {
+      setFinalDraft,
+      toast,
+      session,
+    }
+  );
+
+  // 同步isGeneratingFinalDraft状态
+  useEffect(() => {
+    setIsGeneratingFinalDraft(isDraftGenerating);
+  }, [isDraftGenerating]);
+
   // 处理案例点击
   const handleExampleClick = (content: string) => {
     setQuery(content);
@@ -139,9 +161,11 @@ export function useEssayMaker(session: Session | null) {
 
   // 处理其他文件变化的回调
   const handleOtherFilesChange = (newFiles: File[]) => {
-    console.log(`useEssayMaker - handleOtherFilesChange - 接收到${newFiles.length}个成绩单文件:`, 
-      newFiles.length > 0 ? newFiles.map(f => f.name).join(", ") : "无");
-    
+    console.log(
+      `[ESSAY-MAKER] handleOtherFilesChange - 接收到${newFiles.length}个成绩单文件:`,
+      newFiles.length > 0 ? newFiles.map((f) => f.name).join(", ") : "无"
+    );
+
     // 设置otherFiles状态
     setOtherFiles(newFiles);
   };
@@ -158,25 +182,37 @@ export function useEssayMaker(session: Session | null) {
       return;
     }
 
-    console.log("useEssayMaker - handleSubmit - 提交时初稿文件数量:", files.length);
-    console.log("useEssayMaker - handleSubmit - 提交时成绩单文件数量:", otherFiles.length);
-    
+    console.log(
+      "[ESSAY-MAKER] handleSubmit - 提交时初稿文件数量:",
+      files.length
+    );
+    console.log(
+      "[ESSAY-MAKER] handleSubmit - 提交时成绩单文件数量:",
+      otherFiles.length
+    );
+
     if (files.length > 0) {
-      console.log("useEssayMaker - handleSubmit - 初稿文件:", files.map(f => f.name).join(", "));
+      console.log(
+        "[ESSAY-MAKER] handleSubmit - 初稿文件:",
+        files.map((f) => f.name).join(", ")
+      );
     }
     if (otherFiles.length > 0) {
-      console.log("useEssayMaker - handleSubmit - 成绩单文件:", otherFiles.map(f => f.name).join(", "));
+      console.log(
+        "[ESSAY-MAKER] handleSubmit - 成绩单文件:",
+        otherFiles.map((f) => f.name).join(", ")
+      );
     }
-    
+
     setShowExamples(false);
     setIsInputExpanded(false); // 开始生成时自动收起输入框
-    
+
     // 确保调用API前已有正确的文件数量
-    console.log("useEssayMaker - handleSubmit - 准备调用API，传递参数:");
-    console.log("- 查询文本:", trimmedQuery);
-    console.log("- 初稿文件数量:", files.length);
-    console.log("- 成绩单文件数量:", otherFiles.length);
-    
+    console.log("[ESSAY-MAKER] handleSubmit - 准备调用API，传递参数:");
+    console.log("[ESSAY-MAKER] - 查询文本:", trimmedQuery);
+    console.log("[ESSAY-MAKER] - 初稿文件数量:", files.length);
+    console.log("[ESSAY-MAKER] - 成绩单文件数量:", otherFiles.length);
+
     // 调用API处理
     await handleStreamResponse(trimmedQuery, files, otherFiles);
   };
@@ -199,192 +235,28 @@ export function useEssayMaker(session: Session | null) {
 
   // 生成最终初稿的流式处理函数
   const handleFinalDraftSubmit = async (
-    draftQuery: string, 
+    draftQuery: string,
     draftFiles: File[],
     purifiedContent: string,
     direction: string,
     requirements?: string,
-    transcriptAnalysis?: string | null  // 添加成绩单解析参数
+    transcriptAnalysis?: string | null // 添加成绩单解析参数
   ) => {
-    try {
-      // 检查参数
-      if (!purifiedContent) {
-        toast({
-          title: "错误",
-          description: "提纯内容不能为空",
-          variant: "destructive",
-        });
-        return;
-      }
+    console.log("[ESSAY-MAKER] 🚀 handleFinalDraftSubmit 开始执行");
+    console.log("[ESSAY-MAKER] 参数:", {
+      direction,
+      requirements,
+      purifiedContentLength: purifiedContent.length,
+      transcriptAnalysisLength: transcriptAnalysis?.length || 0,
+    });
 
-      // 设置生成状态
-      setIsGeneratingFinalDraft(true);
-      
-      // 构建定制需求组合文本
-      const combinedRequirements = `申请方向：${direction}${requirements ? `，具体要求：${requirements}` : ''}`;
-      
-      // 保存当前的result状态，确保不会被修改
-      const currentResult = result;
-      
-      // 初始化finalDraft状态
-      setFinalDraft({
-        content: "",
-        timestamp: new Date().toISOString(),
-        steps: [],
-        currentStep: "正在开始生成最终初稿...",
-        isComplete: false,
-      });
-
-      console.log("============= 初稿生成请求准备 =============");
-      console.log("提纯内容长度:", purifiedContent.length, "字节");
-      console.log("申请方向:", direction);
-      console.log("具体要求:", requirements || "无");
-      console.log("成绩单解析:", transcriptAnalysis ? `存在(${transcriptAnalysis.length}字节)` : "不存在");
-      if (transcriptAnalysis) {
-        console.log("成绩单解析前100字符:", transcriptAnalysis.substring(0, 100) + "...");
-      }
-      console.log("文件数量(已废弃):", draftFiles.length);
-
-      // 使用新的API函数，适应新的参数格式
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("请求超时")), 30000); // 30秒超时
-      });
-
-      // 使用新的API服务函数
-      const streamPromise = apiService.streamFinalDraftWithFiles({
-        simplified_material: purifiedContent,
-        transcript_analysis: transcriptAnalysis || undefined,  // 改用文本形式传递成绩单解析
-        combined_requirements: combinedRequirements,
-      });
-      
-      // 使用 Promise.race 实现超时处理
-      const stream = (await Promise.race([
-        streamPromise,
-        timeoutPromise,
-      ])) as ReadableStream<Uint8Array> | null;
-
-      if (!stream) {
-        throw new Error("无法获取响应流");
-      }
-
-      try {
-        // 处理流式响应
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let mergedSteps: string[] = [];
-        let currentStep = "正在开始生成最终初稿...";
-        let accumulatedContent = "";
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            // 解码二进制数据为文本
-            const chunkText = decoder.decode(value, { stream: true });
-            buffer += chunkText;
-            
-            // 按行处理buffer
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || ""; // 最后一行可能不完整，保留到下一次处理
-            
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-
-                  switch (data.type) {
-                    case "step":
-                      // 更新当前步骤
-                      currentStep = data.content;
-                      mergedSteps.push(data.content);
-
-                      // 更新结果
-                      setFinalDraft((prev) => ({
-                        ...prev!,
-                        currentStep,
-                        steps: [...mergedSteps],
-                      }));
-                      break;
-
-                    case "content":
-                      // 获取新内容
-                      const newContent = data.content || "";
-                      
-                      // 处理可能的重复内容
-                      if (
-                        newContent.length > 200 &&
-                        accumulatedContent.includes(newContent)
-                      ) {
-                        console.log("检测到大段重复内容，忽略");
-                        break; // 忽略这次更新
-                      }
-
-                      // 如果新内容包含已累积的内容，使用新内容替换
-                      if (
-                        newContent.length > 500 &&
-                        newContent.includes(accumulatedContent) &&
-                        accumulatedContent.length > 200
-                      ) {
-                        accumulatedContent = newContent;
-                      } else {
-                        // 正常累积内容
-                        accumulatedContent += newContent;
-                      }
-
-                      // 更新UI
-                      setFinalDraft((prev) => ({
-                        ...prev!,
-                        content: accumulatedContent,
-                      }));
-                      break;
-                    
-                    case "complete":
-                      // 完成状态
-                      setFinalDraft((prev) => ({
-                        ...prev!,
-                        isComplete: true,
-                        currentStep: undefined,
-                      }));
-                      console.log("最终初稿生成完成");
-                      break;
-                  }
-                } catch (error) {
-                  console.error("JSON解析错误:", error);
-                }
-              }
-            }
-          }
-        } catch (streamError) {
-          console.error("读取流数据时出错:", streamError);
-          throw streamError;
-        } finally {
-          reader.releaseLock();
-        }
-        
-        // 确保设置完成状态
-        setFinalDraft((prev) => ({
-          ...prev!,
-          isComplete: true,
-          currentStep: undefined,
-        }));
-        
-        console.log("最终初稿生成完成");
-      } catch (error) {
-        console.error("处理流式响应时出错:", error);
-        throw error;
-      }
-    } catch (error) {
-      console.error("生成最终初稿时出错:", error);
-      toast({
-        title: "生成失败",
-        description: "生成最终初稿时出现错误，请重试",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingFinalDraft(false);
-    }
+    // 直接调用专门的初稿生成hook
+    await handleDraftGeneration(
+      purifiedContent,
+      direction,
+      requirements,
+      transcriptAnalysis
+    );
   };
 
   // 返回所有需要的状态和函数

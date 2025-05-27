@@ -28,6 +28,7 @@ interface StepNavigationProps {
   isRLAssistant: boolean;
   isDraftAssistant?: boolean;
   hasSubmittedDraft?: boolean;
+  hasAnalysisResult?: boolean;
 }
 
 export function StepNavigation({
@@ -44,6 +45,7 @@ export function StepNavigation({
   isRLAssistant = false,
   isDraftAssistant = false,
   hasSubmittedDraft = false,
+  hasAnalysisResult = false,
 }: StepNavigationProps) {
   // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理且不是RL助理且不是分稿助理，则不显示导航
   if (
@@ -59,7 +61,12 @@ export function StepNavigation({
 
   // 确定总步骤数
   const totalSteps =
-    (shouldShowMultiStepFlow || isDraftAssistant) && !isProfessorSearch && !isPSAssistant && !isRLAssistant ? 3 : 2;
+    (shouldShowMultiStepFlow || isDraftAssistant) &&
+    !isProfessorSearch &&
+    !isPSAssistant &&
+    !isRLAssistant
+      ? 3
+      : 2;
 
   return (
     <div
@@ -162,48 +169,51 @@ export function StepNavigation({
           </div>
 
           {/* 如果是常规多步骤流程或分稿助理，显示第三步标签 */}
-          {(shouldShowMultiStepFlow || isDraftAssistant) && !isProfessorSearch && !isPSAssistant && !isRLAssistant && (
-            <>
-              {/* 分隔符 */}
-              <div className="text-muted-foreground/30 px-2">/</div>
+          {(shouldShowMultiStepFlow || isDraftAssistant) &&
+            !isProfessorSearch &&
+            !isPSAssistant &&
+            !isRLAssistant && (
+              <>
+                {/* 分隔符 */}
+                <div className="text-muted-foreground/30 px-2">/</div>
 
-              {/* 步骤3标签 */}
-              <div
-                onClick={() => {
-                  if (
-                    !(
-                      currentStep < 3 &&
+                {/* 步骤3标签 */}
+                <div
+                  onClick={() => {
+                    if (
+                      !(
+                        currentStep < 3 &&
+                        (!hasSecondStepResult || isThirdStepLoading)
+                      )
+                    ) {
+                      onStepChange(3);
+                    }
+                  }}
+                  className={cn(
+                    "px-3 py-1 text-xs cursor-pointer relative flex items-center",
+                    "border-0 hover:bg-transparent transition-colors duration-150",
+                    currentStep === 3
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground",
+                    currentStep < 3 &&
                       (!hasSecondStepResult || isThirdStepLoading)
-                    )
-                  ) {
-                    onStepChange(3);
-                  }
-                }}
-                className={cn(
-                  "px-3 py-1 text-xs cursor-pointer relative flex items-center",
-                  "border-0 hover:bg-transparent transition-colors duration-150",
-                  currentStep === 3
-                    ? "text-primary font-medium"
-                    : "text-muted-foreground",
-                  currentStep < 3 &&
-                    (!hasSecondStepResult || isThirdStepLoading)
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                )}
-              >
-                <div className="flex items-center justify-center">
-                  最终文章
-                  {currentStep === 3 && hasFinalResult && (
-                    <Check className="h-3 w-3 ml-1 text-primary" />
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  )}
+                >
+                  <div className="flex items-center justify-center">
+                    最终文章
+                    {currentStep === 3 && hasFinalResult && (
+                      <Check className="h-3 w-3 ml-1 text-primary" />
+                    )}
+                  </div>
+                  {/* 当前步骤的下划线指示器 */}
+                  {currentStep === 3 && (
+                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full"></div>
                   )}
                 </div>
-                {/* 当前步骤的下划线指示器 */}
-                {currentStep === 3 && (
-                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full"></div>
-                )}
-              </div>
-            </>
-          )}
+              </>
+            )}
         </nav>
       </div>
     </div>

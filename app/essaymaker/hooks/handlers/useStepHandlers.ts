@@ -46,16 +46,24 @@ export function useStepHandlers({
 }: UseStepHandlersProps) {
   // 处理步骤切换
   const handleStepChange = (step: number) => {
+    console.log("🔄 useStepHandlers - handleStepChange 被调用:", {
+      fromStep: currentStep,
+      toStep: step,
+      timestamp: new Date().toISOString(),
+    });
+
     setCurrentStep(step);
+    console.log("✅ useStepHandlers - setCurrentStep 调用完成，新步骤:", step);
 
     // 添加自动滚动功能
-    console.log("useStepHandlers - 步骤切换，滚动到页面顶部");
+    console.log("📜 useStepHandlers - 准备滚动到页面顶部");
     setTimeout(() => {
       // 滚动到页面顶部
       window.scrollTo({
         top: 0,
         behavior: "smooth",
       });
+      console.log("✅ useStepHandlers - 滚动完成");
     }, 100);
   };
 
@@ -167,16 +175,17 @@ export function useStepHandlers({
   // 当结果完成时，确保显示全部内容并自动收起
   useEffect(() => {
     // 检查是否真正完成生成
-    const isFullyComplete = result?.isComplete && 
-                           result.content && 
-                           !result.currentStep && // 确保没有正在执行的步骤
-                           result.content.length > 0 && // 确保有内容
-                           displayedContent === result.content; // 确保流式内容已完全显示
+    const isFullyComplete =
+      result?.isComplete &&
+      result.content &&
+      !result.currentStep && // 确保没有正在执行的步骤
+      result.content.length > 0 && // 确保有内容
+      displayedContent === result.content; // 确保流式内容已完全显示
 
     if (isFullyComplete) {
       setDisplayedContent(result.content);
       setTypingProgress(result.content.length);
-      
+
       // 当内容生成完毕且内容较长时，自动收起
       if (result.content.length > previewLength * 1.5) {
         // 延迟1秒收起，让用户能先看到完整内容
@@ -186,11 +195,18 @@ export function useStepHandlers({
             setIsCollapsed(true);
           }
         }, 1000);
-        
+
         return () => clearTimeout(timer);
       }
     }
-  }, [result?.isComplete, result?.content, result?.currentStep, previewLength, autoScroll, displayedContent]);
+  }, [
+    result?.isComplete,
+    result?.content,
+    result?.currentStep,
+    previewLength,
+    autoScroll,
+    displayedContent,
+  ]);
 
   return {
     handleStepChange,

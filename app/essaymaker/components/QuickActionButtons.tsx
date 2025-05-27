@@ -35,7 +35,9 @@ interface QuickActionButtonsProps {
   setIsCVAssistant?: (isCV: boolean) => void; // 新增 CV 助理状态设置
   setIsRLAssistant?: (isRL: boolean) => void; // 新增 RL 助理状态设置
   setShowStepNavigation?: (show: boolean) => void; // 新增属性，控制是否显示步骤导航
-  setCurrentAssistantType?: (type: "draft" | "cv" | "ps" | "custom" | "rl") => void; // 添加新的属性
+  setCurrentAssistantType?: (
+    type: "draft" | "cv" | "ps" | "custom" | "rl"
+  ) => void; // 添加新的属性
 }
 
 export function QuickActionButtons({
@@ -57,9 +59,18 @@ export function QuickActionButtons({
   const [selectedButton, setSelectedButton] = useState<ButtonType>(null);
   // 创建一个ref用于PS初稿助理按钮
   const psAssistantButtonRef = useRef<HTMLButtonElement>(null);
+  // 添加初始化标记，防止重复初始化
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // 在组件加载时自动触发PS初稿助理界面
+  // 在组件加载时自动触发PS初稿助理界面 - 只执行一次
   useEffect(() => {
+    if (hasInitialized) {
+      console.log("[QUICK-BUTTONS] 已初始化，跳过重复初始化");
+      return;
+    }
+
+    console.log("[QUICK-BUTTONS] 开始初始化");
+
     if (onDraftClick) {
       onDraftClick();
     }
@@ -87,7 +98,11 @@ export function QuickActionButtons({
     if (setCurrentAssistantType) {
       setCurrentAssistantType("draft");
     }
-  }, []);
+
+    // 标记已初始化
+    setHasInitialized(true);
+    console.log("[QUICK-BUTTONS] 初始化完成");
+  }, [hasInitialized]); // 依赖hasInitialized而不是空数组
 
   // 处理按钮点击事件
   const handleButtonClick = (type: ButtonType, callback?: () => void) => {
@@ -154,8 +169,7 @@ export function QuickActionButtons({
     <Card className="w-full max-w-[650px] mx-auto my-2 mt-7 border-0 shadow-none">
       <CardContent className="p-2">
         <div className="flex flex-wrap justify-center gap-2">
-
-        <Button
+          <Button
             onClick={() => handleButtonClick("cv", onCvClick)}
             variant={getButtonVariant("cv")}
             size="sm"
@@ -163,7 +177,7 @@ export function QuickActionButtons({
           >
             CV助理
           </Button>
-          
+
           <Button
             onClick={() => handleButtonClick("rl", onRlClick)}
             variant={getButtonVariant("rl")}
@@ -172,7 +186,6 @@ export function QuickActionButtons({
           >
             RL助理
           </Button>
-
 
           <Button
             ref={psAssistantButtonRef}
@@ -194,16 +207,15 @@ export function QuickActionButtons({
           </Button>
 
           <Button
-            onClick={() => handleButtonClick("schoolProfessor", onSchoolProfessorClick)}
+            onClick={() =>
+              handleButtonClick("schoolProfessor", onSchoolProfessorClick)
+            }
             variant={getButtonVariant("schoolProfessor")}
             size="sm"
             className="font-medium"
           >
             套瓷助理
           </Button>
-
-          
-
 
           <Button
             onClick={() => handleButtonClick("question", onQuestionClick)}
