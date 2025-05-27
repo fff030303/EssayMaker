@@ -16,6 +16,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { useStreamResponse } from "../hooks/useStreamResponse";
 
 interface CVAssistantProps {
@@ -26,6 +27,9 @@ interface CVAssistantProps {
 export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
+  const [customRolePrompt, setCustomRolePrompt] = useState<string>("");
+  const [customTaskPrompt, setCustomTaskPrompt] = useState<string>("");
+  const [customOutputFormatPrompt, setCustomOutputFormatPrompt] = useState<string>("");
   const [isDraggingResume, setIsDraggingResume] = useState(false);
   const [isDraggingSupport, setIsDraggingSupport] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -160,7 +164,13 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
     
     try {
       // 使用apiService中的generateResume方法
-      const response = await apiService.generateResume(resumeFile, supportFiles);
+      const response = await apiService.generateResume(
+        resumeFile, 
+        supportFiles,
+        customRolePrompt,
+        customTaskPrompt,
+        customOutputFormatPrompt
+      );
       console.log('API响应类型:', typeof response);
       
       // 检查响应类型
@@ -210,7 +220,7 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
             }
           },
           realtimeTypewriter: true, // 启用实时接收+逐字显示模式
-          charDelay: 2 // 字符显示间隔5毫秒
+          charDelay: 1 // 字符显示间隔1毫秒
         });
       } else {
         // 普通JSON响应
@@ -472,6 +482,48 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
               </div>
             </div>
 
+            {/* 自定义提示词输入框 */}
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  自定义角色提示词
+                </label>
+                <Textarea
+                  placeholder="例如：你是一位经验丰富的简历优化专家，擅长突出申请者的专业技能和项目经验..."
+                  className="min-h-[80px] resize-y"
+                  value={customRolePrompt}
+                  onChange={(e) => setCustomRolePrompt(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  自定义任务提示词
+                </label>
+                <Textarea
+                  placeholder="例如：请根据提供的材料，优化简历以突出申请者的技术能力和项目经验..."
+                  className="min-h-[80px] resize-y"
+                  value={customTaskPrompt}
+                  onChange={(e) => setCustomTaskPrompt(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  自定义输出格式提示词
+                </label>
+                <Textarea
+                  placeholder="例如：请按照标准的简历格式优化，包含教育背景、工作经验、技能和项目经验等部分..."
+                  className="min-h-[80px] resize-y"
+                  value={customOutputFormatPrompt}
+                  onChange={(e) => setCustomOutputFormatPrompt(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
             {/* 其他说明区域 */}
             <div className="mt-2">
               <p className="text-xs text-gray-500">
@@ -492,6 +544,9 @@ export function CVAssistant({ onStepChange, setResult }: CVAssistantProps = {}) 
                 // 清空所有输入和文件
                 setResumeFile(null);
                 setSupportFiles([]);
+                setCustomRolePrompt("");
+                setCustomTaskPrompt("");
+                setCustomOutputFormatPrompt("");
                 
                 // 重置文件输入元素
                 if (resumeInputRef.current) {

@@ -1,7 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Loader2, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { DisplayResult } from "../types";
 import { DraftResultDisplay } from "./DraftResultDisplay";
 import { useState } from "react";
@@ -26,6 +29,11 @@ export function RLGeneration({
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const { processStream } = useStreamResponse();
+  
+  // 自定义提示词状态
+  const [customRolePrompt, setCustomRolePrompt] = useState("");
+  const [customTaskPrompt, setCustomTaskPrompt] = useState("");
+  const [customOutputFormatPrompt, setCustomOutputFormatPrompt] = useState("");
 
   // 处理生成推荐信
   const handleGenerateLetter = async () => {
@@ -45,12 +53,12 @@ export function RLGeneration({
     setIsGenerating(true);
     try {
       console.log("调用格式化推荐信API...");
-      // 调用格式化推荐信API
+      // 调用格式化推荐信API，使用用户输入的自定义提示词
       const response = await apiService.formatRecommendationLetter(
         result.content,
-        "你是一位专业的推荐信写作专家",
-        "请根据分析报告生成一份专业的推荐信",
-        "请按照标准的推荐信格式输出，包括称呼、正文、结尾等部分"
+        customRolePrompt,
+        customTaskPrompt,
+        customOutputFormatPrompt
       );
 
       console.log("API响应:", response);
@@ -85,7 +93,7 @@ export function RLGeneration({
             });
           },
           realtimeTypewriter: true, // 启用实时接收+逐字显示模式
-          charDelay: 2 // 字符显示间隔5毫秒
+          charDelay: 1 // 字符显示间隔1毫秒
         });
       }
     } catch (error) {
@@ -128,62 +136,139 @@ export function RLGeneration({
           {/* 当有格式化推荐信时使用双列布局 */}
           {formattedLetter ? (
             // 有格式化推荐信时的布局
-            <div className="flex flex-col lg:flex-row gap-6 xl:gap-10 justify-center">
-              {/* 左侧 - 推荐信分析报告 */}
-              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
-                <div className="rounded-lg overflow-visible flex-grow h-full">
-                  <DraftResultDisplay
-                    result={result}
-                    title="推荐信分析报告"
-                    key="letter-analysis"
-                    headerActions={
-                      <Button
-                        disabled={
-                          isGenerating ||
-                          !result.content ||
-                          !result.isComplete
-                        }
-                        onClick={handleGenerateLetter}
-                        title={
-                          !result.isComplete
-                            ? "请等待内容创作完成后再生成推荐信"
-                            : ""
-                        }
-                        variant="default"
-                        size="sm"
-                        className="mr-2"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            生成中...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="h-3 w-3 mr-1" />
-                            生成推荐信
-                          </>
-                        )}
-                      </Button>
-                    }
-                  />
+            <div className="flex flex-col">
+              {/* 自定义提示词输入区域 - 在双列布局上方 */}
+              <div className="mb-6 p-6 border rounded-lg bg-card">
+                <h3 className="text-lg font-semibold mb-4">自定义提示词设置</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="role-prompt">角色提示词</Label>
+                    <Input
+                      id="role-prompt"
+                      value={customRolePrompt}
+                      onChange={(e) => setCustomRolePrompt(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="task-prompt">任务提示词</Label>
+                    <Input
+                      id="task-prompt"
+                      value={customTaskPrompt}
+                      onChange={(e) => setCustomTaskPrompt(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="format-prompt">输出格式提示词</Label>
+                    <Textarea
+                      id="format-prompt"
+                      value={customOutputFormatPrompt}
+                      onChange={(e) => setCustomOutputFormatPrompt(e.target.value)}
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* 右侧 - 格式化推荐信 */}
-              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
-                <div className="rounded-lg overflow-visible flex-grow h-full">
-                  <DraftResultDisplay
-                    result={formattedLetter}
-                    title="专业推荐信"
-                    key="formatted-letter"
-                  />
+              {/* 双列布局区域 */}
+              <div className="flex flex-col lg:flex-row gap-6 xl:gap-10 justify-center">
+                {/* 左侧 - 推荐信分析报告 */}
+                <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
+                  <div className="rounded-lg overflow-visible flex-grow h-full">
+                    <DraftResultDisplay
+                      result={result}
+                      title="推荐信分析报告"
+                      key="letter-analysis"
+                      headerActions={
+                        <Button
+                          disabled={
+                            isGenerating ||
+                            !result.content ||
+                            !result.isComplete
+                          }
+                          onClick={handleGenerateLetter}
+                          title={
+                            !result.isComplete
+                              ? "请等待内容创作完成后再生成推荐信"
+                              : ""
+                          }
+                          variant="default"
+                          size="sm"
+                          className="mr-2"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              生成中...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-3 w-3 mr-1" />
+                              生成推荐信
+                            </>
+                          )}
+                        </Button>
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* 右侧 - 生成的推荐信 */}
+                <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
+                  <div className="rounded-lg overflow-visible flex-grow h-full">
+                    <DraftResultDisplay
+                      result={formattedLetter}
+                      title="生成的推荐信"
+                      key="formatted-letter"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
             // 没有格式化推荐信时的布局
             <div className="w-full max-w-[1300px] mx-auto">
+              {/* 自定义提示词输入区域 */}
+              <div className="mb-6 p-6 border rounded-lg bg-card">
+                <h3 className="text-lg font-semibold mb-4">自定义提示词设置</h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="role-prompt">角色提示词</Label>
+                    <Input
+                      id="role-prompt"
+                      value={customRolePrompt}
+                      onChange={(e) => setCustomRolePrompt(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="task-prompt">任务提示词</Label>
+                    <Input
+                      id="task-prompt"
+                      value={customTaskPrompt}
+                      onChange={(e) => setCustomTaskPrompt(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="format-prompt">输出格式提示词</Label>
+                    <Textarea
+                      id="format-prompt"
+                      value={customOutputFormatPrompt}
+                      onChange={(e) => setCustomOutputFormatPrompt(e.target.value)}
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-lg overflow-visible pb-6">
                 <DraftResultDisplay
                   result={result}

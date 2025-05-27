@@ -64,7 +64,10 @@ module.exports = {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography")
+  ],
   // 启用所有变体的透明度修饰符
   safelist: [
     {

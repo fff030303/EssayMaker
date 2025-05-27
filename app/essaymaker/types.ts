@@ -9,6 +9,7 @@ export interface DisplayResult {
   _isStepContent?: boolean;
   // 添加成绩单解析结果字段
   transcriptAnalysis?: string;
+  stream?: ReadableStream<Uint8Array>; // 添加stream属性
 }
 
 // 定义Agent类型枚举

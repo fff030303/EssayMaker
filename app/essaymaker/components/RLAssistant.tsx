@@ -40,6 +40,10 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
   
   // 替换推荐信相关字段为写作需求
   const [writingRequirements, setWritingRequirements] = useState<string>("");
+  // 添加自定义提示词状态
+  const [customRolePrompt, setCustomRolePrompt] = useState<string>("");
+  const [customTaskPrompt, setCustomTaskPrompt] = useState<string>("");
+  const [customOutputFormatPrompt, setCustomOutputFormatPrompt] = useState<string>("");
 
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const supportInputRef = useRef<HTMLInputElement>(null);
@@ -208,7 +212,10 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
       const response = await apiService.generateRecommendationLetter(
         resumeFile,
         writingRequirements,
-        supportFiles
+        supportFiles,
+        customRolePrompt,
+        customTaskPrompt,
+        customOutputFormatPrompt
       );
       
       // 检查响应类型
@@ -258,7 +265,7 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
             }
           },
           realtimeTypewriter: true, // 启用实时接收+逐字显示模式
-          charDelay: 5 // 字符显示间隔5毫秒
+          charDelay: 1 // 字符显示间隔1毫秒
         });
       } else {
         // 处理非流式响应
@@ -355,62 +362,106 @@ export function RLAssistant({ onStepChange, setResult }: RLAssistantProps = {}) 
           <CardContent>
             <div className="space-y-6">
               {/* 写作需求区域 */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  写作需求
-                </Label>
-                
-                {/* 写作需求快速选择按钮 */}
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <Badge 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("X位推荐人")}
-                  >
-                    X位推荐人
-                  </Badge>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="writing-requirements" className="text-sm font-medium">
+                    写作需求
+                  </Label>
+
+                    {/* 写作需求快速选择按钮 */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <Badge 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-muted px-3 py-1"
+                      onClick={() => handleButtonClick("X位推荐人")}
+                    >
+                      X位推荐人
+                    </Badge>
+                    
+                    <Badge 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-muted px-3 py-1"
+                      onClick={() => handleButtonClick("被推荐人是男生\n")}
+                    >
+                      男生
+                    </Badge>
+                    
+                    <Badge 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-muted px-3 py-1"
+                      onClick={() => handleButtonClick("被推荐人是女生\n")}
+                    >
+                      女生
+                    </Badge>
+                    
+                    <Badge 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-muted px-3 py-1"
+                      onClick={() => handleButtonClick("请补充更多课堂互动细节\n")}
+                    >
+                      课堂互动细节
+                    </Badge>
+                    
+                    <Badge 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-muted px-3 py-1"
+                      onClick={() => handleButtonClick("请补充更多科研项目细节\n")}
+                    >
+                      科研项目细节
+                    </Badge>
+                  </div>
                   
-                  <Badge 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("被推荐人是男生\n")}
-                  >
-                    男生
-                  </Badge>
-                  
-                  <Badge 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("被推荐人是女生\n")}
-                  >
-                    女生
-                  </Badge>
-                  
-                  <Badge 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("请补充更多课堂互动细节\n")}
-                  >
-                    课堂互动细节
-                  </Badge>
-                  
-                  <Badge 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-muted px-3 py-1"
-                    onClick={() => handleButtonClick("请补充更多科研项目细节\n")}
-                  >
-                    科研项目细节
-                  </Badge>
+                  <Textarea
+                    ref={textareaRef}
+                    id="writing-requirements"
+                    placeholder="例如：这是申请斯坦福大学计算机科学硕士项目的推荐信，推荐人是我的本科导师王教授，我们的关系是他指导了我的毕业设计，希望推荐信突出我在算法研究和项目实践方面的能力..."
+                    className="min-h-[120px] resize-y"
+                    value={writingRequirements}
+                    onChange={(e) => setWritingRequirements(e.target.value)}
+                  />
                 </div>
-                
-                {/* 写作需求文本框 */}
-                <Textarea
-                  ref={textareaRef}
-                  placeholder="例如：这是申请斯坦福大学计算机科学硕士项目的推荐信，推荐人是我的本科导师王教授，我们的关系是他指导了我的毕业设计，希望推荐信突出我在算法研究和项目实践方面的能力..."
-                  className="min-h-[120px] resize-y"
-                  value={writingRequirements}
-                  onChange={(e) => setWritingRequirements(e.target.value)}
-                />
+
+                {/* 自定义提示词输入框 */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="custom-role-prompt" className="text-sm font-medium">
+                      自定义角色提示词
+                    </Label>
+                    <Textarea
+                      id="custom-role-prompt"
+                      placeholder="例如：你是一位经验丰富的推荐信写作专家，擅长突出学生的学术成就和研究能力..."
+                      className="min-h-[80px] resize-y"
+                      value={customRolePrompt}
+                      onChange={(e) => setCustomRolePrompt(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="custom-task-prompt" className="text-sm font-medium">
+                      自定义任务提示词
+                    </Label>
+                    <Textarea
+                      id="custom-task-prompt"
+                      placeholder="例如：请根据提供的材料，撰写一封突出申请者研究能力和学术潜力的推荐信..."
+                      className="min-h-[80px] resize-y"
+                      value={customTaskPrompt}
+                      onChange={(e) => setCustomTaskPrompt(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="custom-output-format-prompt" className="text-sm font-medium">
+                      自定义输出格式提示词
+                    </Label>
+                    <Textarea
+                      id="custom-output-format-prompt"
+                      placeholder="例如：请按照学术推荐信的标准格式撰写，包含推荐人与申请者的关系、具体事例和评价..."
+                      className="min-h-[80px] resize-y"
+                      value={customOutputFormatPrompt}
+                      onChange={(e) => setCustomOutputFormatPrompt(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
               
               {/* 文件上传区域 - 左右布局 */}
