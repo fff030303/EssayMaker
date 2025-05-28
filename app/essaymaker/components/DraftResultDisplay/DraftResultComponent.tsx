@@ -281,7 +281,7 @@ export function DraftResultDisplay({
       const isAtBottom =
         Math.abs(
           container.scrollHeight - container.scrollTop - container.clientHeight
-        ) < 10;
+        ) < 70;
 
       if (isAtBottom && !autoScroll) {
         // 如果滚动到底部，启用自动滚动

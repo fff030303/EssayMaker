@@ -1,6 +1,6 @@
 // 工具函数文件 - 从 DraftResultDisplay.tsx 中提取的工具函数
 
-import DOMPurify from "dompurify";
+import DOMPurify from 'isomorphic-dompurify';
 
 // 新增：解包被 markdown 代码块包裹的内容
 export const unwrapMarkdownCodeBlock = (content: string): string => {

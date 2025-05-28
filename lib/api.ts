@@ -571,7 +571,11 @@ export const apiService = {
   async generateRecommendationLetter(
     resumeMaterial: File,
     writingRequirements: string,
-    supportFiles: File[] = []
+    recommenderNumber: string,
+    supportFiles: File[] = [],
+    customRolePrompt: string = "",
+    customTaskPrompt: string = "",
+    customOutputFormatPrompt: string = ""
   ) {
     try {
       const apiKey = getApiKey();
@@ -579,8 +583,14 @@ export const apiService = {
 
       console.log("准备生成推荐信, API地址:", apiUrl);
       console.log("推荐信素材文件:", resumeMaterial.name);
+      console.log("推荐人数量:", recommenderNumber);
       console.log("支持文件数量:", supportFiles.length);
       console.log("写作需求:", writingRequirements);
+      console.log("自定义提示词:", {
+        role: customRolePrompt,
+        task: customTaskPrompt,
+        outputFormat: customOutputFormatPrompt,
+      });
 
       // 创建FormData对象用于上传文件
       const formData = new FormData();
@@ -601,6 +611,14 @@ export const apiService = {
 
       // 使用writing_requirements作为写作需求字段名
       formData.append("writing_requirements", writingRequirements);
+      
+      // 添加推荐人数量
+      formData.append("recommender_number", recommenderNumber);
+      
+      // 添加自定义提示词
+      formData.append("custom_role_prompt", customRolePrompt);
+      formData.append("custom_task_prompt", customTaskPrompt);
+      formData.append("custom_output_format_prompt", customOutputFormatPrompt);
 
       // 使用正确的API端点路径
       const response = await fetch(

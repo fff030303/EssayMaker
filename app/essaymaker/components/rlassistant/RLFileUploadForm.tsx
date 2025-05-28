@@ -306,21 +306,7 @@ export function RLFileUploadForm({
   return (
     <div className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
       <Card className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
-        <CardHeader className="pb-3">
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-col space-y-1.5">
-              <CardTitle className="text-xl font-semibold">
-                推荐信助理
-              </CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
-                上传推荐信素材表，生成专业的推荐信分析和建议
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <AssistantTips />
-            </div>
-          </div>
-        </CardHeader>
+        
 
         <CardContent className="p-4 pt-4">
           <div className="grid grid-cols-1 gap-3">
@@ -593,10 +579,10 @@ export function RLFileUploadForm({
 
               {/* 推荐人选择 */}
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-2 hidden">
                   推荐人数量
                 </label>
-                <div className="flex space-x-4">
+                <div className="flex space-x-4 hidden">
                   <label className="flex items-center">
                     <input
                       type="radio"
@@ -626,7 +612,7 @@ export function RLFileUploadForm({
             </div>
 
             {/* 自定义提示词输入框 */}
-            <div className="space-y-4 mt-4">
+            <div className="space-y-4 mt-4 hidden">
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   自定义角色提示词

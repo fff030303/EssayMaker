@@ -363,7 +363,7 @@ export function CVFileUploadForm({
             </div>
 
             {/* 自定义提示词输入框 */}
-            <div className="space-y-4 mt-4">
+            <div className="space-y-4 mt-4 hidden">
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   自定义角色提示词

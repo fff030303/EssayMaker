@@ -138,7 +138,7 @@ export function RLGeneration({
             // 有格式化推荐信时的布局
             <div className="flex flex-col">
               {/* 自定义提示词输入区域 - 在双列布局上方 */}
-              <div className="mb-6 p-6 border rounded-lg bg-card">
+              <div className="mb-6 p-6 border rounded-lg bg-card hidden">
                 <h3 className="text-lg font-semibold mb-4">自定义提示词设置</h3>
                 <div className="space-y-4">
                   <div>
@@ -235,7 +235,7 @@ export function RLGeneration({
             // 没有格式化推荐信时的布局
             <div className="w-full max-w-[1300px] mx-auto">
               {/* 自定义提示词输入区域 */}
-              <div className="mb-6 p-6 border rounded-lg bg-card">
+              <div className="mb-6 p-6 border rounded-lg bg-card hidden">
                 <h3 className="text-lg font-semibold mb-4">自定义提示词设置</h3>
                 <div className="space-y-4">
                   <div>

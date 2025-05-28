@@ -157,7 +157,7 @@ export function RLReportAndResumeDisplay({
   }
 
   return (
-    <div className="w-full max-w-[800px] mx-auto mt-6">
+    <div className="w-full max-w-[800px] mx-auto mt-6 hidden">
       <Card className="shadow-lg">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
