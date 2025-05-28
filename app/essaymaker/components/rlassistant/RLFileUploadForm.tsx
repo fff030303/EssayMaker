@@ -1,3 +1,55 @@
+/**
+ * RLFileUploadForm 组件
+ * 
+ * 功能：推荐信助理的文件上传表单组件，处理推荐信相关文件的上传和管理
+ * 
+ * 核心特性：
+ * 1. 文件上传管理：
+ *    - 支持多种文件格式（PDF、Word、图片等）
+ *    - 拖拽上传和点击选择
+ *    - 文件预览和删除功能
+ *    - 上传进度指示
+ * 
+ * 2. 文件分类：
+ *    - 推荐信文件：现有推荐信文档
+ *    - 支持材料：简历、成绩单等
+ *    - 其他文件：证书、作品集等
+ *    - 智能文件类型识别
+ * 
+ * 3. 表单验证：
+ *    - 文件格式验证
+ *    - 文件大小限制
+ *    - 必填字段检查
+ *    - 实时验证反馈
+ * 
+ * 4. 用户输入：
+ *    - 推荐人信息填写
+ *    - 申请方向选择
+ *    - 特殊要求说明
+ *    - 自动保存草稿
+ * 
+ * 5. 数据处理：
+ *    - 文件内容解析
+ *    - 数据格式转换
+ *    - 信息提取和整理
+ *    - 错误处理和重试
+ * 
+ * 6. 用户体验：
+ *    - 直观的操作界面
+ *    - 清晰的状态指示
+ *    - 友好的错误提示
+ *    - 响应式设计
+ * 
+ * 支持的文件类型：
+ * - PDF文档
+ * - Word文档（.doc, .docx）
+ * - 图片文件（.jpg, .png, .gif）
+ * - 文本文件（.txt）
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
+
 "use client";
 
 import React, { useState, useRef } from "react";
@@ -28,6 +80,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useStreamResponse } from "../../hooks/useStreamResponse";
+import { RLRequest } from "./RLRequest";
 
 interface RLFileUploadFormProps {
   onStepChange?: (step: number) => void;
@@ -47,8 +100,15 @@ export function RLFileUploadForm({
   const [isComplete, setIsComplete] = useState(false);
 
   // 推荐信特定字段
-  const [writingRequirements, setWritingRequirements] = useState<string>("");
   const [recommenderNumber, setRecommenderNumber] = useState<1 | 2>(1);
+
+  // 新增：RLRequest组件需要的状态
+  const [recommenderPosition, setRecommenderPosition] = useState<1 | 2 | 3>(1);
+  const [recommenderPositionType, setRecommenderPositionType] = useState<'preset' | 'custom'>('preset');
+  const [customRecommenderPosition, setCustomRecommenderPosition] = useState<string>('');
+  const [gender, setGender] = useState<'男生' | '女生' | ''>('男生');
+  const [hasOtherRequirements, setHasOtherRequirements] = useState<'是' | '否' | ''>('否');
+  const [additionalRequirements, setAdditionalRequirements] = useState<string>('');
 
   // 自定义提示词状态
   const [customRolePrompt, setCustomRolePrompt] = useState<string>("");
@@ -138,15 +198,6 @@ export function RLFileUploadForm({
     }
   };
 
-  // 快速输入按钮处理
-  const handleButtonClick = (text: string) => {
-    if (text === "X位推荐人") {
-      setWritingRequirements((prev) => prev + "请撰写第X位推荐人的推荐信\n");
-      return;
-    }
-    setWritingRequirements((prev) => prev + text);
-  };
-
   // 处理提交
   const handleSubmit = async () => {
     if (!resumeFile) {
@@ -158,13 +209,50 @@ export function RLFileUploadForm({
       return;
     }
 
-    if (!writingRequirements.trim()) {
+    // 验证必填字段
+    if (recommenderPositionType === 'custom' && !customRecommenderPosition.trim()) {
+      toast({
+        variant: "destructive",
+        title: "信息缺失",
+        description: "请填写推荐人位置",
+      });
+      return;
+    }
+
+    if (!gender) {
+      toast({
+        variant: "destructive",
+        title: "信息缺失",
+        description: "请选择被推荐人的性别",
+      });
+      return;
+    }
+
+    if (hasOtherRequirements === '是' && !additionalRequirements.trim()) {
       toast({
         variant: "destructive",
         title: "要求缺失",
-        description: "请填写推荐信写作要求",
+        description: "请填写其他写作要求",
       });
       return;
+    }
+
+    // 构建完整的写作要求
+    let fullWritingRequirements = "";
+    
+    // 添加推荐人位置信息
+    if (recommenderPositionType === 'preset') {
+      fullWritingRequirements += `请撰写第${recommenderPosition}位推荐人的推荐信。`;
+    } else {
+      fullWritingRequirements += `请撰写第${customRecommenderPosition}位推荐人的推荐信。`;
+    }
+    
+    // 添加性别信息
+    fullWritingRequirements += `被推荐人是${gender}。`;
+    
+    // 添加额外要求
+    if (hasOtherRequirements === '是' && additionalRequirements.trim()) {
+      fullWritingRequirements += `其他写作要求：${additionalRequirements}`;
     }
 
     setIsLoading(true);
@@ -197,11 +285,11 @@ export function RLFileUploadForm({
     }
 
     try {
-      // 使用apiService中的推荐信生成方法
+      // 使用apiService中的推荐信生成方法，传入构建的完整要求
       const response = await apiService.generateRecommendationLetter(
         resumeFile,
-        writingRequirements,
-        recommenderNumber,
+        fullWritingRequirements, // 使用构建的完整要求
+        recommenderNumber.toString(),
         supportFiles,
         customRolePrompt,
         customTaskPrompt,
@@ -257,7 +345,7 @@ export function RLFileUploadForm({
             }
           },
           realtimeTypewriter: true, // 启用实时接收+逐字显示模式
-          charDelay: 1,
+          charDelay: 0.2, // 字符显示间隔0.2毫秒
         });
       } else {
         // 普通JSON响应
@@ -512,102 +600,26 @@ export function RLFileUploadForm({
             {/* 推荐信写作要求输入区域 */}
             <div className="space-y-4 mt-4">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
+                <label className="block text-sm font-medium text-gray-600 mb-3">
                   推荐信写作要求 <span className="text-red-500">*</span>
                 </label>
 
-                {/* 快速输入按钮 */}
-                <div className="mb-2 flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      handleButtonClick(
-                        "请撰写学术推荐信，重点突出学术能力和研究潜力。"
-                      )
-                    }
-                    disabled={isLoading}
-                  >
-                    学术推荐信
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      handleButtonClick(
-                        "请撰写工作推荐信，重点突出工作能力和职业素养。"
-                      )
-                    }
-                    disabled={isLoading}
-                  >
-                    工作推荐信
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      handleButtonClick(
-                        "请撰写实习推荐信，重点突出实习期间的表现和成长。"
-                      )
-                    }
-                    disabled={isLoading}
-                  >
-                    实习推荐信
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleButtonClick("X位推荐人")}
-                    disabled={isLoading}
-                  >
-                    X位推荐人
-                  </Button>
-                </div>
-
-                <Textarea
-                  placeholder="请详细描述您对推荐信的具体要求，例如：推荐人身份、重点突出的能力、推荐信用途等..."
-                  className="min-h-[100px] resize-y"
-                  value={writingRequirements}
-                  onChange={(e) => setWritingRequirements(e.target.value)}
+                {/* 使用新的RLRequest组件 */}
+                <RLRequest
+                  recommenderPosition={recommenderPosition}
+                  setRecommenderPosition={setRecommenderPosition}
+                  recommenderPositionType={recommenderPositionType}
+                  setRecommenderPositionType={setRecommenderPositionType}
+                  customRecommenderPosition={customRecommenderPosition}
+                  setCustomRecommenderPosition={setCustomRecommenderPosition}
+                  gender={gender}
+                  setGender={setGender}
+                  hasOtherRequirements={hasOtherRequirements}
+                  setHasOtherRequirements={setHasOtherRequirements}
+                  additionalRequirements={additionalRequirements}
+                  setAdditionalRequirements={setAdditionalRequirements}
                   disabled={isLoading}
                 />
-              </div>
-
-              {/* 推荐人选择 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2 hidden">
-                  推荐人数量
-                </label>
-                <div className="flex space-x-4 hidden">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="recommender"
-                      value={1}
-                      checked={recommenderNumber === 1}
-                      onChange={() => setRecommenderNumber(1)}
-                      className="mr-2"
-                      disabled={isLoading}
-                    />
-                    第1位推荐人
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="recommender"
-                      value={2}
-                      checked={recommenderNumber === 2}
-                      onChange={() => setRecommenderNumber(2)}
-                      className="mr-2"
-                      disabled={isLoading}
-                    />
-                    第2位推荐人
-                  </label>
-                </div>
               </div>
             </div>
 
@@ -673,10 +685,17 @@ export function RLFileUploadForm({
                 // 清空所有输入和文件
                 setResumeFile(null);
                 setSupportFiles([]);
-                setWritingRequirements("");
                 setCustomRolePrompt("");
                 setCustomTaskPrompt("");
                 setCustomOutputFormatPrompt("");
+
+                // 清空RLRequest相关状态
+                setRecommenderPosition(1);
+                setRecommenderPositionType('preset');
+                setCustomRecommenderPosition('');
+                setGender('男生');
+                setHasOtherRequirements('否');
+                setAdditionalRequirements('');
 
                 // 重置文件输入元素
                 if (resumeInputRef.current) {
@@ -702,7 +721,7 @@ export function RLFileUploadForm({
               size="default"
               className="flex items-center gap-1"
               onClick={handleSubmit}
-              disabled={isLoading || !resumeFile || !writingRequirements.trim()}
+              disabled={isLoading || !resumeFile || !gender.trim()}
             >
               {isLoading ? (
                 <>

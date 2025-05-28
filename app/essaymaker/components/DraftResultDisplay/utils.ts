@@ -1,4 +1,48 @@
-// 工具函数文件 - 从 DraftResultDisplay.tsx 中提取的工具函数
+/**
+ * DraftResultDisplay 工具函数文件
+ * 
+ * 功能：提供初稿结果显示相关的工具函数和内容处理逻辑
+ * 
+ * 核心功能：
+ * 1. 内容类型检测：
+ *    - 智能识别HTML和Markdown格式
+ *    - 检测复杂HTML结构和样式
+ *    - 分析内容特征和标记
+ *    - 自动选择最佳渲染方式
+ * 
+ * 2. 内容处理：
+ *    - HTML内容安全化处理
+ *    - Markdown语法转换
+ *    - 换行和格式优化
+ *    - 特殊字符处理
+ * 
+ * 3. 格式转换：
+ *    - HTML到Markdown转换
+ *    - Markdown到HTML转换
+ *    - 混合格式处理
+ *    - 内容提取和清理
+ * 
+ * 4. 安全性处理：
+ *    - XSS攻击防护
+ *    - 内容过滤和验证
+ *    - 标签白名单控制
+ *    - 属性安全检查
+ * 
+ * 5. 性能优化：
+ *    - 内容缓存机制
+ *    - 懒加载处理
+ *    - 批量处理优化
+ *    - 内存使用控制
+ * 
+ * 主要函数：
+ * - detectContentType：内容类型检测
+ * - extractMarkdownFromHtml：从HTML提取Markdown
+ * - processMarkdownLineBreaks：处理Markdown换行
+ * - sanitizeHtml：HTML内容安全化
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
 
 import DOMPurify from 'isomorphic-dompurify';
 

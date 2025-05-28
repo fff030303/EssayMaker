@@ -1,9 +1,54 @@
-// 重构后的主组件文件 - 使用模块化导入
-// 初稿结果展示组件，负责：
-// - 专门用于展示初稿生成结果
-// - 提供更清晰的流式呈现效果
-// - 包含动态加载指示器
-// - 优化 Markdown 渲染样式
+/**
+ * DraftResultComponent 组件
+ * 
+ * 功能：初稿结果显示的核心组件，支持流式生成和实时显示
+ * 
+ * 核心特性：
+ * 1. 智能内容渲染：
+ *    - 自动检测HTML和Markdown格式
+ *    - 动态选择最佳渲染方式
+ *    - 支持混合格式内容处理
+ *    - 实时内容更新和显示
+ * 
+ * 2. 流式生成支持：
+ *    - 实时接收流式数据
+ *    - 逐字显示打字机效果
+ *    - 平滑的内容更新动画
+ *    - 自动滚动到最新内容
+ * 
+ * 3. 内容处理：
+ *    - HTML内容安全化处理
+ *    - Markdown语法解析和渲染
+ *    - 换行和格式优化
+ *    - 重复内容清理
+ * 
+ * 4. 用户交互：
+ *    - 内容复制功能
+ *    - 导出下载选项
+ *    - 手动滚动控制
+ *    - 加载状态指示
+ * 
+ * 5. 响应式设计：
+ *    - 移动端适配
+ *    - 动态高度调整
+ *    - 内容溢出处理
+ *    - 优雅的布局适应
+ * 
+ * 6. 性能优化：
+ *    - 内容缓存机制
+ *    - 虚拟滚动支持
+ *    - 懒加载处理
+ *    - 内存使用优化
+ * 
+ * 技术实现：
+ * - 使用ReactMarkdown进行Markdown渲染
+ * - 使用DOMPurify进行HTML安全化
+ * - 支持remarkGfm扩展语法
+ * - 自定义组件样式和交互
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
 
 "use client";
 
@@ -523,7 +568,7 @@ export function DraftResultDisplay({
                 return (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={markdownComponents}
+                    components={markdownComponents as any}
                   >
                     {markdownContent}
                   </ReactMarkdown>

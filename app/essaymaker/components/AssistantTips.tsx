@@ -1,3 +1,22 @@
+/**
+ * AssistantTips 组件
+ * 
+ * 功能：显示不同类型助理的使用提示信息
+ * 
+ * 特性：
+ * - 支持多种助理类型（draft、cv、ps、custom、rl）
+ * - 从外部配置文件读取提示内容
+ * - 响应式设计，适配不同屏幕尺寸
+ * - 统一的视觉风格（蓝色主题）
+ * 
+ * 使用场景：
+ * - 在各个助理页面顶部显示操作提示
+ * - 帮助用户了解如何使用相应功能
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
+
 import { cn } from "@/lib/utils";
 import { InfoIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";

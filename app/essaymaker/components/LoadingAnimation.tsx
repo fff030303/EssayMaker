@@ -1,3 +1,42 @@
+/**
+ * LoadingAnimation 组件集合
+ * 
+ * 功能：提供多种加载动画效果，增强用户体验
+ * 
+ * 组件列表：
+ * 1. LoadingAnimation - 主要加载动画组件
+ * 2. FullScreenLoadingAnimation - 全屏加载动画
+ * 3. InlineLoadingAnimation - 内联加载动画
+ * 
+ * LoadingAnimation 变体：
+ * - dots：默认的跳动圆点效果
+ * - sparkles：闪烁星星效果
+ * - typing：打字机效果
+ * 
+ * 特性：
+ * - 基于 Framer Motion 的流畅动画
+ * - 多种视觉效果可选
+ * - 自定义文本和样式
+ * - 响应式设计
+ * - 性能优化的动画循环
+ * 
+ * 使用场景：
+ * - 数据加载等待
+ * - 内容生成过程
+ * - 文件上传进度
+ * - 页面切换过渡
+ * 
+ * 动画效果：
+ * - 淡入淡出
+ * - 缩放变换
+ * - 位移动画
+ * - 透明度变化
+ * - 延迟交错动画
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
+
 import { Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 

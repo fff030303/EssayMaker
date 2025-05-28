@@ -4,6 +4,63 @@ import { apiService } from "@/lib/api";
 import { DisplayResult } from "../../../types";
 import { useStreamResponse } from "../../../hooks/useStreamResponse";
 
+/**
+ * useCVReport Hook
+ * 
+ * 功能：管理CV助理报告生成的自定义Hook
+ * 
+ * 核心特性：
+ * 1. 报告生成：
+ *    - 简历内容分析
+ *    - 优化建议生成
+ *    - 技能匹配评估
+ *    - 行业标准对比
+ * 
+ * 2. 流式处理：
+ *    - 实时接收+逐字显示模式
+ *    - 字符显示间隔：0.2ms
+ *    - 平滑的打字机效果
+ *    - 自动滚动到最新内容
+ * 
+ * 3. 状态管理：
+ *    - 生成状态跟踪
+ *    - 错误状态处理
+ *    - 加载进度指示
+ *    - 完成状态确认
+ * 
+ * 4. 数据处理：
+ *    - 文件内容解析
+ *    - 结构化数据提取
+ *    - 格式转换和优化
+ *    - 结果缓存机制
+ * 
+ * 5. 错误处理：
+ *    - 网络错误重试
+ *    - 数据验证失败
+ *    - 超时处理机制
+ *    - 用户友好的错误提示
+ * 
+ * 6. 性能优化：
+ *    - 防抖处理
+ *    - 内存使用控制
+ *    - 异步操作优化
+ *    - 资源清理机制
+ * 
+ * API集成：
+ * - 使用useStreamResponse处理流式响应
+ * - 支持文件上传和内容分析
+ * - 实时数据更新和状态同步
+ * 
+ * 返回值：
+ * - report：生成的报告内容
+ * - isGenerating：生成状态
+ * - error：错误信息
+ * - generateReport：生成函数
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
+
 export function useCVReport() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { toast } = useToast();
@@ -104,7 +161,7 @@ export function useCVReport() {
             }
           },
           realtimeTypewriter: true, // 启用实时接收+逐字显示模式
-          charDelay: 1,
+          charDelay: 0.2, // 字符显示间隔0.2毫秒
         });
       } else {
         // 普通JSON响应

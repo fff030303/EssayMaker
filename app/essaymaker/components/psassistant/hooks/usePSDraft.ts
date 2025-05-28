@@ -12,6 +12,68 @@ interface UsePSDraftProps {
   session: Session | null;
 }
 
+/**
+ * usePSDraft Hook
+ * 
+ * 功能：管理PS助理个人陈述初稿生成的自定义Hook
+ * 
+ * 核心特性：
+ * 1. 初稿生成：
+ *    - 基于分析报告生成个人陈述
+ *    - 多种写作风格支持
+ *    - 个性化内容定制
+ *    - 申请要求适配
+ * 
+ * 2. 流式处理：
+ *    - 实时接收+逐字显示模式
+ *    - 字符显示间隔：0.2ms
+ *    - 平滑的打字机效果
+ *    - 逐段生成和显示
+ * 
+ * 3. 内容优化：
+ *    - 语言表达优化
+ *    - 结构逻辑调整
+ *    - 长度控制管理
+ *    - 可读性提升
+ * 
+ * 4. 状态管理：
+ *    - 生成进度跟踪
+ *    - 错误状态处理
+ *    - 完成状态确认
+ *    - 用户交互状态
+ * 
+ * 5. 数据处理：
+ *    - 报告内容解析
+ *    - 结构化数据转换
+ *    - 模板应用和渲染
+ *    - 格式验证和修正
+ * 
+ * 6. 用户体验：
+ *    - 实时预览功能
+ *    - 编辑和修改支持
+ *    - 版本历史记录
+ *    - 导出功能集成
+ * 
+ * 依赖关系：
+ * - 依赖PS报告的分析结果
+ * - 与文件上传组件协作
+ * - 集成流式响应处理
+ * 
+ * API集成：
+ * - 使用useStreamResponse处理流式响应
+ * - 支持基于报告的初稿生成
+ * - 实时内容更新和状态同步
+ * 
+ * 返回值：
+ * - draft：生成的个人陈述初稿
+ * - isGenerating：生成状态
+ * - error：错误信息
+ * - generateDraft：生成函数
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
+
 export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { processStream } = useStreamResponse();
@@ -127,7 +189,8 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
             isComplete: true,
           });
         },
-        realTimeStreaming: true, // 启用实时流式处理
+        realtimeTypewriter: true, // 启用实时接收+逐字显示模式
+        charDelay: 0.2, // 字符显示间隔0.2毫秒
       });
     } catch (error) {
       console.error("[usePSDraft] 初稿生成异常:", error);

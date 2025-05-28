@@ -1,8 +1,61 @@
-// 高级输入区域组件，提供：
-// - 申请方向输入框
-// - 特定需求输入区域
-// - 文件上传功能（分为初稿和其他文件）
-// - 适用于初稿和定制内容等需要更复杂输入的场景
+/**
+ * AdvancedInputArea 组件
+ * 
+ * 功能：PS助理的高级输入区域组件，提供丰富的用户输入和文件上传功能
+ * 
+ * 核心特性：
+ * 1. 多样化输入：
+ *    - 申请方向选择
+ *    - 详细需求描述
+ *    - 个人信息填写
+ *    - 特殊要求说明
+ * 
+ * 2. 文件管理：
+ *    - 多文件上传支持
+ *    - 拖拽上传功能
+ *    - 文件预览和删除
+ *    - 文件类型验证
+ * 
+ * 3. 智能提示：
+ *    - 输入建议提供
+ *    - 实时验证反馈
+ *    - 错误提示显示
+ *    - 完成度指示
+ * 
+ * 4. 用户体验：
+ *    - 直观的界面设计
+ *    - 流畅的交互动画
+ *    - 响应式布局
+ *    - 无障碍访问支持
+ * 
+ * 5. 数据处理：
+ *    - 输入数据验证
+ *    - 格式标准化
+ *    - 实时保存草稿
+ *    - 数据恢复功能
+ * 
+ * 6. 状态管理：
+ *    - 输入状态跟踪
+ *    - 加载状态指示
+ *    - 错误状态处理
+ *    - 完成状态确认
+ * 
+ * 支持功能：
+ * - 申请方向智能推荐
+ * - 需求模板快速填充
+ * - 文件内容预览
+ * - 批量文件操作
+ * - 输入历史记录
+ * 
+ * 技术实现：
+ * - React Hook Form表单管理
+ * - 文件拖拽API集成
+ * - 实时验证机制
+ * - 本地存储支持
+ * 
+ * @author EssayMaker Team
+ * @version 1.0.0
+ */
 
 "use client";
 
@@ -26,8 +79,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { DisplayResult } from "../types";
-import { TipsButton } from "./TipsButton";
+import { DisplayResult } from "../../types";
+import { TipsButton } from "../TipsButton";
 import {
   Card,
   CardHeader,
