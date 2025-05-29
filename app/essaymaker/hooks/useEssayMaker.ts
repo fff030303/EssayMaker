@@ -85,6 +85,9 @@ export function useEssayMaker(session: Session | null) {
   const [files, setFiles] = useState<File[]>([]);
   const [otherFiles, setOtherFiles] = useState<File[]>([]);
 
+  // 添加助理类型状态
+  const [currentAssistantType, setCurrentAssistantType] = useState<'sectional' | 'networking' | 'general' | null>(null);
+
   // 添加最终初稿状态
   const [finalDraft, setFinalDraft] = useState<DisplayResult | null>(null);
   const [isGeneratingFinalDraft, setIsGeneratingFinalDraft] =
@@ -214,7 +217,7 @@ export function useEssayMaker(session: Session | null) {
     console.log("[ESSAY-MAKER] - 成绩单文件数量:", otherFiles.length);
 
     // 调用API处理
-    await handleStreamResponse(trimmedQuery, files, otherFiles);
+    await handleStreamResponse(trimmedQuery, files, otherFiles, currentAssistantType || undefined);
   };
 
   // 处理快捷键
@@ -287,6 +290,8 @@ export function useEssayMaker(session: Session | null) {
     finalDraft,
     isGeneratingFinalDraft,
     setFinalDraft,
+    currentAssistantType,
+    setCurrentAssistantType,
 
     // refs
     firstStepRef,

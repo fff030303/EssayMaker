@@ -60,6 +60,7 @@ import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import { FullScreenLoadingAnimation } from "../LoadingAnimation";
 
 interface PSReportAndDraftDisplayProps {
   result: DisplayResult | null;
@@ -184,17 +185,81 @@ export function PSReportAndDraftDisplay({
 
   // 有结果的情况
   return (
-    <div className="flex flex-col items-center justify-start w-full px-0">
-      <div className="w-full max-w-[1800px] mx-auto">
-        {/* 移除顶部留白 */}
-        <div className="p-2">
-          {/* 当有初稿时使用双列布局 */}
-          {finalDraft || finalDraftResult ? (
-            // 有初稿时的布局
-            <div className="flex flex-col lg:flex-row gap-6 xl:gap-10 justify-center">
-              {/* 左侧 - 素材整理报告 */}
-              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
-                <div className="rounded-lg overflow-visible flex-grow h-full">
+    <>
+      {/* 全屏加载动画 - 在生成个人陈述初稿过程中显示 */}
+      {(generatingFinalDraft || isGeneratingFinalDraft) && (
+        <FullScreenLoadingAnimation 
+          text="正在生成个人陈述初稿，请勿切换页面..." 
+        />
+      )}
+
+      <div className="flex flex-col items-center justify-start w-full px-0">
+        <div className="w-full max-w-[1800px] mx-auto">
+          {/* 移除顶部留白 */}
+          <div className="p-2">
+            {/* 当有初稿时使用双列布局 */}
+            {finalDraft || finalDraftResult ? (
+              // 有初稿时的布局
+              <div className="flex flex-col lg:flex-row gap-6 xl:gap-10 justify-center">
+                {/* 左侧 - 素材整理报告 */}
+                <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
+                  <div className="rounded-lg overflow-visible flex-grow h-full">
+                    <DraftResultDisplay
+                      result={result}
+                      title="素材整理报告"
+                      key="material-report"
+                      headerActions={
+                        <Button
+                          disabled={
+                            generatingFinalDraft ||
+                            isGeneratingFinalDraft ||
+                            !onGenerateFinalDraft ||
+                            !result.content ||
+                            !userDirection.trim() ||
+                            !result.isComplete
+                          }
+                          onClick={handleGenerateFinalDraft}
+                          title={
+                            !result.isComplete
+                              ? "请等待内容创作完成后再生成初稿"
+                              : ""
+                          }
+                          variant="default"
+                          size="sm"
+                          className="mr-2"
+                        >
+                          {generatingFinalDraft || isGeneratingFinalDraft ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              生成中...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-3 w-3 mr-1" />
+                              生成初稿
+                            </>
+                          )}
+                        </Button>
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* 右侧 - 个人陈述初稿 */}
+                <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
+                  <div className="rounded-lg overflow-visible flex-grow h-full">
+                    <DraftResultDisplay
+                      result={finalDraft || finalDraftResult!}
+                      title="个人陈述初稿"
+                      key="personal-draft"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // 没有初稿时的布局
+              <div className="w-full max-w-[1300px] mx-auto">
+                <div className="rounded-lg overflow-visible pb-6">
                   <DraftResultDisplay
                     result={result}
                     title="素材整理报告"
@@ -235,65 +300,10 @@ export function PSReportAndDraftDisplay({
                   />
                 </div>
               </div>
-
-              {/* 右侧 - 个人陈述初稿 */}
-              <div className="w-full lg:w-[46%] xl:w-[46%] min-w-0 shrink-0 overflow-visible pb-6 flex flex-col h-full">
-                <div className="rounded-lg overflow-visible flex-grow h-full">
-                  <DraftResultDisplay
-                    result={finalDraft || finalDraftResult!}
-                    title="个人陈述初稿"
-                    key="personal-draft"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            // 没有初稿时的布局
-            <div className="w-full max-w-[1300px] mx-auto">
-              <div className="rounded-lg overflow-visible pb-6">
-                <DraftResultDisplay
-                  result={result}
-                  title="素材整理报告"
-                  key="material-report"
-                  headerActions={
-                    <Button
-                      disabled={
-                        generatingFinalDraft ||
-                        isGeneratingFinalDraft ||
-                        !onGenerateFinalDraft ||
-                        !result.content ||
-                        !userDirection.trim() ||
-                        !result.isComplete
-                      }
-                      onClick={handleGenerateFinalDraft}
-                      title={
-                        !result.isComplete
-                          ? "请等待内容创作完成后再生成初稿"
-                          : ""
-                      }
-                      variant="default"
-                      size="sm"
-                      className="mr-2"
-                    >
-                      {generatingFinalDraft || isGeneratingFinalDraft ? (
-                        <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          生成中...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-3 w-3 mr-1" />
-                          生成初稿
-                        </>
-                      )}
-                    </Button>
-                  }
-                />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

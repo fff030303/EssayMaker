@@ -54,6 +54,7 @@ import { DisplayResult } from "../types";
 import { ResultDisplay } from "./ResultDisplay";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { FullScreenLoadingAnimation } from "./LoadingAnimation";
 
 interface SecondStepProps {
   secondStepInput: string;
@@ -154,236 +155,249 @@ export function SecondStep({
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 min-w-full">
-      {/* 用户输入 */}
-      <div className="flex flex-col">
-        <div className="p-2 sm:p-3 md:p-5 overflow-visible">
-          <Card className="shadow-lg flex flex-col">
-            <CardHeader className="flex flex-row items-center gap-2 sm:gap-3 pb-3 pt-4 px-3 sm:pb-4 sm:pt-5 sm:px-5 flex-shrink-0">
-              <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <Pencil className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-              </div>
-              <div className="flex-1">
-                <CardTitle className="text-sm sm:text-base font-medium">
-                  个人陈述原稿
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-4 px-3 pb-4 sm:pt-6 sm:px-6 sm:pb-6">
-              <div className="space-y-3 sm:space-y-4">
-                <div className="space-y-1 sm:space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs sm:text-sm font-medium text-gray-700">
-                      请输入补充信息：
-                    </label>
-                    
-                  </div>
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder="请输入您的补充信息..."
-                    value={secondStepInput}
-                    onChange={enhancedInputChange}
-                    className="w-full resize-none text-sm sm:text-base overflow-auto"
-                    disabled={secondStepLoading}
-                    style={{
-                      minHeight: "120px",
-                      maxHeight: "200px",
-                      transition: "height 0.1s ease",
-                    }}
-                    onKeyDown={(e) => {
-                      // 添加Ctrl+Enter提交功能
-                      if (
-                        (e.ctrlKey || e.metaKey) &&
-                        e.key === "Enter" &&
-                        !secondStepLoading &&
-                        secondStepInput.trim()
-                      ) {
-                        e.preventDefault();
-                        handleSecondStepSubmit();
-                      }
-                    }}
-                  />
-                  <div  className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm text-gray-500">
-                    提示：使用 Ctrl/Cmd + Enter 快速提交
-                  </p>
-                  <Button
-                    onClick={handleSecondStepSubmit}
-                    disabled={secondStepLoading || !secondStepInput.trim()}
-                    size="sm"
-                    className="h-8 gap-1 text-xs sm:text-sm bg-sky-500 hover:bg-sky-600 text-white"
-                    >
-                    {secondStepLoading ? (
-                      <>
-                        <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                        生成中...
-                      </>
-                    ) : (
-                      "撰写改写策略"
-                    )}
-                  </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+    <>
+      {/* 全屏加载动画 - 在第二步和第三步生成过程中显示 */}
+      {(secondStepLoading || thirdStepLoading) && (
+        <FullScreenLoadingAnimation 
+          text={
+            secondStepLoading 
+              ? "正在生成修改建议，请勿切换页面..." 
+              : "正在生成最终文章，请勿切换页面..."
+          } 
+        />
+      )}
 
-      {/* 第二步结果 */}
-      <div className="flex flex-col">
-        <div className="p-2 sm:p-3 md:p-5 overflow-visible">
-          {secondStepResult ? (
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
+        {/* 用户输入 */}
+        <div className="flex flex-col">
+          <div className="p-2 sm:p-3 md:p-5 overflow-visible">
             <Card className="shadow-lg flex flex-col">
-              {/* 结果卡片头部保持不变 */}
               <CardHeader className="flex flex-row items-center gap-2 sm:gap-3 pb-3 pt-4 px-3 sm:pb-4 sm:pt-5 sm:px-5 flex-shrink-0">
                 <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  <Pencil className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                 </div>
                 <div className="flex-1">
                   <CardTitle className="text-sm sm:text-base font-medium">
-                    修改建议
+                    个人陈述原稿
                   </CardTitle>
                 </div>
               </CardHeader>
-
-              {secondStepResult.currentStep && (
-                <div className="flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm text-gray-500 bg-gray-50 border-t border-b border-gray-100 flex-shrink-0">
-                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                  <span>{secondStepResult.currentStep}</span>
-                </div>
-              )}
-
-              {/* 添加onScroll事件处理和ref */}
-              <CardContent 
-                ref={resultContentRef} 
-                onScroll={handleScroll}
-                className="pt-4 px-3 pb-4 sm:pt-6 sm:px-6 sm:pb-6 overflow-y-auto flex-grow"
-              >
-                <div className="prose prose-sm max-w-none text-gray-700">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      a: ({ node, ...props }) => (
-                        <a
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                          {...props}
-                        />
-                      ),
-                      p: ({ node, ...props }) => (
-                        <p
-                          className="mb-4 leading-relaxed"
-                          {...props}
-                        />
-                      ),
-                      h1: ({ node, ...props }) => (
-                        <h1
-                          className="text-xl font-bold mt-6 mb-4 text-gray-900"
-                          {...props}
-                        />
-                      ),
-                      h2: ({ node, ...props }) => (
-                        <h2
-                          className="text-lg font-bold mt-5 mb-3 text-gray-900"
-                          {...props}
-                        />
-                      ),
-                      h3: ({ node, ...props }) => (
-                        <h3
-                          className="text-base font-bold mt-4 mb-2 text-gray-900"
-                          {...props}
-                        />
-                      ),
-                      ul: ({ node, ...props }) => (
-                        <ul
-                          className="my-3 pl-6 list-disc"
-                          {...props}
-                        />
-                      ),
-                      ol: ({ node, ...props }) => (
-                        <ol
-                          className="my-3 pl-6 list-decimal"
-                          {...props}
-                        />
-                      ),
-                      li: ({ node, ...props }) => (
-                        <li className="mb-1" {...props} />
-                      ),
-                      blockquote: ({ node, ...props }) => (
-                        <blockquote
-                          className="border-l-4 border-gray-200 pl-4 italic my-4 text-gray-600"
-                          {...props}
-                        />
-                      ),
-                      code: ({ node, className, ...props }: any) => {
-                        const match = /language-(\w+)/.exec(className || "");
-                        const isInline =
-                          !match && !className?.includes("contains-task-list");
-                        return isInline ? (
-                          <code
-                            className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800"
-                            {...props}
-                          />
-                        ) : (
-                          <code
-                            className="block bg-gray-100 p-3 rounded-md text-sm font-mono overflow-x-auto my-4 text-gray-800"
-                            {...props}
-                          />
-                        );
-                      },
-                    }}
-                  >
-                    {secondStepResult.content || "正在生成内容..."}
-                  </ReactMarkdown>
-                </div>
-                
-                {/* 将按钮移到内容底部 */}
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    onClick={handleFinalGeneration}
-                    disabled={
-                      thirdStepLoading ||
-                      !secondStepResult ||
-                      !secondStepResult.isComplete
-                    }
-                    size="sm"
-                    className="h-8 gap-1 text-xs sm:text-sm bg-sky-500 hover:bg-sky-600 text-white"
-                  >
-                    {thirdStepLoading ? (
-                      <>
-                        <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                        生成中...
-                      </>
-                    ) : (
-                      "生成最终文章"
-                    )}
-                  </Button>
+              <CardContent className="pt-4 px-3 pb-4 sm:pt-6 sm:px-6 sm:pb-6">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-medium text-gray-700">
+                        请输入补充信息：
+                      </label>
+                      
+                    </div>
+                    <Textarea
+                      ref={textareaRef}
+                      placeholder="请输入您的补充信息..."
+                      value={secondStepInput}
+                      onChange={enhancedInputChange}
+                      className="w-full resize-none text-sm sm:text-base overflow-auto"
+                      disabled={secondStepLoading}
+                      style={{
+                        minHeight: "120px",
+                        maxHeight: "200px",
+                        transition: "height 0.1s ease",
+                      }}
+                      onKeyDown={(e) => {
+                        // 添加Ctrl+Enter提交功能
+                        if (
+                          (e.ctrlKey || e.metaKey) &&
+                          e.key === "Enter" &&
+                          !secondStepLoading &&
+                          secondStepInput.trim()
+                        ) {
+                          e.preventDefault();
+                          handleSecondStepSubmit();
+                        }
+                      }}
+                    />
+                    <div  className="flex items-center justify-between">
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      提示：使用 Ctrl/Cmd + Enter 快速提交
+                    </p>
+                    <Button
+                      onClick={handleSecondStepSubmit}
+                      disabled={secondStepLoading || !secondStepInput.trim()}
+                      size="sm"
+                      className="h-8 gap-1 text-xs sm:text-sm bg-sky-500 hover:bg-sky-600 text-white"
+                      >
+                      {secondStepLoading ? (
+                        <>
+                          <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                          生成中...
+                        </>
+                      ) : (
+                        "撰写改写策略"
+                      )}
+                    </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ) : (
-            <Card className="shadow-lg h-[calc(100%-3px)] flex flex-col">
-              <CardHeader className="flex flex-row items-center gap-2 sm:gap-3 pb-3 pt-4 px-3 sm:pb-4 sm:pt-5 sm:px-5 flex-shrink-0">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-                </div>
-                <div className="flex-1">
-                  <CardTitle className="text-sm sm:text-base font-medium">
-                    等待生成
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4 px-3 pb-4 sm:pt-6 sm:px-6 sm:pb-6 overflow-y-auto flex-grow">
-                <div className="text-center text-gray-500 text-xs sm:text-sm">
-                  请在左侧输入补充信息并点击生成
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          </div>
+        </div>
+
+        {/* 第二步结果 */}
+        <div className="flex flex-col">
+          <div className="p-2 sm:p-3 md:p-5 overflow-visible">
+            {secondStepResult ? (
+              <Card className="shadow-lg flex flex-col">
+                {/* 结果卡片头部保持不变 */}
+                <CardHeader className="flex flex-row items-center gap-2 sm:gap-3 pb-3 pt-4 px-3 sm:pb-4 sm:pt-5 sm:px-5 flex-shrink-0">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm sm:text-base font-medium">
+                      修改建议
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+
+                {secondStepResult.currentStep && (
+                  <div className="flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm text-gray-500 bg-gray-50 border-t border-b border-gray-100 flex-shrink-0">
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                    <span>{secondStepResult.currentStep}</span>
+                  </div>
+                )}
+
+                {/* 添加onScroll事件处理和ref */}
+                <CardContent 
+                  ref={resultContentRef} 
+                  onScroll={handleScroll}
+                  className="pt-4 px-3 pb-4 sm:pt-6 sm:px-6 sm:pb-6 overflow-y-auto flex-grow"
+                >
+                  <div className="prose prose-sm max-w-none text-gray-700">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                            {...props}
+                          />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p
+                            className="mb-4 leading-relaxed"
+                            {...props}
+                          />
+                        ),
+                        h1: ({ node, ...props }) => (
+                          <h1
+                            className="text-xl font-bold mt-6 mb-4 text-gray-900"
+                            {...props}
+                          />
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2
+                            className="text-lg font-bold mt-5 mb-3 text-gray-900"
+                            {...props}
+                          />
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3
+                            className="text-base font-bold mt-4 mb-2 text-gray-900"
+                            {...props}
+                          />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul
+                            className="my-3 pl-6 list-disc"
+                            {...props}
+                          />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol
+                            className="my-3 pl-6 list-decimal"
+                            {...props}
+                          />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="mb-1" {...props} />
+                        ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote
+                            className="border-l-4 border-gray-200 pl-4 italic my-4 text-gray-600"
+                            {...props}
+                          />
+                        ),
+                        code: ({ node, className, ...props }: any) => {
+                          const match = /language-(\w+)/.exec(className || "");
+                          const isInline =
+                            !match && !className?.includes("contains-task-list");
+                          return isInline ? (
+                            <code
+                              className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800"
+                              {...props}
+                            />
+                          ) : (
+                            <code
+                              className="block bg-gray-100 p-3 rounded-md text-sm font-mono overflow-x-auto my-4 text-gray-800"
+                              {...props}
+                            />
+                          );
+                        },
+                      }}
+                    >
+                      {secondStepResult.content || "正在生成内容..."}
+                    </ReactMarkdown>
+                  </div>
+                  
+                  {/* 将按钮移到内容底部 */}
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      onClick={handleFinalGeneration}
+                      disabled={
+                        thirdStepLoading ||
+                        !secondStepResult ||
+                        !secondStepResult.isComplete
+                      }
+                      size="sm"
+                      className="h-8 gap-1 text-xs sm:text-sm bg-sky-500 hover:bg-sky-600 text-white"
+                    >
+                      {thirdStepLoading ? (
+                        <>
+                          <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                          生成中...
+                        </>
+                      ) : (
+                        "生成最终文章"
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="shadow-lg h-[calc(100%-3px)] flex flex-col">
+                <CardHeader className="flex flex-row items-center gap-2 sm:gap-3 pb-3 pt-4 px-3 sm:pb-4 sm:pt-5 sm:px-5 flex-shrink-0">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm sm:text-base font-medium">
+                      等待生成
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4 px-3 pb-4 sm:pt-6 sm:px-6 sm:pb-6 overflow-y-auto flex-grow">
+                  <div className="text-center text-gray-500 text-xs sm:text-sm">
+                    请在左侧输入补充信息并点击生成
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

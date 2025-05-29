@@ -115,6 +115,7 @@ interface FirstStepProps {
     transcriptFiles?: File[]
   ) => Promise<void>;
   currentAssistantType?: string; // 添加当前助理类型属性
+  setCurrentAssistantType?: (type: 'sectional' | 'networking' | 'general' | null) => void; // 添加设置助理类型的方法
   onCvClick?: () => void; // 添加CV助理按钮点击回调
   onRlClick?: () => void; // 添加RL助理按钮点击回调
 }
@@ -155,6 +156,7 @@ export function FirstStep({
   onOtherFilesChange,
   handleStreamResponse,
   currentAssistantType,
+  setCurrentAssistantType,
   onCvClick,
   onRlClick,
 }: FirstStepProps) {
@@ -430,6 +432,24 @@ export function FirstStep({
         setIsCVAssistant(type === "cv");
       }
 
+      // 根据按钮类型设置助理类型
+      if (setCurrentAssistantType) {
+        switch (type) {
+          case "custom":
+            setCurrentAssistantType("sectional"); // PS分稿助理
+            break;
+          case "schoolProfessor":
+            setCurrentAssistantType("networking"); // 套瓷助理
+            break;
+          case "question":
+            setCurrentAssistantType("general"); // 随便问问
+            break;
+          default:
+            setCurrentAssistantType(null); // 其他类型使用默认API
+            break;
+        }
+      }
+
       // 同步更新inputMode，确保状态一致
       if (type === "draft") {
         setInputMode("draft");
@@ -444,6 +464,7 @@ export function FirstStep({
       setShouldHideResult,
       setFinalDraft,
       setIsCVAssistant,
+      setCurrentAssistantType,
     ]
   );
 

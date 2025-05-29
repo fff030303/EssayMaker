@@ -15,7 +15,7 @@ import { FirstStep } from "./components/FirstStep";
 import { SecondStep } from "./components/SecondStep";
 import { ThirdStep } from "./components/ThirdStep";
 import { StepNavigation } from "./components/StepNavigation";
-import { PSReportAndDraftDisplay } from "./components/psassistant";
+import { PSReportAndDraftDisplay } from "./components/psassistant/PSReportAndDraftDisplay";
 import { CVAssistantMain } from "./components/cvassistant/CVAssistantMain";
 import { CVReportAndResumeDisplay } from "./components/cvassistant/CVReportAndResumeDisplay";
 import { RLAssistantMain } from "./components/rlassistant/RLAssistantMain";
@@ -27,10 +27,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { ButtonType } from "./components/QuickActionButtons";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DraftResultDisplay } from "./components/DraftResultDisplay";
-import { RLGeneration } from "./components/rlassistant";
+import { RLGeneration } from "./components/rlassistant/RLGeneration";
 // 移除侧边栏导入
 // import { useSidebar } from "@/components/ui/sidebar";
 import { toast } from "@/components/ui/use-toast";
+import { FullScreenLoadingAnimation } from "./components/LoadingAnimation";
 
 export default function EssayMakerPage() {
   // 移除侧边栏状态
@@ -59,6 +60,8 @@ export default function EssayMakerPage() {
     finalDraft,
     isGeneratingFinalDraft,
     setFinalDraft,
+    currentAssistantType,
+    setCurrentAssistantType,
 
     // refs
     firstStepRef,
@@ -131,6 +134,10 @@ export default function EssayMakerPage() {
   const [formattedLetter, setFormattedLetter] = useState<DisplayResult | null>(
     null
   );
+
+  // 添加CV和RL助理的生成状态
+  const [isCVGenerating, setIsCVGenerating] = useState<boolean>(false);
+  const [isRLGenerating, setIsRLGenerating] = useState<boolean>(false);
 
   // 监控文件状态变化
   useEffect(() => {
@@ -542,6 +549,7 @@ export default function EssayMakerPage() {
                 isRLAssistant={isRLAssistant}
                 onCvClick={handleCvClick}
                 onRlClick={handleRlClick}
+                setCurrentAssistantType={setCurrentAssistantType}
                 currentAssistantType={
                   isPSAssistant
                     ? "draft"
@@ -695,6 +703,7 @@ export default function EssayMakerPage() {
                           onStepChange={handleStepChange}
                           formattedResume={formattedResume}
                           onFormattedResumeChange={setFormattedResume}
+                          onGeneratingStateChange={setIsCVGenerating}
                         />
                       )}
                     </>
@@ -715,6 +724,7 @@ export default function EssayMakerPage() {
                           onStepChange={handleStepChange}
                           formattedLetter={formattedLetter}
                           onFormattedLetterChange={setFormattedLetter}
+                          onGeneratingStateChange={setIsRLGenerating}
                         />
                       )}
                     </>
@@ -801,6 +811,27 @@ export default function EssayMakerPage() {
         isDraftAssistant={isDraftAssistant}
         hasSubmittedDraft={hasSubmittedDraft}
       />
+
+      {/* 全屏加载动画 - 在生成过程中显示 */}
+      {isGeneratingFinalDraft && isPSAssistant && (
+        <FullScreenLoadingAnimation 
+          text="正在生成个人陈述初稿，请勿切换页面..." 
+        />
+      )}
+
+      {/* CV助理全屏加载动画 */}
+      {isCVGenerating && isCVAssistant && (
+        <FullScreenLoadingAnimation 
+          text="正在生成简历，请勿切换页面..." 
+        />
+      )}
+
+      {/* RL助理全屏加载动画 */}
+      {isRLGenerating && isRLAssistant && (
+        <FullScreenLoadingAnimation 
+          text="正在生成推荐信，请勿切换页面..." 
+        />
+      )}
     </div>
   );
 }

@@ -22,7 +22,8 @@ export function useFirstStep({
   const handleStreamResponse = async (
     query: string,
     files?: File[],
-    transcriptFiles?: File[]
+    transcriptFiles?: File[],
+    assistantType?: 'sectional' | 'networking' | 'general' // 添加助理类型参数
   ) => {
     try {
       console.log(
@@ -32,6 +33,10 @@ export function useFirstStep({
       console.log(
         "useFirstStep - handleStreamResponse - 接收的成绩单文件数量:",
         transcriptFiles?.length || 0
+      );
+      console.log(
+        "useFirstStep - handleStreamResponse - 助理类型:",
+        assistantType || 'default'
       );
 
       // 输出具体文件信息
@@ -89,22 +94,56 @@ export function useFirstStep({
           : "无"
       );
 
-      const streamPromise = apiService.streamQuery(
-        query,
-        {
-          timestamp: new Date().toISOString(),
-          source: "web",
-          userId: session?.user?.id || undefined,
-        },
-        files,
-        transcriptFiles
-      );
+      // 根据助理类型选择不同的API调用
+      let streamPromise: Promise<ReadableStream<Uint8Array> | null>;
+      
+      switch (assistantType) {
+        case 'sectional':
+          console.log("调用PS分稿助理API");
+          streamPromise = apiService.streamSectionalQuery(
+            query,
+            [...(files || []), ...(transcriptFiles || [])], // 合并所有文件
+            undefined // 课程信息，可以后续扩展
+          );
+          break;
+          
+        case 'networking':
+          console.log("调用套瓷助理API");
+          streamPromise = apiService.streamNetworkingQuery(
+            query,
+            [...(files || []), ...(transcriptFiles || [])] // 合并所有文件
+          );
+          break;
+          
+        case 'general':
+          console.log("调用随便问问API");
+          streamPromise = apiService.streamGeneralQuery(
+            query,
+            [...(files || []), ...(transcriptFiles || [])] // 合并所有文件
+          );
+          break;
+          
+        default:
+          console.log("调用默认通用API");
+          streamPromise = apiService.streamQuery(
+            query,
+            {
+              timestamp: new Date().toISOString(),
+              source: "web",
+              userId: (session?.user as any)?.id || undefined,
+            },
+            files,
+            transcriptFiles
+          );
+          break;
+      }
 
       console.log("第一步API请求参数:", {
         query,
+        assistantType: assistantType || 'default',
         timestamp: new Date().toISOString(),
         source: "web",
-        userId: session?.user?.id,
+        userId: (session?.user as any)?.id,
         filesCount: files?.length || 0,
         transcriptFilesCount: transcriptFiles?.length || 0,
       });
