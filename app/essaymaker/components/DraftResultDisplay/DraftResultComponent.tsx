@@ -61,7 +61,6 @@
 
 "use client";
 
-import React from "react";
 import {
   Card,
   CardHeader,
@@ -109,97 +108,6 @@ import type { DraftResultDisplayProps } from "./types";
 import { useStreaming } from "../../contexts/StreamingContext";
 import { useGlobalStreamResponse } from "../../hooks/useGlobalStreamResponse";
 
-// 新增：内容类型接口
-interface ContentSegment {
-  content_type: 'reasoning' | 'resume' | 'default';
-  content: string;
-  isComplete?: boolean;
-}
-
-// 新增：解析多段内容的函数
-const parseMultiSegmentContent = (content: string): ContentSegment[] => {
-  if (!content) return [];
-
-  console.log("开始解析多段内容:", {
-    contentLength: content.length,
-    contentPreview: content.substring(0, 200) + "...",
-    hasContentType: content.includes('content_type')
-  });
-
-  // 尝试解析JSON格式的多段内容
-  try {
-    const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) {
-      console.log("成功解析JSON格式的多段内容:", parsed);
-      return parsed.map((segment: any) => ({
-        content_type: segment.content_type || 'default',
-        content: segment.content || '',
-        isComplete: segment.isComplete
-      }));
-    }
-  } catch (e) {
-    console.log("不是JSON格式，尝试文本解析");
-  }
-
-  // 文本格式解析（备用方案）
-  const segments: ContentSegment[] = [];
-  const lines = content.split('\n');
-  let currentSegment: ContentSegment | null = null;
-
-  for (const line of lines) {
-    if (line.startsWith('content_type:')) {
-      console.log("发现content_type标记:", line);
-      
-      // 保存之前的段落
-      if (currentSegment) {
-        segments.push(currentSegment);
-      }
-      
-      // 开始新段落
-      const type = line.replace('content_type:', '').trim().replace(/['"]/g, '') as 'reasoning' | 'resume' | 'default';
-      currentSegment = {
-        content_type: type,
-        content: '',
-        isComplete: false
-      };
-      console.log("创建新段落:", { type, content_type: currentSegment.content_type });
-    } else if (currentSegment && currentSegment.content !== undefined) {
-      currentSegment.content += (currentSegment.content ? '\n' : '') + line;
-    } else {
-      // 没有类型标记的内容，作为默认内容
-      if (!currentSegment) {
-        currentSegment = {
-          content_type: 'default',
-          content: line,
-          isComplete: false
-        };
-      } else if (currentSegment.content !== undefined) {
-        currentSegment.content += '\n' + line;
-      }
-    }
-  }
-
-  // 添加最后一个段落
-  if (currentSegment) {
-    segments.push(currentSegment);
-  }
-
-  console.log("解析完成的段落:", {
-    segmentCount: segments.length,
-    segments: segments.map(seg => ({
-      type: seg.content_type,
-      contentLength: seg.content.length,
-      contentPreview: seg.content.substring(0, 50) + "..."
-    }))
-  });
-
-  return segments.length > 0 ? segments : [{
-    content_type: 'default',
-    content: content,
-    isComplete: false
-  }];
-};
-
 export function DraftResultDisplay({
   result,
   title = "素材整理报告",
@@ -230,100 +138,21 @@ export function DraftResultDisplay({
     ? globalTask.result 
     : result;
 
-  // 新增：解析多段内容
-  const contentSegments = effectiveResult?.content 
-    ? parseMultiSegmentContent(effectiveResult.content)
-    : [];
-
-  // 新增：reasoning段落状态管理
-  const [reasoningCollapsed, setReasoningCollapsed] = useState(false);
-  const [reasoningAutoCollapsed, setReasoningAutoCollapsed] = useState(false);
-
-  // 新增：检测reasoning段落是否完成，如果完成则自动收起
-  useEffect(() => {
-    const reasoningSegment = contentSegments.find(seg => seg.content_type === 'reasoning');
-    if (reasoningSegment && effectiveResult?.isComplete && !reasoningAutoCollapsed) {
-      // 延迟3秒后自动收起reasoning卡片
-      const timer = setTimeout(() => {
-        setReasoningCollapsed(true);
-        setReasoningAutoCollapsed(true);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [contentSegments, effectiveResult?.isComplete, reasoningAutoCollapsed]);
-
   // 添加日志查看后端返回的数据
   useEffect(() => {
     if (effectiveResult) {
-      console.log("=== DraftResultComponent 调试信息 ===");
-      console.log("后端返回的完整数据结构:");
-      console.log(JSON.stringify(effectiveResult, null, 2));
-      
-      console.log("各字段详情:");
-      console.log("- content:", effectiveResult.content);
-      console.log("- content类型:", typeof effectiveResult.content);
-      console.log("- content长度:", effectiveResult.content?.length || 0);
-      console.log("- timestamp:", effectiveResult.timestamp);
-      console.log("- steps:", effectiveResult.steps);
-      console.log("- currentStep:", effectiveResult.currentStep);
-      console.log("- isComplete:", effectiveResult.isComplete);
-      
-      // 如果有其他字段，也显示出来
-      const allKeys = Object.keys(effectiveResult);
-      console.log("所有字段:", allKeys);
-      allKeys.forEach(key => {
-        if (!['content', 'timestamp', 'steps', 'currentStep', 'isComplete'].includes(key)) {
-          console.log(`- ${key}:`, (effectiveResult as any)[key]);
-        }
-      });
-      
-      if (effectiveResult.content) {
-        console.log("原始内容预览:", effectiveResult.content.substring(0, 500) + "...");
-        console.log("包含content_type:", effectiveResult.content.includes('content_type') ? '✅ 是' : '❌ 否');
-        
-        // 输出完整内容
-        console.log("=== 完整接收内容 ===");
-        console.log(effectiveResult.content);
-        console.log("=== 完整内容结束 ===");
-        
-        console.log("解析的段落数量:", contentSegments.length);
-        console.log("解析的段落详情:", contentSegments.map((seg, idx) => ({
-          index: idx,
-          type: seg.content_type,
-          contentLength: seg.content.length,
-          contentPreview: seg.content.substring(0, 100) + "..."
-        })));
-        
-        // 检查是否有reasoning段落
-        const reasoningSegments = contentSegments.filter(seg => seg.content_type === 'reasoning');
-        console.log("Reasoning段落数量:", reasoningSegments.length);
-        if (reasoningSegments.length > 0) {
-          console.log("Reasoning段落内容:", reasoningSegments);
-          console.log("Reasoning状态:", { reasoningCollapsed, reasoningAutoCollapsed });
-        } else {
-          console.log("⚠️ 未发现reasoning段落，请检查后端返回的content_type格式");
-          console.log("期望格式1 (JSON):", '[{"content_type":"reasoning","content":"..."}]');
-          console.log("期望格式2 (文本):", 'content_type: reasoning\\n内容...');
-        }
-      } else {
-        console.log("⚠️ content为空，可能还在流式生成初始阶段");
-        console.log("当前状态:", effectiveResult.currentStep);
-        console.log("是否完成:", effectiveResult.isComplete);
-      }
+      console.log("后端返回的数据:", effectiveResult);
+      console.log("内容长度:", effectiveResult.content?.length || 0);
+      console.log("是否完成:", effectiveResult.isComplete);
+      console.log("当前步骤:", effectiveResult.currentStep);
+      console.log("时间戳:", effectiveResult.timestamp);
       
       if (enableGlobalStreaming && globalTask) {
         console.log("全局任务状态:", globalTask.status);
         console.log("任务ID:", globalTask.id);
-        console.log("全局任务完整数据:", JSON.stringify(globalTask, null, 2));
       }
-      console.log("=== 调试信息结束 ===");
-    } else {
-      console.log("⚠️ effectiveResult 为空或未定义");
-      console.log("原始result:", result);
-      console.log("globalTask:", globalTask);
     }
-  }, [effectiveResult, enableGlobalStreaming, globalTask, contentSegments, reasoningCollapsed, reasoningAutoCollapsed]);
+  }, [effectiveResult, enableGlobalStreaming, globalTask]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const [copying, setCopying] = useState(false);
@@ -381,17 +210,8 @@ export function DraftResultDisplay({
 
     setCopying(true);
     try {
-      // 新增：只复制resume类型的内容，忽略reasoning
-      let contentToCopy = "";
-      if (contentSegments.length > 0) {
-        const resumeSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
-        contentToCopy = resumeSegments.map(seg => seg.content).join('\n\n');
-      } else {
-        contentToCopy = effectiveResult.content;
-      }
-
       // 🆕 使用新的清理函数去除Markdown格式，获取纯文本
-      const cleanContent = cleanMarkdownToPlainText(contentToCopy);
+      const cleanContent = cleanMarkdownToPlainText(effectiveResult.content);
 
       // 尝试使用现代clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -433,17 +253,8 @@ export function DraftResultDisplay({
   const handleDownload = () => {
     if (!effectiveResult?.content) return;
 
-    // 新增：只下载resume类型的内容，忽略reasoning
-    let contentToDownload = "";
-    if (contentSegments.length > 0) {
-      const resumeSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
-      contentToDownload = resumeSegments.map(seg => seg.content).join('\n\n');
-    } else {
-      contentToDownload = effectiveResult.content;
-    }
-
     // 🆕 使用新的清理函数去除Markdown格式，获取纯文本
-    const cleanContent = cleanMarkdownToPlainText(contentToDownload);
+    const cleanContent = cleanMarkdownToPlainText(effectiveResult.content);
 
     // 创建Word文档内容
     const wordContent = `
@@ -718,112 +529,6 @@ export function DraftResultDisplay({
   const shouldShowToggle =
     effectiveResult?.isComplete && displayContent.length > previewLength;
 
-  // 新增：Reasoning卡片组件
-  const ReasoningCard = ({ segment }: { segment: ContentSegment }) => (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`mb-4 transition-all duration-300 ${reasoningCollapsed ? 'opacity-50' : ''}`}
-    >
-      <Card className="bg-yellow-50 border-yellow-200 shadow-sm">
-        <CardHeader 
-          className="pb-2 pt-3 px-4 cursor-pointer flex flex-row items-center gap-2"
-          onClick={() => setReasoningCollapsed(!reasoningCollapsed)}
-        >
-          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
-            <Send className="h-3 w-3 text-yellow-600" />
-          </div>
-          <CardTitle className="text-sm font-medium text-yellow-800 flex-1">
-            AI思考过程
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-6 h-6 p-0 rounded-full text-yellow-600"
-          >
-            {reasoningCollapsed ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronUp className="h-3 w-3" />
-            )}
-          </Button>
-        </CardHeader>
-        
-        {!reasoningCollapsed && (
-          <CardContent className="px-4 pb-3 pt-1">
-            <div className="text-sm text-yellow-700 bg-white/50 rounded p-3 border border-yellow-100">
-              {(() => {
-                const unwrappedContent = unwrapMarkdownCodeBlock(segment.content);
-                const contentType = detectContentType(unwrappedContent);
-
-                if (contentType === "html") {
-                  return (
-                    <div
-                      className="reasoning-content text-sm"
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizeHtml(unwrappedContent),
-                      }}
-                    />
-                  );
-                } else {
-                  const extractedContent = extractMarkdownFromHtml(unwrappedContent);
-                  const markdownContent = processMarkdownLineBreaks(extractedContent);
-                  return (
-                    <div className="reasoning-markdown text-xs">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={markdownComponents as any}
-                      >
-                        {markdownContent}
-                      </ReactMarkdown>
-                    </div>
-                  );
-                }
-              })()}
-            </div>
-          </CardContent>
-        )}
-      </Card>
-    </motion.div>
-  );
-
-  // 新增：渲染内容段落的函数
-  const renderContentSegment = (segment: ContentSegment, index: number) => {
-    if (segment.content_type === 'reasoning') {
-      return <ReasoningCard key={index} segment={segment} />;
-    }
-
-    // 渲染resume或default类型的内容
-    const unwrappedContent = unwrapMarkdownCodeBlock(segment.content);
-    const contentType = detectContentType(unwrappedContent);
-
-    if (contentType === "html") {
-      return (
-        <div
-          key={index}
-          className="html-content mb-4"
-          dangerouslySetInnerHTML={{
-            __html: sanitizeHtml(unwrappedContent),
-          }}
-        />
-      );
-    } else {
-      const extractedContent = extractMarkdownFromHtml(unwrappedContent);
-      const markdownContent = processMarkdownLineBreaks(extractedContent);
-      
-      return (
-        <div key={index} className="markdown-segment mb-4">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents as any}
-          >
-            {markdownContent}
-          </ReactMarkdown>
-        </div>
-      );
-    }
-  };
-
   return (
     <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full mt-[30px]">
       <CardHeader className="flex flex-row items-center gap-2 pb-2 pt-4 px-5 flex-shrink-0">
@@ -955,169 +660,45 @@ export function DraftResultDisplay({
           <style jsx global>
             {scrollbarStyles}
           </style>
-          {/* 新增：多段内容渲染区域 */}
-          <div className="content-segments">
-            {/* 调试面板 - 帮助用户查看content_type解析状态 */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded text-xs">
-                <div className="font-semibold mb-2">🔍 调试信息</div>
-                
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <div><strong>当前状态:</strong> {effectiveResult?.currentStep || '未知'}</div>
-                    <div><strong>是否完成:</strong> {effectiveResult?.isComplete ? '✅ 是' : '❌ 否'}</div>
-                    <div><strong>段落数量:</strong> {contentSegments.length}</div>
-                  </div>
-                  <div>
-                    <div><strong>原始内容长度:</strong> {effectiveResult?.content?.length || 0}</div>
-                    <div><strong>包含content_type:</strong> {effectiveResult?.content?.includes('content_type') ? '✅ 是' : '❌ 否'}</div>
-                    <div><strong>时间戳:</strong> {effectiveResult?.timestamp ? new Date(effectiveResult.timestamp).toLocaleTimeString() : '无'}</div>
-                  </div>
-                </div>
+          {/* 优化的内容渲染区域 - 支持HTML和Markdown */}
+          <div className="markdown-content">
+            {(() => {
+              // 先解包可能被代码块包裹的 markdown 内容
+              const unwrappedContent = unwrapMarkdownCodeBlock(contentToRender);
+              const contentType = detectContentType(unwrappedContent);
 
-                {effectiveResult?.content ? (
-                  <>
-                    {/* 内容预览 */}
-                    <details className="mb-2">
-                      <summary className="cursor-pointer font-semibold">📝 原始内容预览 ({effectiveResult.content.length}字符)</summary>
-                      <div className="mt-1 p-2 bg-white border rounded text-xs max-h-20 overflow-y-auto font-mono">
-                        {effectiveResult.content.substring(0, 200) + (effectiveResult.content.length > 200 ? '...' : '')}
-                      </div>
-                    </details>
-
-                    {/* 完整内容 */}
-                    <details className="mb-2">
-                      <summary className="cursor-pointer font-semibold">📄 完整接收内容</summary>
-                      <div className="mt-1 p-3 bg-white border rounded text-xs max-h-80 overflow-auto font-mono whitespace-pre-wrap break-words">
-                        {effectiveResult.content || '(内容为空)'}
-                      </div>
-                      <div className="mt-1 text-gray-500 text-xs">
-                        提示: 可以复制此框中的内容进行分析
-                      </div>
-                    </details>
-                    
-                    {contentSegments.length > 0 && (
-                      <details className="mb-2">
-                        <summary className="cursor-pointer font-semibold">📑 解析后的段落</summary>
-                        <div className="mt-2 space-y-2">
-                          {contentSegments.map((seg, idx) => (
-                            <div key={idx} className="border rounded p-2 bg-white">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  seg.content_type === 'reasoning' ? 'bg-yellow-200 text-yellow-800' : 
-                                  seg.content_type === 'resume' ? 'bg-blue-200 text-blue-800' : 
-                                  'bg-gray-200 text-gray-800'
-                                }`}>
-                                  {seg.content_type}
-                                </span>
-                                <span className="text-gray-600">({seg.content.length}字符)</span>
-                              </div>
-                              <div className="mt-1 p-2 bg-gray-50 border rounded text-xs max-h-32 overflow-auto font-mono whitespace-pre-wrap">
-                                {seg.content}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-orange-600">
-                    <strong>提示:</strong> 内容为空，正在等待数据...
-                  </div>
-                )}
-                
-                {contentSegments.length === 0 && effectiveResult?.content && (
-                  <div className="mt-2 text-orange-600">
-                    <strong>提示:</strong> 未检测到多段内容格式，使用默认渲染方式
-                  </div>
-                )}
-
-                {/* 显示所有字段 */}
-                {effectiveResult && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer font-semibold">🔧 完整数据结构</summary>
-                    <pre className="mt-1 p-2 bg-white border rounded text-xs max-h-40 overflow-auto">
-                      {JSON.stringify(effectiveResult, null, 2)}
-                    </pre>
-                  </details>
-                )}
-
-                {/* 快速操作 */}
-                {effectiveResult?.content && (
-                  <div className="mt-3 pt-2 border-t border-gray-300">
-                    <div className="font-semibold mb-1">🛠️ 快速操作</div>
-                    <div className="flex gap-2">
-                      <button 
-                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs hover:bg-blue-200"
-                        onClick={() => {
-                          navigator.clipboard.writeText(effectiveResult.content || '');
-                          alert('完整内容已复制到剪贴板');
-                        }}
-                      >
-                        复制完整内容
-                      </button>
-                      <button 
-                        className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs hover:bg-green-200"
-                        onClick={() => {
-                          console.log("=== 完整内容输出 ===");
-                          console.log(effectiveResult.content);
-                          console.log("=== 内容结束 ===");
-                        }}
-                      >
-                        输出到控制台
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {contentSegments.length > 0 ? (
-              // 渲染多段内容
-              contentSegments.map((segment, index) => renderContentSegment(segment, index))
-            ) : (
-              // 回退到原始渲染方式
-              <div className="markdown-content">
-                {(() => {
-                  // 先解包可能被代码块包裹的 markdown 内容
-                  const unwrappedContent = unwrapMarkdownCodeBlock(contentToRender);
-                  const contentType = detectContentType(unwrappedContent);
-
-                  if (contentType === "html") {
-                    // 渲染HTML内容
-                    return (
-                      <div
-                        className="html-content"
-                        dangerouslySetInnerHTML={{
-                          __html: sanitizeHtml(unwrappedContent),
-                        }}
-                      />
-                    );
-                  } else {
-                    // 渲染Markdown内容
-                    const extractedContent =
-                      extractMarkdownFromHtml(unwrappedContent);
-                    const markdownContent =
-                      processMarkdownLineBreaks(extractedContent);
-                    console.log("渲染Markdown内容:", {
-                      original: contentToRender.substring(0, 100) + "...",
-                      unwrapped: unwrappedContent.substring(0, 100) + "...",
-                      extracted: extractedContent.substring(0, 100) + "...",
-                      processed: markdownContent.substring(0, 100) + "...",
-                    });
-                    return (
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={markdownComponents as any}
-                      >
-                        {markdownContent}
-                      </ReactMarkdown>
-                    );
-                  }
-                })()}
-              </div>
-            )}
+              if (contentType === "html") {
+                // 渲染HTML内容
+                return (
+                  <div
+                    className="html-content"
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeHtml(unwrappedContent),
+                    }}
+                  />
+                );
+              } else {
+                // 渲染Markdown内容
+                const extractedContent =
+                  extractMarkdownFromHtml(unwrappedContent);
+                const markdownContent =
+                  processMarkdownLineBreaks(extractedContent);
+                console.log("渲染Markdown内容:", {
+                  original: contentToRender.substring(0, 100) + "...",
+                  unwrapped: unwrappedContent.substring(0, 100) + "...",
+                  extracted: extractedContent.substring(0, 100) + "...",
+                  processed: markdownContent.substring(0, 100) + "...",
+                });
+                return (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={markdownComponents as any}
+                  >
+                    {markdownContent}
+                  </ReactMarkdown>
+                );
+              }
+            })()}
           </div>
 
           {/* 收起/展开指示器 - 在内容中间显示 */}
