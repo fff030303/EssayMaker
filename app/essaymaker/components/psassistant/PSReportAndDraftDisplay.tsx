@@ -312,18 +312,6 @@ export function PSReportAndDraftDisplay({
                       key="personal-draft"
                       enableGlobalStreaming={!!globalTaskId}
                       taskId={globalTaskId || undefined}
-                      headerActions={
-                        <div className="flex items-center gap-2">
-                          <Button
-                            onClick={handleGlobalDraftGeneration}
-                            variant="outline"
-                            className="mr-2"
-                          >
-                            <Globe className="h-4 w-4 mr-2" />
-                            后台生成（全局模式）
-                          </Button>
-                        </div>
-                      }
                     />
                   </div>
                 </div>

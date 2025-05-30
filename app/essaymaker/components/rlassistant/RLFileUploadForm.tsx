@@ -85,6 +85,8 @@ import { FullScreenLoadingAnimation } from "../LoadingAnimation";
 interface RLFileUploadFormProps {
   onStepChange?: (step: number) => void;
   setResult?: (result: DisplayResult | null) => void;
+  // 新增：写作需求传递回调
+  onWritingRequirementsChange?: (requirements: string) => void;
 }
 
 // 支持的文件格式
@@ -108,6 +110,7 @@ const getFileExtension = (fileName: string): string => {
 export function RLFileUploadForm({
   onStepChange,
   setResult,
+  onWritingRequirementsChange,
 }: RLFileUploadFormProps = {}) {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
@@ -309,17 +312,24 @@ export function RLFileUploadForm({
       fullWritingRequirements += `其他写作要求：${additionalRequirements}`;
     }
 
+    // 🆕 通过回调函数传递写作需求给父组件
+    if (onWritingRequirementsChange) {
+      onWritingRequirementsChange(fullWritingRequirements);
+    }
+
     setIsLoading(true);
     setStreamContent("");
     setIsComplete(false);
 
-    // 创建结果对象
+    // 创建结果对象，包含写作需求信息
     const resultObject: DisplayResult = {
       content: "",
       steps: [],
       timestamp: new Date().toISOString(),
       isComplete: false,
       currentStep: "生成推荐信分析",
+      // 🆕 在结果对象中包含写作需求
+      writingRequirements: fullWritingRequirements,
     };
 
     // 更新结果状态

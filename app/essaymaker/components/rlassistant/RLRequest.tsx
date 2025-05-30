@@ -310,6 +310,15 @@ export function RLRequest({
           <div className="space-y-3">
             {/* 快速选择按钮 */}
             <div className="flex flex-wrap gap-2">
+
+              <Badge 
+                variant="outline" 
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => !disabled && handleRequirementButtonClick("学生要申请XX专业，要求合理选用素材，并且从素材中合理推导出该专业所要求的专业技能和软实力")}
+              >
+                申请专业
+              </Badge>
+
               <Badge 
                 variant="outline" 
                 className="cursor-pointer hover:bg-muted px-3 py-1"
