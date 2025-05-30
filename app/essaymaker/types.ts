@@ -10,6 +10,8 @@ export interface DisplayResult {
   // 添加成绩单解析结果字段
   transcriptAnalysis?: string;
   stream?: ReadableStream<Uint8Array>; // 添加stream属性
+  // 🆕 添加写作需求字段，用于推荐信助理
+  writingRequirements?: string;
 }
 
 // 定义Agent类型枚举

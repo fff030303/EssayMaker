@@ -190,6 +190,56 @@ export const processMarkdownLineBreaks = (content: string): string => {
   );
 };
 
+// 🆕 新增：清理Markdown格式，返回纯文本内容
+export const cleanMarkdownToPlainText = (content: string): string => {
+  if (!content) return content;
+
+  // 先解包可能被代码块包裹的内容
+  const unwrappedContent = unwrapMarkdownCodeBlock(content);
+
+  // 去除所有Markdown格式，保留纯文本
+  const cleanContent = unwrappedContent
+    // 去除标题标记
+    .replace(/#{1,6}\s+/g, "")
+    // 去除粗体标记
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    // 去除斜体标记
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/_(.*?)_/g, "$1")
+    // 去除删除线
+    .replace(/~~(.*?)~~/g, "$1")
+    // 去除代码块标记
+    .replace(/```[\s\S]*?\n([\s\S]*?)\n```/g, "$1")
+    .replace(/`{1,2}([^`]+)`{1,2}/g, "$1")
+    // 去除链接，保留链接文本
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\[[^\]]*\]/g, "$1")
+    // 去除图片标记
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    // 去除引用标记
+    .replace(/^>\s*/gm, "")
+    .replace(/\n>\s*/g, "\n")
+    // 去除无序列表标记
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/\n\s*[-*+]\s+/g, "\n")
+    // 去除有序列表标记
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/\n\s*\d+\.\s+/g, "\n")
+    // 去除分隔线
+    .replace(/^[-*_]{3,}$/gm, "")
+    .replace(/\n[-*_]{3,}\n/g, "\n\n")
+    // 去除表格标记
+    .replace(/\|/g, " ")
+    .replace(/^[-\s:]+$/gm, "")
+    // 清理多余的空白字符
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+
+  return cleanContent;
+};
+
 // 清理和安全化HTML内容
 export const sanitizeHtml = (html: string): string => {
   if (typeof window === "undefined") {

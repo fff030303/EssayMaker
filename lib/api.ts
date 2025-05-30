@@ -769,7 +769,8 @@ export const apiService = {
     rawLetter: string,
     customRolePrompt: string = "",
     customTaskPrompt: string = "",
-    customOutputFormatPrompt: string = ""
+    customOutputFormatPrompt: string = "",
+    writingRequirements: string = ""
   ) {
     try {
       const apiKey = getApiKey();
@@ -777,6 +778,7 @@ export const apiService = {
 
       console.log("准备格式化推荐信, API地址:", apiUrl);
       console.log("原始推荐信内容长度:", rawLetter.length);
+      console.log("写作需求:", writingRequirements);
       console.log("自定义提示词:", {
         role: customRolePrompt,
         task: customTaskPrompt,
@@ -789,6 +791,7 @@ export const apiService = {
       formData.append("custom_role_prompt", customRolePrompt);
       formData.append("custom_task_prompt", customTaskPrompt);
       formData.append("custom_output_format_prompt", customOutputFormatPrompt);
+      formData.append("writing_requirements", writingRequirements);
 
       // 打印上传的表单数据
       for (let [key, value] of formData.entries()) {

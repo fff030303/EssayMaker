@@ -71,6 +71,7 @@ interface RLGenerationProps {
   onFormattedLetterChange: (result: DisplayResult) => void;
   onStepChange: (step: number) => void;
   onGeneratingStateChange?: (isGenerating: boolean) => void;
+  writingRequirements?: string;
 }
 
 export function RLGeneration({
@@ -79,6 +80,7 @@ export function RLGeneration({
   onFormattedLetterChange,
   onStepChange,
   onGeneratingStateChange,
+  writingRequirements,
 }: RLGenerationProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -100,6 +102,7 @@ export function RLGeneration({
   const handleGenerateLetter = async () => {
     console.log("开始生成推荐信...");
     console.log("当前结果:", result);
+    console.log("写作需求:", writingRequirements);
 
     if (!result || !result.content) {
       console.log("没有结果或内容，显示错误提示");
@@ -114,12 +117,15 @@ export function RLGeneration({
     setIsGenerating(true);
     try {
       console.log("调用格式化推荐信API...");
-      // 调用格式化推荐信API，使用用户输入的自定义提示词
+      const requirementsToUse = writingRequirements || result.writingRequirements || "";
+      console.log("使用的写作需求:", requirementsToUse);
+      
       const response = await apiService.formatRecommendationLetter(
         result.content,
         customRolePrompt,
         customTaskPrompt,
-        customOutputFormatPrompt
+        customOutputFormatPrompt,
+        requirementsToUse
       );
 
       console.log("API响应:", response);

@@ -35,7 +35,6 @@ import { FullScreenLoadingAnimation } from "./components/LoadingAnimation";
 
 // 导入全局流式生成相关组件
 import { StreamingProvider } from "./contexts/StreamingContext";
-import { GlobalTaskManager } from "./components/GlobalTaskManager";
 
 // 导入分稿助理组件
 import { SectionalAssistantMain } from "./components/sectionalassistant/SectionalAssistantMain";
@@ -145,6 +144,9 @@ export default function EssayMakerPage() {
     null
   );
 
+  // 🆕 添加RL助理写作需求状态
+  const [rlWritingRequirements, setRlWritingRequirements] = useState<string>("");
+
   // 添加CV和RL助理的生成状态
   const [isCVGenerating, setIsCVGenerating] = useState<boolean>(false);
   const [isRLGenerating, setIsRLGenerating] = useState<boolean>(false);
@@ -216,6 +218,8 @@ export default function EssayMakerPage() {
         setOtherFiles([]);
         setFormattedResume(null);
         setFormattedLetter(null);
+        // 🆕 清理RL助理写作需求状态
+        setRlWritingRequirements("");
       };
 
       if (type === "draft") {
@@ -508,8 +512,6 @@ export default function EssayMakerPage() {
         {/* 添加Toaster组件以显示通知 */}
         <Toaster />
 
-        {/* 全局任务管理器 */}
-        <GlobalTaskManager />
 
         {/* 导航栏 - 仅在第一步显示 - 已移除 */}
 
@@ -731,7 +733,6 @@ export default function EssayMakerPage() {
                           <CVAssistantMain
                             onStepChange={handleStepChange}
                             setResult={setResult}
-                            isCVGenerating={isCVGenerating}
                           />
                         )}
                         {currentStep === 2 && (
@@ -754,6 +755,7 @@ export default function EssayMakerPage() {
                             onStepChange={handleStepChange}
                             setResult={setResult}
                             isRLGenerating={isRLGenerating}
+                            onWritingRequirementsChange={setRlWritingRequirements}
                           />
                         )}
                         {currentStep === 2 && (
@@ -763,6 +765,7 @@ export default function EssayMakerPage() {
                             formattedLetter={formattedLetter}
                             onFormattedLetterChange={setFormattedLetter}
                             onGeneratingStateChange={setIsRLGenerating}
+                            writingRequirements={rlWritingRequirements}
                           />
                         )}
                       </>
@@ -882,9 +885,31 @@ export default function EssayMakerPage() {
         />
 
         {/* 全屏加载动画 - 在生成过程中显示 */}
-        {isGeneratingFinalDraft && isPSAssistant && (
+        {/* PS助理第一步：生成素材整理报告 */}
+        {firstStepLoading && isPSAssistant && (
           <FullScreenLoadingAnimation 
-            text="正在生成个人陈述初稿，请勿切换页面..." 
+            text="正在分析个人陈述素材，请勿切换页面..." 
+          />
+        )}
+
+        {/* PS助理第二步：生成个人陈述初稿（只在非第二步界面显示） */}
+        {isGeneratingFinalDraft && isPSAssistant && currentStep !== 2 && (
+          <FullScreenLoadingAnimation 
+            text="正在生成个人陈述初稿，可通过底边栏切换到第二步查看进度..." 
+          />
+        )}
+
+        {/* CV助理：生成简历时，只在非第二步界面显示全屏动画 */}
+        {isCVGenerating && isCVAssistant && currentStep !== 2 && (
+          <FullScreenLoadingAnimation 
+            text="正在生成简历，可通过底边栏切换到第二步查看进度..." 
+          />
+        )}
+
+        {/* RL助理：生成推荐信时，只在非第二步界面显示全屏动画 */}
+        {isRLGenerating && isRLAssistant && currentStep !== 2 && (
+          <FullScreenLoadingAnimation 
+            text="正在生成推荐信，可通过底边栏切换到第二步查看进度..." 
           />
         )}
 

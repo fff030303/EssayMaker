@@ -53,12 +53,14 @@ interface RLAssistantMainProps {
   onStepChange?: (step: number) => void;
   setResult?: (result: DisplayResult | null) => void;
   isRLGenerating?: boolean;
+  onWritingRequirementsChange?: (requirements: string) => void;
 }
 
 export function RLAssistantMain({
   onStepChange,
   setResult,
   isRLGenerating = false,
+  onWritingRequirementsChange,
 }: RLAssistantMainProps = {}) {
   const [internalResult, setInternalResult] = useState<DisplayResult | null>(
     null
@@ -66,12 +68,21 @@ export function RLAssistantMain({
   const [isLoading, setIsLoading] = useState(false);
   const [streamContent, setStreamContent] = useState<string>("");
   const [isComplete, setIsComplete] = useState(false);
+  const [writingRequirements, setWritingRequirements] = useState<string>("");
 
   // 创建统一的结果处理函数
   const handleResultChange = (result: DisplayResult | null) => {
     setInternalResult(result);
     if (setResult) {
       setResult(result);
+    }
+  };
+
+  // 🆕 处理写作需求变化
+  const handleWritingRequirementsChange = (requirements: string) => {
+    setWritingRequirements(requirements);
+    if (onWritingRequirementsChange) {
+      onWritingRequirementsChange(requirements);
     }
   };
 
@@ -89,6 +100,7 @@ export function RLAssistantMain({
         <RLFileUploadForm
           onStepChange={onStepChange}
           setResult={handleResultChange}
+          onWritingRequirementsChange={handleWritingRequirementsChange}
         />
 
         {/* 结果显示组件 */}

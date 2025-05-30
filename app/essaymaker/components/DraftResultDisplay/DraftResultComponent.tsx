@@ -99,6 +99,7 @@ import {
   processMarkdownLineBreaks,
   sanitizeHtml,
   unwrapMarkdownCodeBlock,
+  cleanMarkdownToPlainText,
 } from "./utils";
 import { markdownComponents } from "./MarkdownComponents";
 import type { DraftResultDisplayProps } from "./types";
@@ -209,16 +210,16 @@ export function DraftResultDisplay({
 
     setCopying(true);
     try {
-      // 先解包可能被代码块包裹的内容
-      const unwrappedContent = unwrapMarkdownCodeBlock(effectiveResult.content);
+      // 🆕 使用新的清理函数去除Markdown格式，获取纯文本
+      const cleanContent = cleanMarkdownToPlainText(effectiveResult.content);
 
       // 尝试使用现代clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(unwrappedContent);
+        await navigator.clipboard.writeText(cleanContent);
       } else {
         // 回退到传统方法
         const textArea = document.createElement("textarea");
-        textArea.value = unwrappedContent;
+        textArea.value = cleanContent;
         textArea.style.position = "fixed";
         textArea.style.left = "-9999px";
         textArea.style.top = "0";
@@ -234,7 +235,7 @@ export function DraftResultDisplay({
 
       toast({
         title: "复制成功",
-        description: "内容已复制到剪贴板",
+        description: "内容已复制到剪贴板（已去除格式）",
       });
     } catch (err) {
       console.error("复制失败:", err);
@@ -252,21 +253,8 @@ export function DraftResultDisplay({
   const handleDownload = () => {
     if (!effectiveResult?.content) return;
 
-    // 先解包可能被代码块包裹的内容
-    const unwrappedContent = unwrapMarkdownCodeBlock(effectiveResult.content);
-
-    // 去除Markdown格式
-    const cleanContent = unwrappedContent
-      .replace(/\*\*(.*?)\*\*/g, "$1") // 去除加粗
-      .replace(/\*(.*?)\*/g, "$1") // 去除斜体
-      .replace(/\n\s*[-*+]\s/g, "\n") // 去除无序列表
-      .replace(/\n\s*\d+\.\s/g, "\n") // 去除有序列表
-      .replace(/>\s*(.*?)\n/g, "$1\n") // 去除引用
-      .replace(/#{1,6}\s/g, "") // 去除标题
-      .replace(/`{1,3}(.*?)`{1,3}/g, "$1") // 去除代码块
-      .replace(/\[(.*?)\]\((.*?)\)/g, "$1") // 去除链接
-      .replace(/\n{3,}/g, "\n\n") // 去除多余空行
-      .trim();
+    // 🆕 使用新的清理函数去除Markdown格式，获取纯文本
+    const cleanContent = cleanMarkdownToPlainText(effectiveResult.content);
 
     // 创建Word文档内容
     const wordContent = `
@@ -290,14 +278,16 @@ export function DraftResultDisplay({
     `;
 
     // 创建Blob对象
-    const blob = new Blob([wordContent], { type: "application/msword" });
+    const blob = new Blob([wordContent], { 
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     // 使用title作为文件名，并添加日期
     a.download = `${title}-${new Date()
       .toLocaleDateString()
-      .replace(/\//g, "-")}.doc`;
+      .replace(/\//g, "-")}.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -305,7 +295,7 @@ export function DraftResultDisplay({
 
     toast({
       title: "下载成功",
-      description: `${title}已下载为Word文档`,
+      description: `${title}已下载为Word文档（已去除格式）`,
     });
   };
 
@@ -520,13 +510,7 @@ export function DraftResultDisplay({
                 ))}
               </motion.div>
               
-              {/* 全局流式生成提示 */}
-              {enableGlobalStreaming && (
-                <div className="text-sm text-gray-500 mt-2 text-center">
-                  <p>支持后台生成，您可以切换到其他页面</p>
-                  <p>生成完成后会自动通知您</p>
-                </div>
-              )}
+              
             </div>
           </div>
         </div>

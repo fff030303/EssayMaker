@@ -641,344 +641,344 @@ export function AdvancedInputArea({
         />
       )}
 
-      <Card className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
-        <CardContent className="p-4 pt-4">
-          <div className="grid grid-cols-1 gap-3">
-            {/* 申请方向输入框 - 全宽度 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center">
-                申请方向 <span className="text-red-500 ml-0.5">*</span>
-                <span className="ml-1 text-xs text-red-500">(必填)</span>
-              </label>
-              <Input
-                value={direction}
-                onChange={(e) => setDirection(e.target.value)}
-                placeholder="例如: 计算机科学、经济学等"
-                className={cn(
-                  "placeholder:text-gray-400 w-full",
-                  !direction.trim() && "border-red-300 focus-visible:ring-red-500"
-                )}
+    <Card className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
+      <CardContent className="p-4 pt-4">
+        <div className="grid grid-cols-1 gap-3">
+          {/* 申请方向输入框 - 全宽度 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center">
+              申请方向 <span className="text-red-500 ml-0.5">*</span>
+              <span className="ml-1 text-xs text-red-500">(必填)</span>
+            </label>
+            <Input
+              value={direction}
+              onChange={(e) => setDirection(e.target.value)}
+              placeholder="例如: 计算机科学、经济学等"
+              className={cn(
+                "placeholder:text-gray-400 w-full",
+                !direction.trim() && "border-red-300 focus-visible:ring-red-500"
+              )}
+              disabled={isLoading || submitting}
+            />
+          </div>
+
+          {/* 写作需求区域 - 直接展示，不使用折叠组件 */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              写作需求（选填）
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements +
+                      "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n"
+                    : "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                弃用部分素材
+              </Badge>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements +
+                      "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n"
+                    : "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                增加部分细节
+              </Badge>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements + "禁止添加素材表中不存在的数据/操作步骤\n"
+                    : "禁止添加素材表中不存在的数据/操作步骤\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                保证内容真实
+              </Badge>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-muted px-3 py-1"
+                onClick={() => {
+                  const newRequirements = requirements
+                    ? requirements +
+                      "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n"
+                    : "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n";
+                  setRequirements(newRequirements);
+                }}
+              >
+                其他写作需求
+              </Badge>
+            </div>
+            <div className="relative">
+              <Textarea
+                value={requirements}
+                onChange={(e) => setRequirements(e.target.value)}
+                placeholder="例如：内容要求、字数要求等"
+                className="text-sm placeholder:text-gray-400 w-full min-h-[36px] max-h-[80px] overflow-y-auto resize-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+                style={{ height: "100px" }}
                 disabled={isLoading || submitting}
               />
             </div>
+          </div>
 
-            {/* 写作需求区域 - 直接展示，不使用折叠组件 */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                写作需求（选填）
+          {/* 文件上传区域 - 更紧凑的布局 */}
+          <div className="grid grid-cols-2 gap-3 mt-1">
+            {/* 左侧 - 个人陈述素材表文件上传 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center">
+                个人陈述素材表 <span className="text-red-500 ml-0.5">*</span>
+                <span className="ml-1 text-xs text-red-500">(必填)</span>
               </label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-muted px-3 py-1"
-                  onClick={() => {
-                    const newRequirements = requirements
-                      ? requirements +
-                        "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n"
-                      : "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n";
-                    setRequirements(newRequirements);
-                  }}
-                >
-                  弃用部分素材
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-muted px-3 py-1"
-                  onClick={() => {
-                    const newRequirements = requirements
-                      ? requirements +
-                        "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n"
-                      : "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n";
-                    setRequirements(newRequirements);
-                  }}
-                >
-                  增加部分细节
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-muted px-3 py-1"
-                  onClick={() => {
-                    const newRequirements = requirements
-                      ? requirements + "禁止添加素材表中不存在的数据/操作步骤\n"
-                      : "禁止添加素材表中不存在的数据/操作步骤\n";
-                    setRequirements(newRequirements);
-                  }}
-                >
-                  保证内容真实
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-muted px-3 py-1"
-                  onClick={() => {
-                    const newRequirements = requirements
-                      ? requirements +
-                        "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n"
-                      : "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n";
-                    setRequirements(newRequirements);
-                  }}
-                >
-                  其他写作需求
-                </Badge>
-              </div>
-              <div className="relative">
-                <Textarea
-                  value={requirements}
-                  onChange={(e) => setRequirements(e.target.value)}
-                  placeholder="例如：内容要求、字数要求等"
-                  className="text-sm placeholder:text-gray-400 w-full min-h-[36px] max-h-[80px] overflow-y-auto resize-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
-                  style={{ height: "100px" }}
+              <div
+                ref={draftDropAreaRef}
+                className={cn(
+                  "border border-dashed rounded-md p-3 transition-colors cursor-pointer",
+                  isDraggingDraft
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-300 hover:border-primary hover:bg-gray-50",
+                  (isLoading || submitting) && "opacity-50 cursor-not-allowed"
+                )}
+                onClick={draftFile ? undefined : triggerDraftFileInput}
+              >
+                <input
+                  type="file"
+                  ref={draftFileInputRef}
+                  onChange={handleDraftFileChange}
+                  className="hidden"
+                    accept=".docx"
                   disabled={isLoading || submitting}
                 />
-              </div>
-            </div>
 
-            {/* 文件上传区域 - 更紧凑的布局 */}
-            <div className="grid grid-cols-2 gap-3 mt-1">
-              {/* 左侧 - 个人陈述素材表文件上传 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center">
-                  个人陈述素材表 <span className="text-red-500 ml-0.5">*</span>
-                  <span className="ml-1 text-xs text-red-500">(必填)</span>
-                </label>
-                <div
-                  ref={draftDropAreaRef}
-                  className={cn(
-                    "border border-dashed rounded-md p-3 transition-colors cursor-pointer",
-                    isDraggingDraft
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-300 hover:border-primary hover:bg-gray-50",
-                    (isLoading || submitting) && "opacity-50 cursor-not-allowed"
-                  )}
-                  onClick={draftFile ? undefined : triggerDraftFileInput}
-                >
-                  <input
-                    type="file"
-                    ref={draftFileInputRef}
-                    onChange={handleDraftFileChange}
-                    className="hidden"
-                    accept=".docx"
-                    disabled={isLoading || submitting}
-                  />
-
-                  {draftFile ? (
-                    <div className="flex items-center p-2 border rounded bg-muted/50">
-                      <FileText className="h-4 w-4 mr-2 text-primary" />
-                      <span className="text-sm flex-1 truncate">
-                        {draftFile.name}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveDraftFile();
-                        }}
-                        disabled={isLoading || submitting}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-[120px]">
-                      <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        点击或拖放文件到此处上传
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        只支持 DOCX 格式
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 右侧 - 成绩单文件上传 */}
-              <div>
-                <div className="flex justify-between items-center">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                    成绩单（选填）
-                  </label>
-                  {otherFiles.length > 0 && (
+                {draftFile ? (
+                  <div className="flex items-center p-2 border rounded bg-muted/50">
+                    <FileText className="h-4 w-4 mr-2 text-primary" />
+                    <span className="text-sm flex-1 truncate">
+                      {draftFile.name}
+                    </span>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={handleClearAllOtherFiles}
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveDraftFile();
+                      }}
+                      disabled={isLoading || submitting}
                     >
-                      清空全部
+                      <X className="h-4 w-4" />
                     </Button>
-                  )}
-                </div>
-                <div
-                  ref={otherDropAreaRef}
-                  className={cn(
-                    "border border-dashed rounded-md p-3 transition-colors cursor-pointer",
-                    isDraggingOther
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-300 hover:border-primary hover:bg-gray-50",
-                    (isLoading || submitting) && "opacity-50 cursor-not-allowed"
-                  )}
-                  onClick={
-                    otherFiles.length > 0 ? undefined : triggerOtherFilesInput
-                  }
-                >
-                  <input
-                    type="file"
-                    ref={otherFilesInputRef}
-                    onChange={handleOtherFilesChange}
-                    className="hidden"
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[120px]">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      点击或拖放文件到此处上传
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        只支持 DOCX 格式
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 右侧 - 成绩单文件上传 */}
+            <div>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  成绩单（选填）
+                </label>
+                {otherFiles.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={handleClearAllOtherFiles}
+                  >
+                    清空全部
+                  </Button>
+                )}
+              </div>
+              <div
+                ref={otherDropAreaRef}
+                className={cn(
+                  "border border-dashed rounded-md p-3 transition-colors cursor-pointer",
+                  isDraggingOther
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-300 hover:border-primary hover:bg-gray-50",
+                  (isLoading || submitting) && "opacity-50 cursor-not-allowed"
+                )}
+                onClick={
+                  otherFiles.length > 0 ? undefined : triggerOtherFilesInput
+                }
+              >
+                <input
+                  type="file"
+                  ref={otherFilesInputRef}
+                  onChange={handleOtherFilesChange}
+                  className="hidden"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    multiple
-                    disabled={isLoading || submitting}
-                  />
+                  multiple
+                  disabled={isLoading || submitting}
+                />
 
-                  {otherFiles.length > 0 ? (
-                    <div className="space-y-2 max-h-[120px] overflow-y-auto">
-                      {otherFiles.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center p-2 border rounded bg-muted/50"
-                        >
-                          <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                          <span className="text-sm flex-1 truncate">
-                            {file.name}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveOtherFile(index);
-                            }}
-                            disabled={isLoading || submitting}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full mt-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerOtherFilesInput();
-                        }}
-                        disabled={isLoading || submitting}
+                {otherFiles.length > 0 ? (
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                    {otherFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center p-2 border rounded bg-muted/50"
                       >
-                        <ArrowUp className="h-3.5 w-3.5 mr-1" />
-                        添加更多文件
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-[120px]">
-                      <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        添加额外支持材料（可选）
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                        <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                        <span className="text-sm flex-1 truncate">
+                          {file.name}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveOtherFile(index);
+                          }}
+                          disabled={isLoading || submitting}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerOtherFilesInput();
+                      }}
+                      disabled={isLoading || submitting}
+                    >
+                      <ArrowUp className="h-3.5 w-3.5 mr-1" />
+                      添加更多文件
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[120px]">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      添加额外支持材料（可选）
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
                         支持 PDF, JPG, JPEG, PNG 格式
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </CardContent>
+        </div>
+      </CardContent>
 
-        {/* 控制按钮区域 - 放在Card底部 */}
-        <CardFooter className="px-4 py-3 flex justify-between">
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs px-2 py-1 h-8"
-              onClick={() => {
-                // 清空所有输入和文件
-                setDirection("");
-                setRequirements("");
-                setDraftFile(null);
-                setOtherFiles([]);
+      {/* 控制按钮区域 - 放在Card底部 */}
+      <CardFooter className="px-4 py-3 flex justify-between">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs px-2 py-1 h-8"
+            onClick={() => {
+              // 清空所有输入和文件
+              setDirection("");
+              setRequirements("");
+              setDraftFile(null);
+              setOtherFiles([]);
 
-                // 重置文件输入元素
-                if (draftFileInputRef.current) {
-                  draftFileInputRef.current.value = "";
-                }
-                if (otherFilesInputRef.current) {
-                  otherFilesInputRef.current.value = "";
-                }
-
-                // 清除生成内容
-                if (onClearGeneratedContent) {
-                  onClearGeneratedContent();
-                }
-
-                // 显示清空提示
-                toast({
-                  title: "已清空",
-                  description: "所有内容已重置",
-                });
-              }}
-            >
-              <RefreshCcw className="h-3 w-3 mr-1" /> 清空所有内容
-            </Button>
-          </div>
-
-          <div className="flex gap-2 justify-end items-center">
-            {type === "draft" &&
-              finalDraftResult === null &&
-              onGenerateFinalDraft &&
-              purifiedDraft && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 h-10"
-                  onClick={handleGenerateFinalDraft}
-                  disabled={
-                    isLoading ||
-                    submitting ||
-                    isGeneratingFinalDraft ||
-                    !draftFile
-                  }
-                >
-                  {isGeneratingFinalDraft ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> 正在生成...
-                    </>
-                  ) : (
-                    <>
-                      <FileUp className="h-4 w-4" /> 直接生成初稿
-                    </>
-                  )}
-                </Button>
-              )}
-
-            <Button
-              variant="default"
-              size="default"
-              className="flex items-center gap-1"
-              onClick={handleSubmit}
-              disabled={
-                isLoading || submitting || !direction.trim() || !draftFile
+              // 重置文件输入元素
+              if (draftFileInputRef.current) {
+                draftFileInputRef.current.value = "";
               }
-            >
-              {isLoading || submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> 处理中...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" /> 获取素材表分析报告
-                </>
-              )}
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
+              if (otherFilesInputRef.current) {
+                otherFilesInputRef.current.value = "";
+              }
+
+              // 清除生成内容
+              if (onClearGeneratedContent) {
+                onClearGeneratedContent();
+              }
+
+              // 显示清空提示
+              toast({
+                title: "已清空",
+                description: "所有内容已重置",
+              });
+            }}
+          >
+            <RefreshCcw className="h-3 w-3 mr-1" /> 清空所有内容
+          </Button>
+        </div>
+
+        <div className="flex gap-2 justify-end items-center">
+          {type === "draft" &&
+            finalDraftResult === null &&
+            onGenerateFinalDraft &&
+            purifiedDraft && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 h-10"
+                onClick={handleGenerateFinalDraft}
+                disabled={
+                  isLoading ||
+                  submitting ||
+                  isGeneratingFinalDraft ||
+                  !draftFile
+                }
+              >
+                {isGeneratingFinalDraft ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> 正在生成...
+                  </>
+                ) : (
+                  <>
+                    <FileUp className="h-4 w-4" /> 直接生成初稿
+                  </>
+                )}
+              </Button>
+            )}
+
+          <Button
+            variant="default"
+            size="default"
+            className="flex items-center gap-1"
+            onClick={handleSubmit}
+            disabled={
+              isLoading || submitting || !direction.trim() || !draftFile
+            }
+          >
+            {isLoading || submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> 处理中...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" /> 获取素材表分析报告
+              </>
+            )}
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
     </>
   );
 }

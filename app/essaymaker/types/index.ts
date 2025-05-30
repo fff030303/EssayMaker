@@ -26,6 +26,8 @@ export interface DisplayResult {
   // 添加错误状态字段
   isError?: boolean;
   errorMessage?: string;
+  // 🆕 添加写作需求字段，用于推荐信助理
+  writingRequirements?: string;
 }
 
 export interface QueryResponse {
