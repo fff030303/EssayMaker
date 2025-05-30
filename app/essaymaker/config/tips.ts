@@ -19,4 +19,9 @@ export const assistantTips = {
   ],
   rl: [
   ],
+  sectional: [
+    "上传您的原始初稿文件",
+    "描述分稿需求和要求",
+    "可选择上传相关参考文件",
+  ],
 }; 

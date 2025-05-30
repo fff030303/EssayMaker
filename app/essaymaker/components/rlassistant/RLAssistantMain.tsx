@@ -47,15 +47,18 @@ import React, { useState } from "react";
 import { RLFileUploadForm } from "./RLFileUploadForm";
 import { RLReportAndResumeDisplay } from "./RLAnalysisReportDisplay";
 import { DisplayResult } from "../../types";
+import { FullScreenLoadingAnimation } from "../LoadingAnimation";
 
 interface RLAssistantMainProps {
   onStepChange?: (step: number) => void;
   setResult?: (result: DisplayResult | null) => void;
+  isRLGenerating?: boolean;
 }
 
 export function RLAssistantMain({
   onStepChange,
   setResult,
+  isRLGenerating = false,
 }: RLAssistantMainProps = {}) {
   const [internalResult, setInternalResult] = useState<DisplayResult | null>(
     null
@@ -73,20 +76,29 @@ export function RLAssistantMain({
   };
 
   return (
-    <div className="w-full max-w-[800px] mx-auto space-y-6">
-      {/* 文件上传表单 */}
-      <RLFileUploadForm
-        onStepChange={onStepChange}
-        setResult={handleResultChange}
-      />
+    <>
+      {/* RL助理全屏加载动画 - 在第一步界面显示 */}
+      {isRLGenerating && (
+        <FullScreenLoadingAnimation 
+          text="正在生成推荐信，请勿切换页面..." 
+        />
+      )}
 
-      {/* 结果显示组件 */}
-      <RLReportAndResumeDisplay
-        result={internalResult}
-        isLoading={isLoading}
-        streamContent={streamContent}
-        isComplete={isComplete}
-      />
-    </div>
+      <div className="w-full max-w-[800px] mx-auto space-y-6">
+        {/* 文件上传表单 */}
+        <RLFileUploadForm
+          onStepChange={onStepChange}
+          setResult={handleResultChange}
+        />
+
+        {/* 结果显示组件 */}
+        <RLReportAndResumeDisplay
+          result={internalResult}
+          isLoading={isLoading}
+          streamContent={streamContent}
+          isComplete={isComplete}
+        />
+      </div>
+    </>
   );
 }

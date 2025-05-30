@@ -15,6 +15,7 @@
  *    - 逐字显示打字机效果
  *    - 平滑的内容更新动画
  *    - 自动滚动到最新内容
+ *    - 支持跨页面后台生成
  * 
  * 3. 内容处理：
  *    - HTML内容安全化处理
@@ -27,6 +28,7 @@
  *    - 导出下载选项
  *    - 手动滚动控制
  *    - 加载状态指示
+ *    - 暂停/恢复生成控制
  * 
  * 5. 响应式设计：
  *    - 移动端适配
@@ -40,14 +42,21 @@
  *    - 懒加载处理
  *    - 内存使用优化
  * 
+ * 7. 全局状态管理：
+ *    - 跨页面状态保持
+ *    - 后台生成支持
+ *    - 任务恢复机制
+ *    - 全局任务管理
+ * 
  * 技术实现：
  * - 使用ReactMarkdown进行Markdown渲染
  * - 使用DOMPurify进行HTML安全化
  * - 支持remarkGfm扩展语法
  * - 自定义组件样式和交互
+ * - 集成全局流式生成上下文
  * 
  * @author EssayMaker Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 "use client";
@@ -71,6 +80,9 @@ import {
   Code,
   ScrollText,
   Send,
+  Pause,
+  Play,
+  Square,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -91,21 +103,55 @@ import {
 import { markdownComponents } from "./MarkdownComponents";
 import type { DraftResultDisplayProps } from "./types";
 
+// 导入全局流式生成相关
+import { useStreaming } from "../../contexts/StreamingContext";
+import { useGlobalStreamResponse } from "../../hooks/useGlobalStreamResponse";
+
 export function DraftResultDisplay({
   result,
   title = "素材整理报告",
   headerActions,
-}: DraftResultDisplayProps) {
+  // 新增属性：支持全局流式生成
+  enableGlobalStreaming = false,
+  taskId,
+  onTaskCreated,
+}: DraftResultDisplayProps & {
+  enableGlobalStreaming?: boolean;
+  taskId?: string;
+  onTaskCreated?: (taskId: string) => void;
+}) {
+  // 全局流式生成相关
+  const { getTask, updateTaskResult } = useStreaming();
+  const {
+    pauseGlobalStream,
+    resumeGlobalStream,
+    stopGlobalStream,
+    getTaskStatus,
+  } = useGlobalStreamResponse();
+
+  // 获取全局任务状态
+  const globalTask = taskId ? getTask(taskId) : null;
+  
+  // 如果启用了全局流式生成且有任务ID，优先使用全局任务的结果
+  const effectiveResult = enableGlobalStreaming && globalTask?.result 
+    ? globalTask.result 
+    : result;
+
   // 添加日志查看后端返回的数据
   useEffect(() => {
-    if (result) {
-      console.log("后端返回的数据:", result);
-      console.log("内容长度:", result.content?.length || 0);
-      console.log("是否完成:", result.isComplete);
-      console.log("当前步骤:", result.currentStep);
-      console.log("时间戳:", result.timestamp);
+    if (effectiveResult) {
+      console.log("后端返回的数据:", effectiveResult);
+      console.log("内容长度:", effectiveResult.content?.length || 0);
+      console.log("是否完成:", effectiveResult.isComplete);
+      console.log("当前步骤:", effectiveResult.currentStep);
+      console.log("时间戳:", effectiveResult.timestamp);
+      
+      if (enableGlobalStreaming && globalTask) {
+        console.log("全局任务状态:", globalTask.status);
+        console.log("任务ID:", globalTask.id);
+      }
     }
-  }, [result]);
+  }, [effectiveResult, enableGlobalStreaming, globalTask]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const [copying, setCopying] = useState(false);
@@ -128,14 +174,14 @@ export function DraftResultDisplay({
 
   // 新增: 每次result.timestamp变化时重置显示内容和状态
   useEffect(() => {
-    if (!result) return;
+    if (!effectiveResult) return;
     setIsCollapsed(false);
     setHasAutoCollapsed(false); // 重置自动收起状态
     setUserManuallyExpanded(false); // 重置用户手动展开状态
     setUserManuallyScrolled(false); // 重置用户手动滚动状态
     setAutoScroll(true); // 重置自动滚动状态
     lastUpdateRef.current = Date.now();
-  }, [result?.timestamp]);
+  }, [effectiveResult?.timestamp]);
 
   // 新增: 根据 autoScroll 状态控制自动滚动
   useEffect(() => {
@@ -143,28 +189,28 @@ export function DraftResultDisplay({
       autoScroll &&
       contentRef.current &&
       !userManuallyScrolled &&
-      result?.content
+      effectiveResult?.content
     ) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
-  }, [result?.content, autoScroll, userManuallyScrolled]);
+  }, [effectiveResult?.content, autoScroll, userManuallyScrolled]);
 
   // 当结果完成时，确保显示全部内容
   useEffect(() => {
-    if (result?.isComplete && result.content) {
+    if (effectiveResult?.isComplete && effectiveResult.content) {
       // 内容已完成，可以进行其他操作
       lastUpdateRef.current = Date.now();
     }
-  }, [result?.isComplete, result?.content]);
+  }, [effectiveResult?.isComplete, effectiveResult?.content]);
 
   // 处理复制内容
   const handleCopy = async () => {
-    if (!result?.content) return;
+    if (!effectiveResult?.content) return;
 
     setCopying(true);
     try {
       // 先解包可能被代码块包裹的内容
-      const unwrappedContent = unwrapMarkdownCodeBlock(result.content);
+      const unwrappedContent = unwrapMarkdownCodeBlock(effectiveResult.content);
 
       // 尝试使用现代clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -204,10 +250,10 @@ export function DraftResultDisplay({
 
   // 处理下载内容
   const handleDownload = () => {
-    if (!result?.content) return;
+    if (!effectiveResult?.content) return;
 
     // 先解包可能被代码块包裹的内容
-    const unwrappedContent = unwrapMarkdownCodeBlock(result.content);
+    const unwrappedContent = unwrapMarkdownCodeBlock(effectiveResult.content);
 
     // 去除Markdown格式
     const cleanContent = unwrappedContent
@@ -283,6 +329,37 @@ export function DraftResultDisplay({
     }
   };
 
+  // 全局流式生成控制函数
+  const handlePauseGlobalStream = () => {
+    if (taskId) {
+      pauseGlobalStream(taskId);
+      toast({
+        title: "已暂停",
+        description: "生成已暂停，您可以在其他页面恢复",
+      });
+    }
+  };
+
+  const handleResumeGlobalStream = () => {
+    if (taskId) {
+      resumeGlobalStream(taskId);
+      toast({
+        title: "正在恢复",
+        description: "正在恢复生成，请稍候",
+      });
+    }
+  };
+
+  const handleStopGlobalStream = () => {
+    if (taskId) {
+      stopGlobalStream(taskId);
+      toast({
+        title: "已停止",
+        description: "生成已停止并清理",
+      });
+    }
+  };
+
   // 用户手动滚动检测
   useEffect(() => {
     function globalWheelHandler(e: WheelEvent) {
@@ -349,7 +426,11 @@ export function DraftResultDisplay({
   }, [autoScroll]);
 
   // 判断是否正在生成中（流式输出开始前）
-  const isGenerating = !result || (result && !result.content);
+  const isGenerating = !effectiveResult || (effectiveResult && !effectiveResult.content);
+  
+  // 判断是否正在流式生成中
+  const isStreaming = enableGlobalStreaming && globalTask?.status === 'streaming';
+  const isPaused = enableGlobalStreaming && globalTask?.status === 'paused';
 
   // 处理自动滚动按钮点击
   const handleAutoScrollClick = () => {
@@ -438,6 +519,14 @@ export function DraftResultDisplay({
                   </motion.span>
                 ))}
               </motion.div>
+              
+              {/* 全局流式生成提示 */}
+              {enableGlobalStreaming && (
+                <div className="text-sm text-gray-500 mt-2 text-center">
+                  <p>支持后台生成，您可以切换到其他页面</p>
+                  <p>生成完成后会自动通知您</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -446,7 +535,7 @@ export function DraftResultDisplay({
   }
 
   // 计算要显示的内容（根据收起状态）
-  const displayContent = result?.content || "";
+  const displayContent = effectiveResult?.content || "";
   const contentToRender =
     isCollapsed && displayContent.length > previewLength
       ? displayContent.substring(0, previewLength) + "..."
@@ -454,7 +543,7 @@ export function DraftResultDisplay({
 
   // 是否应该显示收起/展开按钮（只有在内容足够长时）
   const shouldShowToggle =
-    result?.isComplete && displayContent.length > previewLength;
+    effectiveResult?.isComplete && displayContent.length > previewLength;
 
   return (
     <Card className="shadow-lg flex flex-col bg-white relative w-full mx-auto mb-6 h-full mt-[30px]">
@@ -472,13 +561,64 @@ export function DraftResultDisplay({
         </div>
         <div className="flex-1">
           <CardTitle className="text-base font-medium">{title}</CardTitle>
+          {/* 显示全局任务状态 */}
+          {enableGlobalStreaming && globalTask && (
+            <div className="text-xs text-gray-500 mt-1">
+              {isStreaming && "正在后台生成中..."}
+              {isPaused && "已暂停，可在任意页面恢复"}
+              {globalTask.status === 'completed' && "生成完成"}
+              {globalTask.status === 'error' && "生成出错"}
+            </div>
+          )}
         </div>
 
         {/* 功能按钮区域 */}
         <div className="flex items-center gap-2">
           {headerActions}
+          
+          {/* 全局流式生成控制按钮 */}
+          {enableGlobalStreaming && taskId && (
+            <>
+              {isStreaming && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-8 h-8 p-0 rounded-full"
+                  onClick={handlePauseGlobalStream}
+                  title="暂停生成"
+                >
+                  <Pause className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {isPaused && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-8 h-8 p-0 rounded-full"
+                  onClick={handleResumeGlobalStream}
+                  title="恢复生成"
+                >
+                  <Play className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {(isStreaming || isPaused) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-8 h-8 p-0 rounded-full text-red-600 hover:text-red-700"
+                  onClick={handleStopGlobalStream}
+                  title="停止生成"
+                >
+                  <Square className="h-4 w-4" />
+                </Button>
+              )}
+            </>
+          )}
+          
           {/* 复制和下载按钮 - 仅在生成完成后显示 */}
-          {result && result.isComplete && (
+          {effectiveResult && effectiveResult.isComplete && (
             <>
               <Button
                 variant="ghost"
@@ -590,7 +730,7 @@ export function DraftResultDisplay({
           )}
 
           {/* 生成中指示器 - 只在不完整且有内容时显示 */}
-          {!result?.isComplete && result?.content && !isGenerating && (
+          {!effectiveResult?.isComplete && effectiveResult?.content && !isGenerating && (
             <div className="flex items-center gap-2 mt-4 text-sm text-gray-500">
               <div className="flex gap-1">
                 <span
@@ -606,11 +746,14 @@ export function DraftResultDisplay({
                   style={{ animationDelay: "600ms" }}
                 ></span>
               </div>
+              {enableGlobalStreaming && (
+                <span className="text-xs">支持后台生成</span>
+              )}
             </div>
           )}
 
           {/* 收起/展开按钮区域 */}
-          {result?.isComplete && shouldShowToggle && !isCollapsed && (
+          {effectiveResult?.isComplete && shouldShowToggle && !isCollapsed && (
             <div className="flex justify-end mt-4">
               <Button
                 variant="ghost"

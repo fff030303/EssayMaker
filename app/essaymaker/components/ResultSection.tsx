@@ -57,6 +57,7 @@ interface ResultSectionProps {
   expandedSteps: string[];
   setExpandedSteps: React.Dispatch<React.SetStateAction<string[]>>;
   handleStepClick: (step: string, stepId: string) => void;
+  title?: string; // 可选的自定义标题
 }
 
 export function ResultSection({
@@ -64,6 +65,7 @@ export function ResultSection({
   expandedSteps,
   setExpandedSteps,
   handleStepClick,
+  title = "查询过程", // 默认标题
 }: ResultSectionProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -84,7 +86,7 @@ export function ResultSection({
         <div className="h-full max-h-[calc(100vh-84px)] p-5 overflow-visible">
           <Card className="shadow-lg h-[calc(100%-3px)] flex flex-col">
             <CardHeader className="pb-2 pt-4 px-4 flex-shrink-0">
-              <CardTitle className="text-base font-medium">查询过程</CardTitle>
+              <CardTitle className="text-base font-medium">{title}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 px-4 pb-4 overflow-y-auto flex-grow">
               <StepIndicator

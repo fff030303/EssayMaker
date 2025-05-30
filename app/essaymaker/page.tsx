@@ -33,6 +33,13 @@ import { RLGeneration } from "./components/rlassistant/RLGeneration";
 import { toast } from "@/components/ui/use-toast";
 import { FullScreenLoadingAnimation } from "./components/LoadingAnimation";
 
+// 导入全局流式生成相关组件
+import { StreamingProvider } from "./contexts/StreamingContext";
+import { GlobalTaskManager } from "./components/GlobalTaskManager";
+
+// 导入分稿助理组件
+import { SectionalAssistantMain } from "./components/sectionalassistant/SectionalAssistantMain";
+
 export default function EssayMakerPage() {
   // 移除侧边栏状态
   // const { state: sidebarState } = useSidebar();
@@ -104,6 +111,9 @@ export default function EssayMakerPage() {
   // 添加判断是否为分稿助理
   const [isDraftAssistant, setIsDraftAssistant] = useState<boolean>(false);
 
+  // 新增：添加判断是否为分稿助理
+  const [isSectionalAssistant, setIsSectionalAssistant] = useState<boolean>(false);
+
   // 添加控制步骤导航显示状态，默认显示
   const [showStepNavigation, setShowStepNavigation] = useState<boolean>(true);
 
@@ -139,6 +149,9 @@ export default function EssayMakerPage() {
   const [isCVGenerating, setIsCVGenerating] = useState<boolean>(false);
   const [isRLGenerating, setIsRLGenerating] = useState<boolean>(false);
 
+  // 新增：添加分稿助理的生成状态
+  const [isSectionalGenerating, setIsSectionalGenerating] = useState<boolean>(false);
+
   // 监控文件状态变化
   useEffect(() => {
     console.log("[PAGE] 📁 文件数量:", files.length);
@@ -151,6 +164,7 @@ export default function EssayMakerPage() {
       isCVAssistant,
       isRLAssistant,
       isDraftAssistant,
+      isSectionalAssistant,
       currentStep,
       isGeneratingFinalDraft,
       timestamp: new Date().toLocaleTimeString(),
@@ -160,6 +174,7 @@ export default function EssayMakerPage() {
     isCVAssistant,
     isRLAssistant,
     isDraftAssistant,
+    isSectionalAssistant,
     currentStep,
     isGeneratingFinalDraft,
   ]);
@@ -209,6 +224,7 @@ export default function EssayMakerPage() {
         setIsCVAssistant(false);
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
+        setIsSectionalAssistant(false);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
@@ -219,6 +235,7 @@ export default function EssayMakerPage() {
         setIsPSAssistant(false);
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
+        setIsSectionalAssistant(false);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
@@ -229,6 +246,7 @@ export default function EssayMakerPage() {
         setIsPSAssistant(false);
         setIsCVAssistant(false);
         setIsDraftAssistant(false);
+        setIsSectionalAssistant(false);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
@@ -238,17 +256,19 @@ export default function EssayMakerPage() {
         setIsPSAssistant(false);
         setIsCVAssistant(false);
         setIsRLAssistant(false);
-        setIsDraftAssistant(true);
+        setIsDraftAssistant(false);
+        setIsSectionalAssistant(true);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
-        console.log("[PAGE] 切换到自定义助理模式，已清理所有相关状态");
+        console.log("[PAGE] 切换到分稿助理模式，已清理所有相关状态");
       } else {
         clearAllStates();
         setIsPSAssistant(false);
         setIsCVAssistant(false);
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
+        setIsSectionalAssistant(false);
         setShowStepNavigation(false);
         setHasSubmittedDraft(false);
         handleStepChange(1);
@@ -273,6 +293,7 @@ export default function EssayMakerPage() {
       setIsCVAssistant,
       setIsRLAssistant,
       setIsDraftAssistant,
+      setIsSectionalAssistant,
       setShowStepNavigation,
       setHasSubmittedDraft,
       handleStepChange,
@@ -388,6 +409,7 @@ export default function EssayMakerPage() {
     setIsPSAssistant(false);
     setIsRLAssistant(false);
     setIsDraftAssistant(false);
+    setIsSectionalAssistant(false);
 
     // 显示导航栏
     setShowStepNavigation(true);
@@ -411,6 +433,7 @@ export default function EssayMakerPage() {
     setIsPSAssistant,
     setIsRLAssistant,
     setIsDraftAssistant,
+    setIsSectionalAssistant,
     setShowStepNavigation,
     handleStepChange,
   ]);
@@ -439,6 +462,7 @@ export default function EssayMakerPage() {
     setIsCVAssistant(false);
     setIsPSAssistant(false);
     setIsDraftAssistant(false);
+    setIsSectionalAssistant(false);
 
     // 显示导航栏
     setShowStepNavigation(true);
@@ -462,376 +486,415 @@ export default function EssayMakerPage() {
     setIsCVAssistant,
     setIsPSAssistant,
     setIsDraftAssistant,
+    setIsSectionalAssistant,
     setShowStepNavigation,
     handleStepChange,
   ]);
 
   return (
-    <div
-      className={cn(
-        "min-h-screen flex flex-col",
-        shouldShowMultiStepFlow || isProfessorSearch || showStepNavigation
-          ? "pb-16"
-          : "pb-4"
-      )}
-    >
-      <style jsx global>
-        {scrollbarStyles}
-      </style>
-
-      {/* 添加Toaster组件以显示通知 */}
-      <Toaster />
-
-      {/* 导航栏 - 仅在第一步显示 - 已移除 */}
-
-      {/* 内容区域 */}
+    <StreamingProvider>
       <div
         className={cn(
-          "flex-1 px-4 pb-6 md:px-8 md:pb-6",
+          "min-h-screen flex flex-col",
           shouldShowMultiStepFlow || isProfessorSearch || showStepNavigation
-            ? "pb-12"
-            : "pb-8",
-          "transition-all duration-300 mx-auto max-w-7xl w-full"
+            ? "pb-16"
+            : "pb-4"
         )}
       >
-        {/* 恢复滑动动画，同时保持条件渲染 */}
-        <div ref={containerRef} className="relative w-full overflow-hidden">
-          <div
-            className="flex items-start gap-16 transition-transform duration-500"
-            style={{
-              transform: `translateX(${
-                currentStep === 1
-                  ? "0"
-                  : currentStep === 2
-                  ? "calc(-100% - 4rem)"
-                  : "calc(-200% - 8rem)"
-              })`,
-            }}
-          >
-            {/* 第一步界面 - 始终渲染 */}
-            <div ref={firstStepRef} className="min-w-full">
-              <FirstStep
-                query={query}
-                setQuery={setQuery}
-                isLoading={firstStepLoading}
-                result={result}
-                setResult={setResult}
-                showExamples={showExamples}
-                setShowExamples={setShowExamples}
-                isInputExpanded={isInputExpanded}
-                setIsInputExpanded={setIsInputExpanded}
-                expandedSteps={expandedSteps}
-                setExpandedSteps={setExpandedSteps}
-                handleSubmit={
-                  isPSAssistant ? handleAdvancedSubmit : handleSubmit
-                }
-                handleStepClick={handleStepClick}
-                handleExampleClick={handleExampleClick}
-                setDetectedAgentType={setDetectedAgentType}
-                onStepChange={handleStepChange}
-                isProfessorSearch={isProfessorSearch}
-                files={files}
-                setFiles={setFiles}
-                finalDraft={finalDraft}
-                isGeneratingFinalDraft={isGeneratingFinalDraft}
-                handleFinalDraftSubmit={handleFinalDraftSubmit}
-                setFinalDraft={setFinalDraft}
-                onButtonChange={handleButtonChange}
-                setIsPSAssistant={setIsPSAssistant}
-                setIsCVAssistant={setIsCVAssistant}
-                setIsRLAssistant={setIsRLAssistant}
-                setShowStepNavigation={setShowStepNavigation}
-                onUserInputChange={handleUserInputChange}
-                onOtherFilesChange={handleOtherFilesChange}
-                handleStreamResponse={handleStreamResponse}
-                isPSAssistant={isPSAssistant}
-                isCVAssistant={isCVAssistant}
-                isRLAssistant={isRLAssistant}
-                onCvClick={handleCvClick}
-                onRlClick={handleRlClick}
-                setCurrentAssistantType={setCurrentAssistantType}
-                currentAssistantType={
-                  isPSAssistant
-                    ? "draft"
-                    : isCVAssistant
-                    ? "cv"
-                    : isRLAssistant
-                    ? "rl"
-                    : "custom"
-                }
-              />
-            </div>
+        <style jsx global>
+          {scrollbarStyles}
+        </style>
 
-            {/* 第二步界面 - 条件渲染内容 */}
+        {/* 添加Toaster组件以显示通知 */}
+        <Toaster />
+
+        {/* 全局任务管理器 */}
+        <GlobalTaskManager />
+
+        {/* 导航栏 - 仅在第一步显示 - 已移除 */}
+
+        {/* 内容区域 */}
+        <div
+          className={cn(
+            "flex-1 px-4 pb-6 md:px-8 md:pb-6",
+            shouldShowMultiStepFlow || isProfessorSearch || showStepNavigation
+              ? "pb-12"
+              : "pb-8",
+            "transition-all duration-300 mx-auto max-w-7xl w-full"
+          )}
+        >
+          {/* 恢复滑动动画，同时保持条件渲染 */}
+          <div ref={containerRef} className="relative w-full overflow-hidden">
             <div
-              ref={secondStepRef}
-              className="min-w-full h-auto overflow-hidden"
+              className="flex items-start gap-16 transition-transform duration-500"
+              style={{
+                transform: `translateX(${
+                  currentStep === 1
+                    ? "0"
+                    : currentStep === 2
+                    ? "calc(-100% - 4rem)"
+                    : "calc(-200% - 8rem)"
+                })`,
+              }}
             >
-              {(() => {
-                console.log("[PAGE] 🔍 第二步渲染状态检查:", {
-                  shouldShowMultiStepFlow,
-                  isProfessorSearch,
-                  isPSAssistant,
-                  isCVAssistant,
-                  isRLAssistant,
-                  isDraftAssistant,
-                  currentStep,
-                  isGeneratingFinalDraft,
-                  hasResult: !!result,
-                  hasSubmittedDraft,
-                  showStepNavigation,
-                  timestamp: new Date().toISOString(),
-                });
+              {/* 第一步界面 - 始终渲染 */}
+              <div ref={firstStepRef} className="min-w-full">
+                <FirstStep
+                  query={query}
+                  setQuery={setQuery}
+                  isLoading={firstStepLoading}
+                  result={result}
+                  setResult={setResult}
+                  showExamples={showExamples}
+                  setShowExamples={setShowExamples}
+                  isInputExpanded={isInputExpanded}
+                  setIsInputExpanded={setIsInputExpanded}
+                  expandedSteps={expandedSteps}
+                  setExpandedSteps={setExpandedSteps}
+                  handleSubmit={
+                    isPSAssistant ? handleAdvancedSubmit : handleSubmit
+                  }
+                  handleStepClick={handleStepClick}
+                  handleExampleClick={handleExampleClick}
+                  setDetectedAgentType={setDetectedAgentType}
+                  onStepChange={handleStepChange}
+                  isProfessorSearch={isProfessorSearch}
+                  files={files}
+                  setFiles={setFiles}
+                  finalDraft={finalDraft}
+                  isGeneratingFinalDraft={isGeneratingFinalDraft}
+                  handleFinalDraftSubmit={handleFinalDraftSubmit}
+                  setFinalDraft={setFinalDraft}
+                  onButtonChange={handleButtonChange}
+                  setIsPSAssistant={setIsPSAssistant}
+                  setIsCVAssistant={setIsCVAssistant}
+                  setIsRLAssistant={setIsRLAssistant}
+                  setIsSectionalAssistant={setIsSectionalAssistant}
+                  setShowStepNavigation={setShowStepNavigation}
+                  onUserInputChange={handleUserInputChange}
+                  onOtherFilesChange={handleOtherFilesChange}
+                  handleStreamResponse={handleStreamResponse}
+                  isPSAssistant={isPSAssistant}
+                  isCVAssistant={isCVAssistant}
+                  isRLAssistant={isRLAssistant}
+                  onCvClick={handleCvClick}
+                  onRlClick={handleRlClick}
+                  setCurrentAssistantType={setCurrentAssistantType}
+                  currentAssistantType={
+                    isPSAssistant
+                      ? "draft"
+                      : isCVAssistant
+                      ? "cv"
+                      : isRLAssistant
+                      ? "rl"
+                      : isSectionalAssistant
+                      ? "sectional"
+                      : "custom"
+                  }
+                />
+              </div>
 
-                console.log("[PAGE] 第二步渲染条件检查:", {
-                  shouldShowMultiStepFlow,
-                  isProfessorSearch,
-                  isPSAssistant,
-                  isCVAssistant,
-                  isRLAssistant,
-                  isDraftAssistant,
-                  detectedAgentType,
-                  "AgentType.COURSE_INFO": AgentType.COURSE_INFO,
-                  "AgentType.PROFESSOR_SEARCH": AgentType.PROFESSOR_SEARCH,
-                });
+              {/* 第二步界面 - 条件渲染内容 */}
+              <div
+                ref={secondStepRef}
+                className="min-w-full h-auto overflow-hidden"
+              >
+                {(() => {
+                  console.log("[PAGE] 🔍 第二步渲染状态检查:", {
+                    shouldShowMultiStepFlow,
+                    isProfessorSearch,
+                    isPSAssistant,
+                    isCVAssistant,
+                    isRLAssistant,
+                    isDraftAssistant,
+                    isSectionalAssistant,
+                    currentStep,
+                    isGeneratingFinalDraft,
+                    hasResult: !!result,
+                    hasSubmittedDraft,
+                    showStepNavigation,
+                    timestamp: new Date().toISOString(),
+                  });
 
-                console.log("[PAGE] 🔍 详细条件分析:", {
-                  shouldShowMultiStepFlow: shouldShowMultiStepFlow,
-                  isProfessorSearch: isProfessorSearch,
-                  isPSAssistant: isPSAssistant,
-                  isCVAssistant: isCVAssistant,
-                  isRLAssistant: isRLAssistant,
-                  detectedAgentType: detectedAgentType,
-                  "AgentType.COURSE_INFO": AgentType.COURSE_INFO,
-                  "AgentType.PROFESSOR_SEARCH": AgentType.PROFESSOR_SEARCH,
-                });
+                  console.log("[PAGE] 第二步渲染条件检查:", {
+                    shouldShowMultiStepFlow,
+                    isProfessorSearch,
+                    isPSAssistant,
+                    isCVAssistant,
+                    isRLAssistant,
+                    isDraftAssistant,
+                    isSectionalAssistant,
+                    detectedAgentType,
+                    "AgentType.COURSE_INFO": AgentType.COURSE_INFO,
+                    "AgentType.PROFESSOR_SEARCH": AgentType.PROFESSOR_SEARCH,
+                  });
 
-                if (shouldShowMultiStepFlow) {
-                  console.log("[PAGE] ✅ 渲染 SecondStep - 多步骤流程");
-                  return (
-                    <SecondStep
-                      secondStepInput={secondStepInput}
-                      setSecondStepInput={(input) => {}}
-                      secondStepLoading={secondStepLoading}
-                      secondStepResult={secondStepResult}
-                      thirdStepLoading={thirdStepLoading}
-                      handleSecondStepSubmit={handleSecondStepSubmit}
-                      handleFinalGeneration={handleFinalGeneration}
-                      handleSecondStepInputChange={handleSecondStepInputChange}
-                      onStepChange={handleStepChange}
-                    />
-                  );
-                } else if (isProfessorSearch) {
-                  console.log("[PAGE] ✅ 渲染教授信息查询");
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center p-8 max-w-md">
-                        <h2 className="text-2xl font-bold mb-4">
-                          教授信息查询
-                        </h2>
-                        <p className="text-muted-foreground mb-6">
-                          您可以查询更多关于教授的详细信息。
-                        </p>
-                        <div className="flex gap-4 justify-center">
+                  console.log("[PAGE] 🔍 详细条件分析:", {
+                    shouldShowMultiStepFlow: shouldShowMultiStepFlow,
+                    isProfessorSearch: isProfessorSearch,
+                    isPSAssistant: isPSAssistant,
+                    isCVAssistant: isCVAssistant,
+                    isRLAssistant: isRLAssistant,
+                    isDraftAssistant: isDraftAssistant,
+                    isSectionalAssistant: isSectionalAssistant,
+                    detectedAgentType: detectedAgentType,
+                    "AgentType.COURSE_INFO": AgentType.COURSE_INFO,
+                    "AgentType.PROFESSOR_SEARCH": AgentType.PROFESSOR_SEARCH,
+                  });
+
+                  if (shouldShowMultiStepFlow) {
+                    console.log("[PAGE] ✅ 渲染 SecondStep - 多步骤流程");
+                    return (
+                      <SecondStep
+                        secondStepInput={secondStepInput}
+                        setSecondStepInput={(input) => {}}
+                        secondStepLoading={secondStepLoading}
+                        secondStepResult={secondStepResult}
+                        thirdStepLoading={thirdStepLoading}
+                        handleSecondStepSubmit={handleSecondStepSubmit}
+                        handleFinalGeneration={handleFinalGeneration}
+                        handleSecondStepInputChange={handleSecondStepInputChange}
+                        onStepChange={handleStepChange}
+                      />
+                    );
+                  } else if (isProfessorSearch) {
+                    console.log("[PAGE] ✅ 渲染教授信息查询");
+                    return (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center p-8 max-w-md">
+                          <h2 className="text-2xl font-bold mb-4">
+                            教授信息查询
+                          </h2>
+                          <p className="text-muted-foreground mb-6">
+                            您可以查询更多关于教授的详细信息。
+                          </p>
+                          <div className="flex gap-4 justify-center">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleStepChange(1)}
+                            >
+                              <ArrowLeft className="h-4 w-4 mr-2" />
+                              返回查询结果
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else if (isPSAssistant) {
+                    console.log(
+                      "[PAGE] ✅ 渲染 PSReportAndDraftDisplay (PS助理)"
+                    );
+                    console.log("[PAGE] 🔍 PSReportAndDraftDisplay Props检查:", {
+                      result: result,
+                      hasResult: !!result,
+                      resultContent: result?.content ? "有内容" : "无内容",
+                      finalDraft: finalDraft,
+                      hasFinalDraft: !!finalDraft,
+                      userDirection: userDirection,
+                      userRequirements: userRequirements,
+                      onGenerateFinalDraft: !!handleFinalDraftSubmit,
+                      isGeneratingFinalDraft: isGeneratingFinalDraft,
+                    });
+                    return (
+                      <PSReportAndDraftDisplay
+                        result={result}
+                        finalDraft={finalDraft}
+                        finalDraftResult={finalDraftResult}
+                        onStepChange={handleStepChange}
+                        onGenerateFinalDraft={
+                          handleFinalDraftSubmit
+                            ? () =>
+                                handleFinalDraftSubmit(
+                                  "生成个人陈述初稿",
+                                  [], // 不再传递文件
+                                  result?.content || "",
+                                  userDirection,
+                                  userRequirements,
+                                  transcriptAnalysis
+                                )
+                            : undefined
+                        }
+                        isGeneratingFinalDraft={isGeneratingFinalDraft}
+                        userDirection={userDirection}
+                        userRequirements={userRequirements}
+                        otherFiles={otherFiles}
+                        transcriptAnalysis={transcriptAnalysis}
+                        setShowStepNavigation={setShowStepNavigation}
+                        setHasSubmittedDraft={setHasSubmittedDraft}
+                      />
+                    );
+                  } else if (isCVAssistant) {
+                    console.log("[PAGE] ✅ 渲染 CV助理");
+                    return (
+                      <>
+                        {currentStep === 1 && (
+                          <CVAssistantMain
+                            onStepChange={handleStepChange}
+                            setResult={setResult}
+                            isCVGenerating={isCVGenerating}
+                          />
+                        )}
+                        {currentStep === 2 && (
+                          <CVReportAndResumeDisplay
+                            result={result}
+                            onStepChange={handleStepChange}
+                            formattedResume={formattedResume}
+                            onFormattedResumeChange={setFormattedResume}
+                            onGeneratingStateChange={setIsCVGenerating}
+                          />
+                        )}
+                      </>
+                    );
+                  } else if (isRLAssistant) {
+                    console.log("[PAGE] ✅ 渲染 RL助理");
+                    return (
+                      <>
+                        {currentStep === 1 && (
+                          <RLAssistantMain
+                            onStepChange={handleStepChange}
+                            setResult={setResult}
+                            isRLGenerating={isRLGenerating}
+                          />
+                        )}
+                        {currentStep === 2 && (
+                          <RLGeneration
+                            result={result}
+                            onStepChange={handleStepChange}
+                            formattedLetter={formattedLetter}
+                            onFormattedLetterChange={setFormattedLetter}
+                            onGeneratingStateChange={setIsRLGenerating}
+                          />
+                        )}
+                      </>
+                    );
+                  } else if (isSectionalAssistant) {
+                    console.log("[PAGE] ✅ 渲染 分稿助理");
+                    return (
+                      <>
+                        {currentStep === 1 && (
+                          <SectionalAssistantMain
+                            onStepChange={handleStepChange}
+                            setResult={setResult}
+                            isSectionalGenerating={isSectionalGenerating}
+                          />
+                        )}
+                        {currentStep === 2 && (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center p-8 max-w-md">
+                              <h2 className="text-2xl font-bold mb-4">分稿策略展示</h2>
+                              <p className="text-muted-foreground mb-6">
+                                第二步界面开发中，敬请期待...
+                              </p>
+                              <Button
+                                variant="outline"
+                                onClick={() => handleStepChange(1)}
+                              >
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                返回第一步
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  } else {
+                    console.log(
+                      "[PAGE] ❌ 进入默认分支 - 显示'此查询不需要后续步骤'"
+                    );
+                    console.log("[PAGE] ❌ 所有条件检查结果:", {
+                      shouldShowMultiStepFlow: "false",
+                      isProfessorSearch: "false",
+                      isPSAssistant: "false",
+                      isCVAssistant: "false",
+                      isRLAssistant: "false",
+                      这意味着: "所有助理状态都被重置了",
+                    });
+                    return (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center p-8 max-w-md">
+                          <h2 className="text-2xl font-bold mb-4">
+                            此查询不需要后续步骤
+                          </h2>
+                          <p className="text-muted-foreground mb-6">
+                            当前查询类型不需要多步骤处理。请返回第一步查看结果。
+                          </p>
                           <Button
                             variant="outline"
                             onClick={() => handleStepChange(1)}
                           >
                             <ArrowLeft className="h-4 w-4 mr-2" />
-                            返回查询结果
+                            返回第一步
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  );
-                } else if (isPSAssistant) {
-                  console.log(
-                    "[PAGE] ✅ 渲染 PSReportAndDraftDisplay (PS助理)"
-                  );
-                  console.log("[PAGE] 🔍 PSReportAndDraftDisplay Props检查:", {
-                    result: result,
-                    hasResult: !!result,
-                    resultContent: result?.content ? "有内容" : "无内容",
-                    finalDraft: finalDraft,
-                    hasFinalDraft: !!finalDraft,
-                    userDirection: userDirection,
-                    userRequirements: userRequirements,
-                    onGenerateFinalDraft: !!handleFinalDraftSubmit,
-                    isGeneratingFinalDraft: isGeneratingFinalDraft,
-                  });
-                  return (
-                    <PSReportAndDraftDisplay
-                      result={result}
-                      finalDraft={finalDraft}
-                      finalDraftResult={finalDraftResult}
-                      onStepChange={handleStepChange}
-                      onGenerateFinalDraft={
-                        handleFinalDraftSubmit
-                          ? () =>
-                              handleFinalDraftSubmit(
-                                "生成个人陈述初稿",
-                                [], // 不再传递文件
-                                result?.content || "",
-                                userDirection,
-                                userRequirements,
-                                transcriptAnalysis
-                              )
-                          : undefined
-                      }
-                      isGeneratingFinalDraft={isGeneratingFinalDraft}
-                      userDirection={userDirection}
-                      userRequirements={userRequirements}
-                      otherFiles={otherFiles}
-                      transcriptAnalysis={transcriptAnalysis}
-                      setShowStepNavigation={setShowStepNavigation}
-                      setHasSubmittedDraft={setHasSubmittedDraft}
-                    />
-                  );
-                } else if (isCVAssistant) {
-                  console.log("[PAGE] ✅ 渲染 CV助理");
-                  return (
-                    <>
-                      {currentStep === 1 && (
-                        <CVAssistantMain
-                          onStepChange={handleStepChange}
-                          setResult={setResult}
-                        />
-                      )}
-                      {currentStep === 2 && (
-                        <CVReportAndResumeDisplay
-                          result={result}
-                          onStepChange={handleStepChange}
-                          formattedResume={formattedResume}
-                          onFormattedResumeChange={setFormattedResume}
-                          onGeneratingStateChange={setIsCVGenerating}
-                        />
-                      )}
-                    </>
-                  );
-                } else if (isRLAssistant) {
-                  console.log("[PAGE] ✅ 渲染 RL助理");
-                  return (
-                    <>
-                      {currentStep === 1 && (
-                        <RLAssistantMain
-                          onStepChange={handleStepChange}
-                          setResult={setResult}
-                        />
-                      )}
-                      {currentStep === 2 && (
-                        <RLGeneration
-                          result={result}
-                          onStepChange={handleStepChange}
-                          formattedLetter={formattedLetter}
-                          onFormattedLetterChange={setFormattedLetter}
-                          onGeneratingStateChange={setIsRLGenerating}
-                        />
-                      )}
-                    </>
-                  );
-                } else {
-                  console.log(
-                    "[PAGE] ❌ 进入默认分支 - 显示'此查询不需要后续步骤'"
-                  );
-                  console.log("[PAGE] ❌ 所有条件检查结果:", {
-                    shouldShowMultiStepFlow: "false",
-                    isProfessorSearch: "false",
-                    isPSAssistant: "false",
-                    isCVAssistant: "false",
-                    isRLAssistant: "false",
-                    这意味着: "所有助理状态都被重置了",
-                  });
-                  return (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center p-8 max-w-md">
-                        <h2 className="text-2xl font-bold mb-4">
-                          此查询不需要后续步骤
-                        </h2>
-                        <p className="text-muted-foreground mb-6">
-                          当前查询类型不需要多步骤处理。请返回第一步查看结果。
-                        </p>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleStepChange(1)}
-                        >
-                          <ArrowLeft className="h-4 w-4 mr-2" />
-                          返回第一步
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-              })()}
-            </div>
+                    );
+                  }
+                })()}
+              </div>
 
-            {/* 第三步界面 - 条件渲染内容 */}
-            <div ref={thirdStepRef} className="min-w-full">
-              {shouldShowMultiStepFlow ? (
-                <ThirdStep
-                  finalResult={finalResult}
-                  onStepChange={handleStepChange}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center p-8 max-w-md">
-                    <h2 className="text-2xl font-bold mb-4">
-                      此查询不需要后续步骤
-                    </h2>
-                    <p className="text-muted-foreground mb-6">
-                      当前查询类型不需要多步骤处理。请返回第一步查看结果。
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleStepChange(1)}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      返回第一步
-                    </Button>
+              {/* 第三步界面 - 条件渲染内容 */}
+              <div ref={thirdStepRef} className="min-w-full">
+                {shouldShowMultiStepFlow ? (
+                  <ThirdStep
+                    finalResult={finalResult}
+                    onStepChange={handleStepChange}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center p-8 max-w-md">
+                      <h2 className="text-2xl font-bold mb-4">
+                        此查询不需要后续步骤
+                      </h2>
+                      <p className="text-muted-foreground mb-6">
+                        当前查询类型不需要多步骤处理。请返回第一步查看结果。
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleStepChange(1)}
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        返回第一步
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* 共享导航组件 */}
+        <StepNavigation
+          currentStep={currentStep}
+          onStepChange={handleStepChange}
+          shouldShowMultiStepFlow={shouldShowMultiStepFlow}
+          hasSecondStepResult={!!secondStepResult}
+          hasFinalResult={!!finalResult && finalResult.isComplete}
+          isThirdStepLoading={thirdStepLoading}
+          agentType={detectedAgentType}
+          isProfessorSearch={isProfessorSearch}
+          isPSAssistant={isPSAssistant}
+          isCVAssistant={isCVAssistant}
+          isRLAssistant={isRLAssistant}
+          isDraftAssistant={isDraftAssistant}
+          isSectionalAssistant={isSectionalAssistant}
+          hasSubmittedDraft={hasSubmittedDraft}
+        />
+
+        {/* 全屏加载动画 - 在生成过程中显示 */}
+        {isGeneratingFinalDraft && isPSAssistant && (
+          <FullScreenLoadingAnimation 
+            text="正在生成个人陈述初稿，请勿切换页面..." 
+          />
+        )}
+
+        {/* 分稿助理全屏加载动画 */}
+        {isSectionalGenerating && isSectionalAssistant && (
+          <FullScreenLoadingAnimation 
+            text="正在生成分稿策略，请勿切换页面..." 
+          />
+        )}
       </div>
-
-      {/* 共享导航组件 */}
-      <StepNavigation
-        currentStep={currentStep}
-        onStepChange={handleStepChange}
-        shouldShowMultiStepFlow={shouldShowMultiStepFlow}
-        hasSecondStepResult={!!secondStepResult}
-        hasFinalResult={!!finalResult && finalResult.isComplete}
-        isThirdStepLoading={thirdStepLoading}
-        agentType={detectedAgentType}
-        isProfessorSearch={isProfessorSearch}
-        isPSAssistant={isPSAssistant}
-        isCVAssistant={isCVAssistant}
-        isRLAssistant={isRLAssistant}
-        isDraftAssistant={isDraftAssistant}
-        hasSubmittedDraft={hasSubmittedDraft}
-      />
-
-      {/* 全屏加载动画 - 在生成过程中显示 */}
-      {isGeneratingFinalDraft && isPSAssistant && (
-        <FullScreenLoadingAnimation 
-          text="正在生成个人陈述初稿，请勿切换页面..." 
-        />
-      )}
-
-      {/* CV助理全屏加载动画 */}
-      {isCVGenerating && isCVAssistant && (
-        <FullScreenLoadingAnimation 
-          text="正在生成简历，请勿切换页面..." 
-        />
-      )}
-
-      {/* RL助理全屏加载动画 */}
-      {isRLGenerating && isRLAssistant && (
-        <FullScreenLoadingAnimation 
-          text="正在生成推荐信，请勿切换页面..." 
-        />
-      )}
-    </div>
+    </StreamingProvider>
   );
 }

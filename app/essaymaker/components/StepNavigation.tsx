@@ -71,6 +71,7 @@ interface StepNavigationProps {
   isCVAssistant: boolean;
   isRLAssistant: boolean;
   isDraftAssistant?: boolean;
+  isSectionalAssistant?: boolean;
   hasSubmittedDraft?: boolean;
   hasAnalysisResult?: boolean;
 }
@@ -88,6 +89,7 @@ export function StepNavigation({
   isCVAssistant = false,
   isRLAssistant = false,
   isDraftAssistant = false,
+  isSectionalAssistant = false,
   hasSubmittedDraft = false,
   hasAnalysisResult = false,
 }: StepNavigationProps) {
@@ -98,7 +100,8 @@ export function StepNavigation({
     !isPSAssistant &&
     !isCVAssistant &&
     !isRLAssistant &&
-    !isDraftAssistant
+    !isDraftAssistant &&
+    !isSectionalAssistant
   ) {
     return null;
   }
@@ -108,7 +111,8 @@ export function StepNavigation({
     (shouldShowMultiStepFlow || isDraftAssistant) &&
     !isProfessorSearch &&
     !isPSAssistant &&
-    !isRLAssistant
+    !isRLAssistant &&
+    !isSectionalAssistant
       ? 3
       : 2;
 
@@ -150,6 +154,8 @@ export function StepNavigation({
                 ? "简历上传"
                 : isRLAssistant
                 ? "推荐信信息"
+                : isSectionalAssistant
+                ? "分稿上传"
                 : "查询信息"}
             </div>
             {/* 当前步骤的下划线指示器 */}
@@ -172,7 +178,8 @@ export function StepNavigation({
                   !isPSAssistant &&
                   !isCVAssistant &&
                   !isRLAssistant &&
-                  !isDraftAssistant
+                  !isDraftAssistant &&
+                  !isSectionalAssistant
                 )
               ) {
                 onStepChange(2);
@@ -190,7 +197,8 @@ export function StepNavigation({
                 !isPSAssistant &&
                 !isCVAssistant &&
                 !isRLAssistant &&
-                !isDraftAssistant
+                !isDraftAssistant &&
+                !isSectionalAssistant
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             )}
@@ -204,6 +212,8 @@ export function StepNavigation({
                 ? "简历生成"
                 : isRLAssistant
                 ? "推荐信生成"
+                : isSectionalAssistant
+                ? "分稿策略"
                 : "补充信息"}
             </div>
             {/* 当前步骤的下划线指示器 */}
@@ -216,7 +226,8 @@ export function StepNavigation({
           {(shouldShowMultiStepFlow || isDraftAssistant) &&
             !isProfessorSearch &&
             !isPSAssistant &&
-            !isRLAssistant && (
+            !isRLAssistant &&
+            !isSectionalAssistant && (
               <>
                 {/* 分隔符 */}
                 <div className="text-muted-foreground/30 px-2">/</div>

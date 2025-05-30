@@ -60,6 +60,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Sparkles, User, FileText, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
+import { SectionalAssistantMain } from "./sectionalassistant/SectionalAssistantMain";
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
 interface FirstStepProps {
@@ -101,6 +102,7 @@ interface FirstStepProps {
   setIsPSAssistant?: (isPS: boolean) => void; // 添加设置PS初稿助理状态
   setIsCVAssistant?: (isCV: boolean) => void; // 添加设置CV助理状态
   setIsRLAssistant?: (isRL: boolean) => void; // 添加设置RL助理状态
+  setIsSectionalAssistant?: (isSectional: boolean) => void; // 添加设置分稿助理状态
   setShowStepNavigation?: (show: boolean) => void; // 添加控制步骤导航显示
   onUserInputChange?: (
     direction: string,
@@ -151,6 +153,7 @@ export function FirstStep({
   setIsPSAssistant,
   setIsCVAssistant,
   setIsRLAssistant,
+  setIsSectionalAssistant,
   setShowStepNavigation,
   onUserInputChange,
   onOtherFilesChange,
@@ -488,7 +491,7 @@ export function FirstStep({
 
   // 添加状态来跟踪当前助理类型
   const [internalAssistantType, setInternalAssistantType] = useState<
-    "draft" | "cv" | "ps" | "custom" | "rl"
+    "draft" | "cv" | "ps" | "custom" | "rl" | "sectional"
   >("draft");
 
   return (
@@ -507,6 +510,7 @@ export function FirstStep({
         setShowStepNavigation={setShowStepNavigation}
         setIsCVAssistant={setIsCVAssistant}
         setIsRLAssistant={setIsRLAssistant}
+        setIsSectionalAssistant={setIsSectionalAssistant}
         setCurrentAssistantType={setInternalAssistantType}
       />
 
@@ -517,6 +521,8 @@ export function FirstStep({
           return <AssistantTips type="cv" />;
         } else if (internalAssistantType === "rl") {
           return <AssistantTips type="rl" />;
+        } else if (internalAssistantType === "sectional") {
+          return <AssistantTips type="sectional" />;
         } else if (internalAssistantType === "draft") {
           // PS助理的提示现在由PSAssistant组件内部处理，这里不再显示
           return null;
@@ -537,6 +543,14 @@ export function FirstStep({
         /* RL助理界面 */
         <div className="w-full">
           <RLAssistantMain onStepChange={onStepChange} setResult={setResult} />
+        </div>
+      ) : internalAssistantType === "sectional" ? (
+        /* 分稿助理界面 */
+        <div className="w-full">
+          <SectionalAssistantMain
+            onStepChange={onStepChange}
+            setResult={setResult}
+          />
         </div>
       ) : internalAssistantType === "draft" ? (
         /* PS助理界面 - 使用新的PSAssistant组件 */
@@ -570,11 +584,12 @@ export function FirstStep({
         />
       ) : null}
 
-      {/* 结果区域 - 如果有结果且不是CV助理或RL助理模式 */}
+      {/* 结果区域 - 如果有结果且不是CV助理、RL助理、分稿助理或PS助理模式 */}
       <div ref={resultRef}>
-        {/* 不在CV助理、RL助理或PS助理模式时才显示结果区域 */}
+        {/* 不在CV助理、RL助理、分稿助理或PS助理模式时才显示结果区域 */}
         {internalAssistantType !== "cv" &&
           internalAssistantType !== "rl" &&
+          internalAssistantType !== "sectional" &&
           internalAssistantType !== "draft" &&
           result &&
           !shouldHideResult && (

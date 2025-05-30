@@ -57,6 +57,7 @@ export type ButtonType =
   | "question"
   | "cv"
   | "rl"
+  | "sectional"
   | null;
 
 interface QuickActionButtonsProps {
@@ -71,9 +72,10 @@ interface QuickActionButtonsProps {
   setIsPSAssistant?: (isPS: boolean) => void; // 新增属性，设置是否为PS初稿助理
   setIsCVAssistant?: (isCV: boolean) => void; // 新增 CV 助理状态设置
   setIsRLAssistant?: (isRL: boolean) => void; // 新增 RL 助理状态设置
+  setIsSectionalAssistant?: (isSectional: boolean) => void; // 新增分稿助理状态设置
   setShowStepNavigation?: (show: boolean) => void; // 新增属性，控制是否显示步骤导航
   setCurrentAssistantType?: (
-    type: "draft" | "cv" | "ps" | "custom" | "rl"
+    type: "draft" | "cv" | "ps" | "custom" | "rl" | "sectional"
   ) => void; // 添加新的属性
 }
 
@@ -89,6 +91,7 @@ export function QuickActionButtons({
   setIsPSAssistant,
   setIsCVAssistant,
   setIsRLAssistant,
+  setIsSectionalAssistant,
   setShowStepNavigation,
   setCurrentAssistantType, // 添加新的属性
 }: QuickActionButtonsProps) {
@@ -126,6 +129,9 @@ export function QuickActionButtons({
     if (setIsRLAssistant) {
       setIsRLAssistant(false);
     }
+    if (setIsSectionalAssistant) {
+      setIsSectionalAssistant(false);
+    }
     // 显示导航栏
     if (setShowStepNavigation) {
       setShowStepNavigation(true);
@@ -156,7 +162,7 @@ export function QuickActionButtons({
       } else if (type === "rl") {
         setCurrentAssistantType("rl");
       } else if (type === "custom") {
-        setCurrentAssistantType("ps");
+        setCurrentAssistantType("sectional");
       } else if (type === "schoolProfessor" || type === "question") {
         setCurrentAssistantType("custom");
       }
@@ -177,10 +183,13 @@ export function QuickActionButtons({
     if (setIsRLAssistant) {
       setIsRLAssistant(type === "rl");
     }
-    // 修改导航栏显示逻辑：PS初稿助理和CV助理都默认显示导航栏
+    if (setIsSectionalAssistant) {
+      setIsSectionalAssistant(type === "custom");
+    }
+    // 修改导航栏显示逻辑：PS初稿助理、CV助理、RL助理和分稿助理都默认显示导航栏
     if (setShowStepNavigation) {
-      // 对于PS初稿助理、CV助理和RL助理，始终显示导航栏
-      setShowStepNavigation(type === "draft" || type === "cv" || type === "rl");
+      // 对于PS初稿助理、CV助理、RL助理和分稿助理，始终显示导航栏
+      setShowStepNavigation(type === "draft" || type === "cv" || type === "rl" || type === "custom");
     }
 
     // 清空个人陈述初稿

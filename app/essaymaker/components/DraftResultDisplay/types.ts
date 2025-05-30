@@ -24,6 +24,9 @@ export interface DraftResultDisplayProps {
   result: DisplayResult | null;
   title?: string;
   headerActions?: React.ReactNode;
+  enableGlobalStreaming?: boolean;
+  taskId?: string;
+  onTaskCreated?: (taskId: string) => void;
 }
 
 export type ContentType = "html" | "markdown";

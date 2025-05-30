@@ -49,6 +49,7 @@
 import React, { useState } from "react";
 import { DisplayResult } from "../../types";
 import { CVFileUploadForm } from "./CVFileUploadForm";
+import { FullScreenLoadingAnimation } from "../LoadingAnimation";
 // 暂时注释掉这个导入来测试
 // import { CVReportAndResumeDisplay } from "./CVReportAndResumeDisplay";
 
@@ -62,6 +63,8 @@ interface CVAssistantMainProps {
   handleResumeGeneration?: () => void;
   handleStreamResponse?: (response: ReadableStream) => void;
   isLoading?: boolean;
+  // 新增：CV生成状态
+  isCVGenerating?: boolean;
 }
 
 export function CVAssistantMain({
@@ -74,6 +77,7 @@ export function CVAssistantMain({
   handleResumeGeneration,
   handleStreamResponse,
   isLoading,
+  isCVGenerating = false,
 }: CVAssistantMainProps) {
   // 本地状态管理
   const [localResult, setLocalResult] = useState<DisplayResult | null>(null);
@@ -103,32 +107,41 @@ export function CVAssistantMain({
   };
 
   return (
-    <div className="w-full space-y-6">
-      {/* 文件上传表单 */}
-      <CVFileUploadForm
-        onStepChange={onStepChange}
-        setResult={handleResultUpdate}
-      />
-
-      {/* 暂时注释掉结果显示区域来测试导入问题 */}
-      {/* 
-      {currentResult && (
-        <CVReportAndResumeDisplay
-          result={currentResult}
-          formattedResume={currentFormattedResume}
-          onFormattedResumeChange={handleFormattedResumeUpdate}
-          onStepChange={onStepChange}
+    <>
+      {/* CV助理全屏加载动画 - 在第一步界面显示 */}
+      {isCVGenerating && (
+        <FullScreenLoadingAnimation 
+          text="正在生成简历，请勿切换页面..." 
         />
       )}
-      */}
 
-      {/* 临时的简单显示 */}
-      {currentResult && (
-        <div className="p-4 border rounded">
-          <h3>简历分析结果</h3>
-          <p>结果已生成，请切换到第二步查看详细内容。</p>
-        </div>
-      )}
-    </div>
+      <div className="w-full space-y-6">
+        {/* 文件上传表单 */}
+        <CVFileUploadForm
+          onStepChange={onStepChange}
+          setResult={handleResultUpdate}
+        />
+
+        {/* 暂时注释掉结果显示区域来测试导入问题 */}
+        {/* 
+        {currentResult && (
+          <CVReportAndResumeDisplay
+            result={currentResult}
+            formattedResume={currentFormattedResume}
+            onFormattedResumeChange={handleFormattedResumeUpdate}
+            onStepChange={onStepChange}
+          />
+        )}
+        */}
+
+        {/* 临时的简单显示 */}
+        {currentResult && (
+          <div className="p-4 border rounded">
+            <h3>简历分析结果</h3>
+            <p>结果已生成，请切换到第二步查看详细内容。</p>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

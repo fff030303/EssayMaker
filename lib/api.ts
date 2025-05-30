@@ -932,6 +932,79 @@ export const apiService = {
     }
   },
 
+  // Essay重写搜索分析API - 第一步：搜索和分析
+  async streamEssayRewriteSearchAndAnalyze(
+    userInput: string,
+    supportFiles: File[] = [],
+    customWebSearcherRole: string = "",
+    customWebSearcherTask: string = ""
+  ) {
+    try {
+      const apiKey = getApiKey();
+      const apiUrl = getApiUrl();
+
+      console.log("Essay重写搜索分析API调用:", {
+        url: `${apiUrl}/api/essay-rewrite/search-and-analyze`,
+        userInputLength: userInput.length,
+        supportFilesCount: supportFiles.length,
+        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask)
+      });
+
+      // 创建FormData对象
+      const formData = new FormData();
+      
+      // 添加必需参数
+      formData.append("user_input", userInput);
+
+      // 添加支持文件（如果有）
+      if (supportFiles && supportFiles.length > 0) {
+        supportFiles.forEach((file, index) => {
+          formData.append("support_files", file, file.name);
+          console.log(`添加支持文件${index + 1}: ${file.name}`);
+        });
+      }
+
+      // 添加自定义提示词参数
+      formData.append("custom_web_searcher_role", customWebSearcherRole);
+      formData.append("custom_web_searcher_task", customWebSearcherTask);
+
+      // 打印FormData内容用于调试
+      console.log("Essay重写搜索分析FormData内容:");
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+        } else if (typeof value === "string" && value.length > 100) {
+          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+      const response = await fetch(`${apiUrl}/api/essay-rewrite/search-and-analyze`, {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Essay重写搜索分析API错误:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        throw new Error(`Essay重写搜索分析失败: ${response.status} - ${errorText}`);
+      }
+
+      return response.body;
+    } catch (error) {
+      console.error("Essay重写搜索分析API调用失败:", error);
+      throw error;
+    }
+  },
+
   // 套瓷助理专用API - 用于学术套瓷和教授联系
   async streamNetworkingQuery(
     queryText: string,
@@ -942,7 +1015,7 @@ export const apiService = {
       const apiUrl = getApiUrl();
 
       console.log("套瓷助理API调用:", {
-        url: `${apiUrl}/api/academic-networking`,
+        url: `${apiUrl}/api/stream`,
         queryLength: queryText.length,
         filesCount: files?.length || 0
       });
