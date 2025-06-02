@@ -1,50 +1,50 @@
 /**
  * RLFileUploadForm 组件
- * 
+ *
  * 功能：推荐信助理的文件上传表单组件，处理推荐信相关文件的上传和管理
- * 
+ *
  * 核心特性：
  * 1. 文件上传管理：
  *    - 支持多种文件格式（PDF、Word、图片等）
  *    - 拖拽上传和点击选择
  *    - 文件预览和删除功能
  *    - 上传进度指示
- * 
+ *
  * 2. 文件分类：
  *    - 推荐信文件：现有推荐信文档
  *    - 支持材料：简历、成绩单等
  *    - 其他文件：证书、作品集等
  *    - 智能文件类型识别
- * 
+ *
  * 3. 表单验证：
  *    - 文件格式验证
  *    - 文件大小限制
  *    - 必填字段检查
  *    - 实时验证反馈
- * 
+ *
  * 4. 用户输入：
  *    - 推荐人信息填写
  *    - 申请方向选择
  *    - 特殊要求说明
  *    - 自动保存草稿
- * 
+ *
  * 5. 数据处理：
  *    - 文件内容解析
  *    - 数据格式转换
  *    - 信息提取和整理
  *    - 错误处理和重试
- * 
+ *
  * 6. 用户体验：
  *    - 直观的操作界面
  *    - 清晰的状态指示
  *    - 友好的错误提示
  *    - 响应式设计
- * 
+ *
  * 支持的文件类型：
  * - DOCX, XLSX, XLS, PPTX, PPT
  * - TXT, MD, CSV, PDF
  * - JPG, JPEG, PNG
- * 
+ *
  * @author EssayMaker Team
  * @version 1.0.0
  */
@@ -81,6 +81,8 @@ import { Badge } from "@/components/ui/badge";
 import { useStreamResponse } from "../../hooks/useStreamResponse";
 import { RLRequest } from "./RLRequest";
 import { FullScreenLoadingAnimation } from "../LoadingAnimation";
+import { ToastAction } from "@/components/ui/toast";
+import { useRLLogger } from "./hooks/useRLLogger";
 
 interface RLFileUploadFormProps {
   onStepChange?: (step: number) => void;
@@ -91,20 +93,29 @@ interface RLFileUploadFormProps {
 
 // 支持的文件格式
 const SUPPORTED_FILE_TYPES = [
-  '.docx', '.xlsx', '.xls', '.pptx', '.ppt', 
-  '.txt', '.md', '.csv', '.pdf', 
-  '.jpg', '.jpeg', '.png'
+  ".docx",
+  ".xlsx",
+  ".xls",
+  ".pptx",
+  ".ppt",
+  ".txt",
+  ".md",
+  ".csv",
+  ".pdf",
+  ".jpg",
+  ".jpeg",
+  ".png",
 ];
 
 // 文件格式验证函数
 const validateFileType = (file: File): boolean => {
   const fileName = file.name.toLowerCase();
-  return SUPPORTED_FILE_TYPES.some(type => fileName.endsWith(type));
+  return SUPPORTED_FILE_TYPES.some((type) => fileName.endsWith(type));
 };
 
 // 获取文件扩展名
 const getFileExtension = (fileName: string): string => {
-  return fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  return fileName.toLowerCase().substring(fileName.lastIndexOf("."));
 };
 
 export function RLFileUploadForm({
@@ -125,11 +136,17 @@ export function RLFileUploadForm({
 
   // 新增：RLRequest组件需要的状态
   const [recommenderPosition, setRecommenderPosition] = useState<1 | 2 | 3>(1);
-  const [recommenderPositionType, setRecommenderPositionType] = useState<'preset' | 'custom'>('preset');
-  const [customRecommenderPosition, setCustomRecommenderPosition] = useState<string>('');
-  const [gender, setGender] = useState<'男生' | '女生' | ''>('男生');
-  const [hasOtherRequirements, setHasOtherRequirements] = useState<'是' | '否' | ''>('否');
-  const [additionalRequirements, setAdditionalRequirements] = useState<string>('');
+  const [recommenderPositionType, setRecommenderPositionType] = useState<
+    "preset" | "custom"
+  >("preset");
+  const [customRecommenderPosition, setCustomRecommenderPosition] =
+    useState<string>("");
+  const [gender, setGender] = useState<"男生" | "女生" | "">("男生");
+  const [hasOtherRequirements, setHasOtherRequirements] = useState<
+    "是" | "否" | ""
+  >("否");
+  const [additionalRequirements, setAdditionalRequirements] =
+    useState<string>("");
 
   // 自定义提示词状态
   const [customRolePrompt, setCustomRolePrompt] = useState<string>("");
@@ -144,11 +161,12 @@ export function RLFileUploadForm({
 
   const { toast } = useToast();
   const { processStream } = useStreamResponse();
+  const { logAnalysisResult } = useRLLogger();
 
   // 处理推荐信素材表文件上传
   const handleResumeFile = (file: File) => {
     if (!file) return;
-    
+
     // 验证文件格式
     if (!validateFileType(file)) {
       const fileExt = getFileExtension(file.name);
@@ -159,7 +177,7 @@ export function RLFileUploadForm({
       });
       return;
     }
-    
+
     setResumeFile(file);
     toast({
       title: "推荐信素材表已上传",
@@ -170,20 +188,22 @@ export function RLFileUploadForm({
   // 处理支持文件上传
   const handleSupportFiles = (files: File[]) => {
     if (!files.length) return;
-    
+
     // 验证所有文件格式
-    const invalidFiles = files.filter(file => !validateFileType(file));
-    
+    const invalidFiles = files.filter((file) => !validateFileType(file));
+
     if (invalidFiles.length > 0) {
-      const invalidFileNames = invalidFiles.map(file => `${file.name} (${getFileExtension(file.name)})`).join(', ');
+      const invalidFileNames = invalidFiles
+        .map((file) => `${file.name} (${getFileExtension(file.name)})`)
+        .join(", ");
       toast({
         title: "部分文件格式不支持",
         description: `以下文件格式不受支持：${invalidFileNames}。`,
         variant: "destructive",
       });
-      
+
       // 只添加格式正确的文件
-      const validFiles = files.filter(file => validateFileType(file));
+      const validFiles = files.filter((file) => validateFileType(file));
       if (validFiles.length > 0) {
         setSupportFiles((prev) => [...prev, ...validFiles]);
         toast({
@@ -193,7 +213,7 @@ export function RLFileUploadForm({
       }
       return;
     }
-    
+
     setSupportFiles((prev) => [...prev, ...files]);
     toast({
       title: "支持文件已上传",
@@ -257,6 +277,13 @@ export function RLFileUploadForm({
 
   // 处理提交
   const handleSubmit = async () => {
+    console.log("[RLFileUploadForm] handleSubmit 被调用");
+    console.log("[RLFileUploadForm] 当前推荐信文件:", resumeFile?.name);
+    console.log(
+      "[RLFileUploadForm] logAnalysisResult函数:",
+      typeof logAnalysisResult
+    );
+
     if (!resumeFile) {
       toast({
         variant: "destructive",
@@ -267,7 +294,10 @@ export function RLFileUploadForm({
     }
 
     // 验证必填字段
-    if (recommenderPositionType === 'custom' && !customRecommenderPosition.trim()) {
+    if (
+      recommenderPositionType === "custom" &&
+      !customRecommenderPosition.trim()
+    ) {
       toast({
         variant: "destructive",
         title: "信息缺失",
@@ -285,7 +315,7 @@ export function RLFileUploadForm({
       return;
     }
 
-    if (hasOtherRequirements === '是' && !additionalRequirements.trim()) {
+    if (hasOtherRequirements === "是" && !additionalRequirements.trim()) {
       toast({
         variant: "destructive",
         title: "要求缺失",
@@ -294,21 +324,23 @@ export function RLFileUploadForm({
       return;
     }
 
+    const startTime = Date.now(); // 记录开始时间，用于计算处理时长
+
     // 构建完整的写作要求
     let fullWritingRequirements = "";
-    
+
     // 添加推荐人位置信息
-    if (recommenderPositionType === 'preset') {
+    if (recommenderPositionType === "preset") {
       fullWritingRequirements += `请撰写第${recommenderPosition}位推荐人的推荐信。`;
     } else {
       fullWritingRequirements += `请撰写第${customRecommenderPosition}位推荐人的推荐信。`;
     }
-    
+
     // 添加性别信息
     fullWritingRequirements += `被推荐人是${gender}。`;
-    
+
     // 添加额外要求
-    if (hasOtherRequirements === '是' && additionalRequirements.trim()) {
+    if (hasOtherRequirements === "是" && additionalRequirements.trim()) {
       fullWritingRequirements += `其他写作要求：${additionalRequirements}`;
     }
 
@@ -376,10 +408,32 @@ export function RLFileUploadForm({
               });
             }
           },
-          onComplete: (result) => {
+          onComplete: async (result) => {
             setStreamContent(result.content);
             setIsComplete(true);
             setIsLoading(false); // 🆕 立即取消加载状态
+
+            // 记录成功的分析结果
+            await logAnalysisResult(
+              {
+                fileContent: resumeFile.name,
+                supportFiles: supportFiles.map((f) => f.name),
+                writingRequirements: fullWritingRequirements,
+                hasCustomPrompt: !!(
+                  customRolePrompt ||
+                  customTaskPrompt ||
+                  customOutputFormatPrompt
+                ),
+              },
+              {
+                content: result.content,
+                isComplete: true,
+                currentStep: "推荐信分析完成",
+              },
+              true,
+              Date.now() - startTime
+            );
+
             if (setResult) {
               setResult({
                 ...result,
@@ -391,8 +445,27 @@ export function RLFileUploadForm({
               description: "您的推荐信分析已完成",
             });
           },
-          onError: (error) => {
+          onError: async (error) => {
             console.error("处理推荐信时出错:", error);
+
+            // 记录失败的分析结果
+            await logAnalysisResult(
+              {
+                fileContent: resumeFile.name,
+                supportFiles: supportFiles.map((f) => f.name),
+                writingRequirements: fullWritingRequirements,
+                hasCustomPrompt: !!(
+                  customRolePrompt ||
+                  customTaskPrompt ||
+                  customOutputFormatPrompt
+                ),
+              },
+              { content: "", error: true },
+              false,
+              Date.now() - startTime,
+              error instanceof Error ? error.message : "处理推荐信时发生错误"
+            );
+
             toast({
               variant: "destructive",
               title: "处理失败",
@@ -422,6 +495,23 @@ export function RLFileUploadForm({
           setIsComplete(true);
           setIsLoading(false); // 立即取消加载状态
 
+          // 记录成功的分析结果
+          await logAnalysisResult(
+            {
+              fileContent: resumeFile.name,
+              supportFiles: supportFiles.map((f) => f.name),
+              writingRequirements: fullWritingRequirements,
+              hasCustomPrompt: !!(
+                customRolePrompt ||
+                customTaskPrompt ||
+                customOutputFormatPrompt
+              ),
+            },
+            { content, isComplete: true, currentStep: "推荐信分析完成" },
+            true,
+            Date.now() - startTime
+          );
+
           if (setResult) {
             setResult({
               content,
@@ -435,6 +525,25 @@ export function RLFileUploadForm({
       }
     } catch (error) {
       console.error("提交推荐信时出错:", error);
+
+      // 记录失败的分析结果
+      await logAnalysisResult(
+        {
+          fileContent: resumeFile.name,
+          supportFiles: supportFiles.map((f) => f.name),
+          writingRequirements: fullWritingRequirements,
+          hasCustomPrompt: !!(
+            customRolePrompt ||
+            customTaskPrompt ||
+            customOutputFormatPrompt
+          ),
+        },
+        { content: "", error: true },
+        false,
+        Date.now() - startTime,
+        error instanceof Error ? error.message : "上传推荐信时发生错误"
+      );
+
       toast({
         variant: "destructive",
         title: "提交失败",
@@ -459,15 +568,11 @@ export function RLFileUploadForm({
     <>
       {/* 全屏加载动画 - 在生成过程中显示 */}
       {isLoading && (
-        <FullScreenLoadingAnimation 
-          text="正在生成推荐信分析报告，请勿切换页面..." 
-        />
+        <FullScreenLoadingAnimation text="正在生成推荐信分析报告，请勿切换页面..." />
       )}
 
       <div className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
         <Card className="w-full max-w-[800px] mx-auto mb-8 mt-4 shadow-lg">
-          
-
           <CardContent className="p-4 pt-4">
             <div className="grid grid-cols-1 gap-3">
               {/* 文件上传区域 */}
@@ -550,7 +655,8 @@ export function RLFileUploadForm({
                         <Upload className="h-6 w-6 text-muted-foreground mb-2" />
                         <p className="text-sm text-muted-foreground">
                           点击或拖拽上传推荐信素材表
-                        </p><p className="text-xs text-muted-foreground mt-1">
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
                           推荐上传 DOCX 格式
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -736,13 +842,13 @@ export function RLFileUploadForm({
                     placeholder="例如：请按照标准的推荐信格式输出，包含推荐人信息、申请者评价、具体事例等部分..."
                     className="min-h-[80px] resize-y"
                     value={customOutputFormatPrompt}
-                    onChange={(e) => setCustomOutputFormatPrompt(e.target.value)}
+                    onChange={(e) =>
+                      setCustomOutputFormatPrompt(e.target.value)
+                    }
                     disabled={isLoading}
                   />
                 </div>
               </div>
-
-              
             </div>
           </CardContent>
 
@@ -763,11 +869,11 @@ export function RLFileUploadForm({
 
                   // 清空RLRequest相关状态
                   setRecommenderPosition(1);
-                  setRecommenderPositionType('preset');
-                  setCustomRecommenderPosition('');
-                  setGender('男生');
-                  setHasOtherRequirements('否');
-                  setAdditionalRequirements('');
+                  setRecommenderPositionType("preset");
+                  setCustomRecommenderPosition("");
+                  setGender("男生");
+                  setHasOtherRequirements("否");
+                  setAdditionalRequirements("");
 
                   // 重置文件输入元素
                   if (resumeInputRef.current) {

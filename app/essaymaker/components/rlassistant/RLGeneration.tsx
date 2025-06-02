@@ -1,51 +1,51 @@
 /**
  * RLGeneration 组件
- * 
+ *
  * 功能：推荐信生成组件，负责推荐信的创建和优化
- * 
+ *
  * 核心特性：
  * 1. 推荐信生成：
  *    - 基于上传文件生成推荐信
  *    - 多种推荐信模板支持
  *    - 个性化内容定制
  *    - 专业格式标准
- * 
+ *
  * 2. 流式处理：
  *    - 实时接收+逐字显示模式
  *    - 字符显示间隔：0.2ms
  *    - 平滑的打字机效果
  *    - 逐段生成和显示
- * 
+ *
  * 3. 内容优化：
  *    - 语言表达优化
  *    - 结构逻辑调整
  *    - 长度控制管理
  *    - 专业性提升
- * 
+ *
  * 4. 交互功能：
  *    - 实时预览功能
  *    - 编辑和修改支持
  *    - 版本对比功能
  *    - 导出功能集成
- * 
+ *
  * 5. 状态管理：
  *    - 生成进度跟踪
  *    - 错误状态处理
  *    - 完成状态确认
  *    - 用户交互状态
- * 
+ *
  * 6. 用户体验：
  *    - 流畅的内容切换
  *    - 清晰的视觉层次
  *    - 直观的操作反馈
  *    - 优雅的动画效果
- * 
+ *
  * 技术实现：
  * - 使用自定义Hook管理状态
  * - 支持流式内容更新
  * - Markdown渲染支持
  * - 响应式设计
- * 
+ *
  * @author EssayMaker Team
  * @version 1.0.0
  */
@@ -64,6 +64,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { apiService } from "@/lib/api";
 import { useStreamResponse } from "../../hooks/useStreamResponse";
+import { useRLLogger } from "./hooks/useRLLogger";
 
 interface RLGenerationProps {
   result: DisplayResult | null;
@@ -85,6 +86,7 @@ export function RLGeneration({
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const { processStream } = useStreamResponse();
+  const { logFormatResult } = useRLLogger();
 
   // 自定义提示词状态
   const [customRolePrompt, setCustomRolePrompt] = useState("");
@@ -114,12 +116,15 @@ export function RLGeneration({
       return;
     }
 
+    const startTime = Date.now();
+
     setIsGenerating(true);
     try {
       console.log("调用格式化推荐信API...");
-      const requirementsToUse = writingRequirements || result.writingRequirements || "";
+      const requirementsToUse =
+        writingRequirements || result.writingRequirements || "";
       console.log("使用的写作需求:", requirementsToUse);
-      
+
       const response = await apiService.formatRecommendationLetter(
         result.content,
         customRolePrompt,
@@ -141,7 +146,25 @@ export function RLGeneration({
               currentStep: result.currentStep || "推荐信生成中",
             });
           },
-          onComplete: (result) => {
+          onComplete: async (result) => {
+            // 记录成功的格式化结果
+            await logFormatResult(
+              {
+                rawLetter: result.content.substring(0, 500),
+                customRolePrompt: customRolePrompt,
+                customTaskPrompt: customTaskPrompt,
+                customOutputFormatPrompt: customOutputFormatPrompt,
+                writingRequirements: requirementsToUse,
+              },
+              {
+                content: result.content,
+                isComplete: true,
+                currentStep: "推荐信生成完成",
+              },
+              true,
+              Date.now() - startTime
+            );
+
             onFormattedLetterChange({
               ...result,
               currentStep: "推荐信生成完成",
@@ -151,20 +174,53 @@ export function RLGeneration({
               description: "推荐信已生成完成",
             });
           },
-          onError: (error) => {
+          onError: async (error) => {
             console.error("生成推荐信时出错:", error);
+
+            // 记录失败的格式化结果
+            await logFormatResult(
+              {
+                rawLetter: result?.content?.substring(0, 500) || "",
+                customRolePrompt: customRolePrompt,
+                customTaskPrompt: customTaskPrompt,
+                customOutputFormatPrompt: customOutputFormatPrompt,
+                writingRequirements: requirementsToUse,
+              },
+              { content: "", error: true },
+              false,
+              Date.now() - startTime,
+              error instanceof Error ? error.message : "生成推荐信时发生错误"
+            );
+
             toast({
               variant: "destructive",
               title: "生成失败",
               description: "生成推荐信时发生错误，请重试",
             });
           },
-          realtimeTypewriter: true, // 启用实时接收+逐字显示模式
-          charDelay: 0.2, // 字符显示间隔0.2毫秒
+          realtimeTypewriter: true,
+          charDelay: 0.2,
         });
       }
     } catch (error) {
       console.error("生成推荐信时出错:", error);
+
+      // 记录失败的格式化结果
+      await logFormatResult(
+        {
+          rawLetter: result?.content?.substring(0, 500) || "",
+          customRolePrompt: customRolePrompt,
+          customTaskPrompt: customTaskPrompt,
+          customOutputFormatPrompt: customOutputFormatPrompt,
+          writingRequirements:
+            writingRequirements || result.writingRequirements || "",
+        },
+        { content: "", error: true },
+        false,
+        Date.now() - startTime,
+        error instanceof Error ? error.message : "生成推荐信时发生错误"
+      );
+
       toast({
         variant: "destructive",
         title: "生成失败",
