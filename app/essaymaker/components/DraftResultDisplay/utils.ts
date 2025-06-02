@@ -197,8 +197,21 @@ export const cleanMarkdownToPlainText = (content: string): string => {
   // 先解包可能被代码块包裹的内容
   const unwrappedContent = unwrapMarkdownCodeBlock(content);
 
-  // 去除所有Markdown格式，保留纯文本
-  const cleanContent = unwrappedContent
+  // 第一步：去除所有HTML标签
+  let cleanContent = unwrappedContent
+    // 去除HTML标签（包括属性）
+    .replace(/<[^>]*>/g, "")
+    // 去除HTML实体
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&[a-zA-Z0-9#]+;/g, ""); // 去除其他HTML实体
+
+  // 第二步：去除所有Markdown格式，保留纯文本
+  cleanContent = cleanContent
     // 去除标题标记
     .replace(/#{1,6}\s+/g, "")
     // 去除粗体标记
@@ -221,8 +234,8 @@ export const cleanMarkdownToPlainText = (content: string): string => {
     .replace(/^>\s*/gm, "")
     .replace(/\n>\s*/g, "\n")
     // 去除无序列表标记
-    .replace(/^\s*[-*+]\s+/gm, "")
-    .replace(/\n\s*[-*+]\s+/g, "\n")
+    .replace(/^\s*[-*+•●]\s+/gm, "")
+    .replace(/\n\s*[-*+•●]\s+/g, "\n")
     // 去除有序列表标记
     .replace(/^\s*\d+\.\s+/gm, "")
     .replace(/\n\s*\d+\.\s+/g, "\n")
@@ -232,10 +245,21 @@ export const cleanMarkdownToPlainText = (content: string): string => {
     // 去除表格标记
     .replace(/\|/g, " ")
     .replace(/^[-\s:]+$/gm, "")
+    // 去除特殊符号和格式
+    .replace(/[•●]/g, "")
+    .replace(/\[([^\]]*)\]/g, "$1") // 去除方括号，保留内容
     // 清理多余的空白字符
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
+    .replace(/^\s+|\s+$/gm, "") // 去除每行开头和结尾的空白
     .trim();
+
+  console.log("清理内容:", {
+    original: unwrappedContent.substring(0, 100) + "...",
+    cleaned: cleanContent.substring(0, 100) + "...",
+    htmlTagsRemoved: (unwrappedContent.match(/<[^>]*>/g) || []).length,
+    markdownRemoved: unwrappedContent !== cleanContent
+  });
 
   return cleanContent;
 };
