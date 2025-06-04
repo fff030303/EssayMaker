@@ -1,45 +1,45 @@
 /**
  * PSFileUploadForm 组件
- * 
+ *
  * 功能：PS助理的文件上传表单组件，处理个人陈述相关文件的上传
- * 
+ *
  * 核心特性：
  * 1. 文件上传管理：
  *    - 支持多种文件格式（PDF、Word、图片等）
  *    - 拖拽上传和点击选择
  *    - 文件预览和删除功能
  *    - 上传进度指示
- * 
+ *
  * 2. 文件分类：
  *    - 素材文件：个人经历、成就等
  *    - 成绩单文件：学术成绩记录
  *    - 其他材料：证书、推荐信等
  *    - 智能文件类型识别
- * 
+ *
  * 3. 表单验证：
  *    - 文件格式验证
  *    - 文件大小限制
  *    - 必填字段检查
  *    - 实时验证反馈
- * 
+ *
  * 4. 用户体验：
  *    - 直观的操作界面
  *    - 清晰的状态指示
  *    - 友好的错误提示
  *    - 响应式设计
- * 
+ *
  * 5. 数据处理：
  *    - 文件内容解析
  *    - 数据格式转换
  *    - 信息提取和整理
  *    - 错误处理和重试
- * 
+ *
  * 支持的文件类型：
  * - PDF文档
  * - Word文档（.doc, .docx）
  * - 图片文件（.jpg, .png, .gif）
  * - 文本文件（.txt）
- * 
+ *
  * @author EssayMaker Team
  * @version 1.0.0
  */
@@ -49,6 +49,7 @@
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { DisplayResult } from "../../types";
 import { usePSReport } from "./hooks/usePSReport";
+import { usePSLogger } from "./hooks/usePSLogger";
 import { AdvancedInputArea } from "./AdvancedInputArea";
 import { Session } from "next-auth";
 
@@ -71,6 +72,8 @@ export function PSFileUploadForm({
   onStepChange,
   onUserInputChange,
 }: PSFileUploadFormProps) {
+  const { logReportResult } = usePSLogger();
+
   const { isLoading, handleStreamResponse } = usePSReport({
     setResult,
     toast,
@@ -95,7 +98,7 @@ export function PSFileUploadForm({
   }, [direction, requirements, onUserInputChange]);
 
   // 处理提交 - 无参数函数，内部收集数据
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log("PSFileUploadForm - 处理提交", {
       direction,
       requirements,
@@ -123,8 +126,27 @@ export function PSFileUploadForm({
       filesCount: files.length,
     });
 
-    // 调用流处理函数
-    handleStreamResponse(queryText, files);
+    // 调用handleStreamResponse，使用onLogResult回调记录真实结果
+    await handleStreamResponse(
+      queryText,
+      files,
+      undefined,
+      async (requestData, resultData, isSuccess, duration, errorMessage) => {
+        console.log("[PSFileUploadForm] 记录PS报告结果日志", {
+          isSuccess,
+          duration,
+          contentLength: resultData?.content?.length || 0,
+        });
+
+        await logReportResult(
+          requestData,
+          resultData,
+          isSuccess,
+          duration,
+          errorMessage
+        );
+      }
+    );
   };
 
   // 输入变化处理

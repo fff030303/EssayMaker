@@ -614,7 +614,7 @@ export const apiService = {
       
       // 添加推荐人数量
       formData.append("recommender_number", recommenderNumber);
-      
+
       // 添加自定义提示词
       formData.append("custom_role_prompt", customRolePrompt);
       formData.append("custom_task_prompt", customTaskPrompt);
@@ -870,7 +870,7 @@ export const apiService = {
         url: `${apiUrl}/api/essay-rewrite/search-and-analyze`,
         queryLength: queryText.length,
         filesCount: files?.length || 0,
-        hasCourseInfo: !!courseInfo
+        hasCourseInfo: !!courseInfo,
       });
 
       // 准备搜索分析的用户输入
@@ -908,12 +908,12 @@ export const apiService = {
         url: `${apiUrl}/api/essay-rewrite/search-and-analyze`,
         userInputLength: userInput.length,
         supportFilesCount: supportFiles.length,
-        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask)
+        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask),
       });
 
       // 创建FormData对象
       const formData = new FormData();
-      
+
       // 添加必需参数
       formData.append("user_input", userInput);
 
@@ -935,28 +935,38 @@ export const apiService = {
         if (value instanceof File) {
           console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
         } else if (typeof value === "string" && value.length > 100) {
-          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+          console.log(
+            `${key}: String - ${value.length} 字符 (前50字符: ${value.substring(
+              0,
+              50
+            )}...)`
+          );
         } else {
           console.log(`${key}: ${value}`);
         }
       }
 
-      const response = await fetch(`${apiUrl}/api/essay-rewrite/search-and-analyze`, {
-        method: "POST",
-        headers: {
-          "X-API-Key": apiKey,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${apiUrl}/api/essay-rewrite/search-and-analyze`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Essay重写搜索分析API错误:", {
           status: response.status,
           statusText: response.statusText,
-          errorText
+          errorText,
         });
-        throw new Error(`Essay重写搜索分析失败: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Essay重写搜索分析失败: ${response.status} - ${errorText}`
+        );
       }
 
       return response.body;
@@ -1111,10 +1121,7 @@ export const apiService = {
   },
 
   // 套瓷助理专用API - 用于学术套瓷和教授联系
-  async streamNetworkingQuery(
-    queryText: string,
-    files?: File[]
-  ) {
+  async streamNetworkingQuery(queryText: string, files?: File[]) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
@@ -1122,7 +1129,7 @@ export const apiService = {
       console.log("套瓷助理API调用:", {
         url: `${apiUrl}/api/stream`,
         queryLength: queryText.length,
-        filesCount: files?.length || 0
+        filesCount: files?.length || 0,
       });
 
       // 创建FormData对象
@@ -1150,7 +1157,7 @@ export const apiService = {
         console.error("套瓷助理API错误:", {
           status: response.status,
           statusText: response.statusText,
-          errorText
+          errorText,
         });
         throw new Error(`套瓷助理请求失败: ${response.status} - ${errorText}`);
       }
@@ -1163,10 +1170,7 @@ export const apiService = {
   },
 
   // 随便问问专用API - 用于通用问题咨询
-  async streamGeneralQuery(
-    queryText: string,
-    files?: File[]
-  ) {
+  async streamGeneralQuery(queryText: string, files?: File[]) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
@@ -1174,7 +1178,7 @@ export const apiService = {
       console.log("随便问问API调用:", {
         url: `${apiUrl}/api/general-consultation`,
         queryLength: queryText.length,
-        filesCount: files?.length || 0
+        filesCount: files?.length || 0,
       });
 
       // 创建FormData对象
@@ -1202,7 +1206,7 @@ export const apiService = {
         console.error("随便问问API错误:", {
           status: response.status,
           statusText: response.statusText,
-          errorText
+          errorText,
         });
         throw new Error(`随便问问请求失败: ${response.status} - ${errorText}`);
       }
@@ -1210,6 +1214,127 @@ export const apiService = {
       return response.body;
     } catch (error) {
       console.error("随便问问API调用失败:", error);
+      throw error;
+    }
+  },
+
+  // Essay重写策略生成API
+  async generateEssayRewriteStrategy(
+    userInput: string,
+    originalEssayFile: File,
+    supportFiles: File[] = [],
+    customWebSearcherRole: string = "",
+    customWebSearcherTask: string = "",
+    customStrategyGeneratorRole: string = "",
+    customStrategyGeneratorTask: string = "",
+    customStrategyGeneratorOutputFormat: string = ""
+  ) {
+    try {
+      const apiKey = getApiKey();
+      const apiUrl = getApiUrl();
+
+      console.log("Essay重写策略生成API调用:", {
+        url: `${apiUrl}/api/essay-rewrite/generate-strategy`,
+        userInputLength: userInput.length,
+        originalEssayFile: originalEssayFile.name,
+        supportFilesCount: supportFiles.length,
+        hasCustomPrompts: !!(
+          customWebSearcherRole ||
+          customWebSearcherTask ||
+          customStrategyGeneratorRole ||
+          customStrategyGeneratorTask ||
+          customStrategyGeneratorOutputFormat
+        ),
+      });
+
+      // 创建FormData对象
+      const formData = new FormData();
+
+      // 添加必需参数
+      formData.append("user_input", userInput);
+      formData.append(
+        "original_essay_file",
+        originalEssayFile,
+        originalEssayFile.name
+      );
+
+      // 添加支持文件（如果有）
+      if (supportFiles && supportFiles.length > 0) {
+        supportFiles.forEach((file, index) => {
+          formData.append("support_files", file, file.name);
+          console.log(`添加支持文件${index + 1}: ${file.name}`);
+        });
+      }
+
+      // 添加自定义提示词参数
+      formData.append("custom_web_searcher_role", customWebSearcherRole);
+      formData.append("custom_web_searcher_task", customWebSearcherTask);
+      formData.append(
+        "custom_strategy_generator_role",
+        customStrategyGeneratorRole
+      );
+      formData.append(
+        "custom_strategy_generator_task",
+        customStrategyGeneratorTask
+      );
+      formData.append(
+        "custom_strategy_generator_output_format",
+        customStrategyGeneratorOutputFormat
+      );
+
+      // 打印FormData内容用于调试
+      console.log("Essay重写策略FormData内容:");
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+        } else if (typeof value === "string" && value.length > 100) {
+          console.log(
+            `${key}: String - ${value.length} 字符 (前50字符: ${value.substring(
+              0,
+              50
+            )}...)`
+          );
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+      const response = await fetch(
+        `${apiUrl}/api/essay-rewrite/generate-strategy`,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Essay重写策略API错误:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText,
+        });
+        throw new Error(
+          `Essay重写策略生成失败: ${response.status} - ${errorText}`
+        );
+      }
+
+      // 判断响应类型
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("text/event-stream")) {
+        console.log("接收到流式响应");
+        return response.body;
+      } else {
+        console.log("接收到普通响应");
+        const text = await response.text();
+        return text;
+      }
+    } catch (error) {
+      console.error("Essay重写策略API调用失败:", error);
       throw error;
     }
   },

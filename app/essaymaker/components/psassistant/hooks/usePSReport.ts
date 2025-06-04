@@ -14,57 +14,57 @@ interface UsePSReportProps {
 
 /**
  * usePSReport Hook
- * 
+ *
  * 功能：管理PS助理报告生成的自定义Hook
- * 
+ *
  * 核心特性：
  * 1. 报告生成：
  *    - 个人背景分析
  *    - 申请优势识别
  *    - 写作建议提供
  *    - 改进方向指导
- * 
+ *
  * 2. 流式处理：
  *    - 实时接收+逐字显示模式
  *    - 字符显示间隔：0.2ms
  *    - 平滑的打字机效果
  *    - 自动滚动到最新内容
- * 
+ *
  * 3. 状态管理：
  *    - 生成状态跟踪
  *    - 错误状态处理
  *    - 加载进度指示
  *    - 完成状态确认
- * 
+ *
  * 4. 数据处理：
  *    - 文件内容解析
  *    - 结构化数据提取
  *    - 格式转换和优化
  *    - 结果缓存机制
- * 
+ *
  * 5. 错误处理：
  *    - 网络错误重试
  *    - 数据验证失败
  *    - 超时处理机制
  *    - 用户友好的错误提示
- * 
+ *
  * 6. 性能优化：
  *    - 防抖处理
  *    - 内存使用控制
  *    - 异步操作优化
  *    - 资源清理机制
- * 
+ *
  * API集成：
  * - 使用useStreamResponse处理流式响应
  * - 支持文件上传和内容分析
  * - 实时数据更新和状态同步
- * 
+ *
  * 返回值：
  * - report：生成的报告内容
  * - isLoading：加载状态
  * - error：错误信息
  * - handleStreamResponse：流式响应处理函数
- * 
+ *
  * @author EssayMaker Team
  * @version 1.0.0
  */
@@ -77,8 +77,26 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
   const handleStreamResponse = async (
     query: string,
     files?: File[],
-    transcriptFiles?: File[]
+    transcriptFiles?: File[],
+    onLogResult?: (
+      requestData: any,
+      resultData: any,
+      isSuccess: boolean,
+      duration: number,
+      errorMessage?: string
+    ) => Promise<void>
   ) => {
+    const startTime = Date.now();
+
+    // 准备请求数据用于日志记录
+    const requestData = {
+      query,
+      files: files?.map((f) => ({ name: f.name, size: f.size })) || [],
+      transcriptFiles:
+        transcriptFiles?.map((f) => ({ name: f.name, size: f.size })) || [],
+      timestamp: new Date().toISOString(),
+    };
+
     try {
       console.log(
         "usePSReport - handleStreamResponse - 接收的文件数量:",
@@ -157,45 +175,80 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
           });
           setResult(result);
         },
-        onComplete: (result) => {
+        onComplete: async (result) => {
           console.log("PS报告助理 - 流完成:", {
             contentLength: result.content.length,
             stepsCount: result.steps?.length || 0,
           });
-          setResult({
+          const finalResult = {
             ...result,
             isComplete: true,
             currentStep: "分析完成",
-          });
+          };
+          setResult(finalResult);
+
+          // 记录成功日志
+          if (onLogResult) {
+            await onLogResult(
+              requestData,
+              finalResult,
+              true,
+              Date.now() - startTime
+            );
+          }
         },
-        onError: (error) => {
+        onError: async (error) => {
           console.error("PS报告助理 - 流处理错误:", error);
           if (toast) {
             toast.error("处理请求失败: " + error.message);
           }
-          setResult({
+          const errorResult = {
             content: "处理请求时出现错误",
             timestamp: new Date().toISOString(),
             steps: ["❌ 处理失败"],
             currentStep: "处理失败",
             isComplete: true,
-          });
+          };
+          setResult(errorResult);
+
+          // 记录失败日志
+          if (onLogResult) {
+            await onLogResult(
+              requestData,
+              errorResult,
+              false,
+              Date.now() - startTime,
+              error.message
+            );
+          }
         },
         realtimeTypewriter: true, // 启用实时接收+逐字显示模式
         charDelay: 0.2, // 字符显示间隔0.2毫秒
       });
     } catch (error) {
       console.error("PS报告助理处理流式响应错误:", error);
-      setResult({
+      const errorResult = {
         content: "处理请求时出现错误",
         timestamp: new Date().toISOString(),
         steps: ["❌ 处理失败"],
         currentStep: "处理失败",
         isComplete: true,
-      });
+      };
+      setResult(errorResult);
 
       if (toast) {
         toast.error("处理请求失败: " + (error as Error).message);
+      }
+
+      // 记录异常日志
+      if (onLogResult) {
+        await onLogResult(
+          requestData,
+          errorResult,
+          false,
+          Date.now() - startTime,
+          (error as Error).message
+        );
       }
     } finally {
       setIsLoading(false);
