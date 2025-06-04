@@ -978,7 +978,6 @@ export const apiService = {
 
   // 第二步：Essay重写策略生成API
   async streamEssayRewriteGenerateStrategy(
-    userInput: string,
     searchResult: string,
     originalEssayFile: File,
     analysisResult: string = "",
@@ -992,7 +991,6 @@ export const apiService = {
 
       console.log("Essay重写策略生成API调用:", {
         url: `${apiUrl}/api/essay-rewrite/generate-strategy`,
-        userInputLength: userInput.length,
         searchResultLength: searchResult.length,
         originalEssayFile: originalEssayFile.name,
         analysisResultLength: analysisResult.length,
@@ -1003,7 +1001,6 @@ export const apiService = {
       const formData = new FormData();
       
       // 添加必需参数
-      formData.append("user_input", userInput);
       formData.append("search_result", searchResult);
       formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
 

@@ -49,12 +49,15 @@
 "use client";
 
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { FileText, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Loader2, Edit } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DisplayResult } from "../types";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import DOMPurify from "dompurify";
+import { apiService } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 // 检测内容类型的函数
 const detectContentType = (content: string): 'html' | 'markdown' => {
@@ -450,9 +453,22 @@ const htmlStyles = `
 interface ResultDisplayProps {
   result: DisplayResult | null;
   title?: string; // 添加可选的标题属性
+  // 新增：用于调用改写策略API的参数
+  onGenerateStrategy?: (strategyResult: DisplayResult) => void;
+  originalEssayFile?: File | null;
+  searchResult?: string;
 }
 
-export function ResultDisplay({ result, title = "分析结果" }: ResultDisplayProps) {
+export function ResultDisplay({ 
+  result, 
+  title = "分析结果", 
+  onGenerateStrategy,
+  originalEssayFile,
+  searchResult
+}: ResultDisplayProps) {
+  const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
+  const { toast } = useToast();
+
   if (!result) return null;
 
   // 处理可能包含在内容中的重复标题
@@ -481,6 +497,122 @@ export function ResultDisplay({ result, title = "分析结果" }: ResultDisplayP
       .replace(/^\s+/, ""); // 移除开头的空白
   }, [result.content, result._isStepContent]);
 
+  // 处理撰写改写策略
+  const handleGenerateStrategy = async () => {
+    if (!originalEssayFile || !searchResult) {
+      toast({
+        variant: "destructive",
+        title: "参数不足",
+        description: "缺少原始文件或搜索结果数据",
+      });
+      return;
+    }
+
+    setIsGeneratingStrategy(true);
+
+    try {
+      const streamResponse = await apiService.streamEssayRewriteGenerateStrategy(
+        searchResult,
+        originalEssayFile,
+        result.content || "" // 使用当前分析结果作为analysisResult
+      );
+
+      if (!streamResponse) {
+        throw new Error("未收到响应流");
+      }
+
+      const reader = streamResponse.getReader();
+      const decoder = new TextDecoder();
+      let strategyContent = "";
+      let steps: string[] = [];
+
+      // 创建策略结果对象
+      const strategyResult: DisplayResult = {
+        content: "",
+        steps: [],
+        timestamp: new Date().toISOString(),
+        isComplete: false,
+        currentStep: "改写策略生成中...",
+      };
+
+      // 立即显示加载状态
+      if (onGenerateStrategy) {
+        onGenerateStrategy(strategyResult);
+      }
+
+      // 处理流式响应
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(line => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.step) {
+                steps.push(data.step);
+              }
+
+              if (data.content) {
+                strategyContent += data.content;
+              }
+
+              if (data.current_step) {
+                strategyResult.currentStep = data.current_step;
+              }
+
+              // 更新结果
+              const updatedResult: DisplayResult = {
+                ...strategyResult,
+                content: strategyContent,
+                steps: steps,
+                isComplete: false,
+              };
+
+              if (onGenerateStrategy) {
+                onGenerateStrategy(updatedResult);
+              }
+            } catch (e) {
+              console.warn("解析流数据失败:", e);
+            }
+          }
+        }
+      }
+
+      // 完成生成
+      const finalResult: DisplayResult = {
+        ...strategyResult,
+        content: strategyContent,
+        steps: steps,
+        isComplete: true,
+        currentStep: undefined,
+      };
+
+      if (onGenerateStrategy) {
+        onGenerateStrategy(finalResult);
+      }
+
+      toast({
+        title: "改写策略生成完成",
+        description: "已成功生成Essay改写策略",
+      });
+
+    } catch (error) {
+      console.error("生成改写策略失败:", error);
+      toast({
+        variant: "destructive",
+        title: "生成失败",
+        description: error instanceof Error ? error.message : "改写策略生成失败",
+      });
+    } finally {
+      setIsGeneratingStrategy(false);
+    }
+  };
+
   // 使用Shadcn UI原生Card组件
   return (
     <Card className="shadow-lg h-[calc(100%-3px)] flex flex-col">
@@ -488,12 +620,48 @@ export function ResultDisplay({ result, title = "分析结果" }: ResultDisplayP
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
           <FileText className="h-5 w-5 text-blue-500" />
         </div>
-        <div>
+        <div className="flex-1">
           <CardTitle className="text-base font-medium">{title}</CardTitle>
           <p className="text-sm text-gray-500">
             {new Date(result.timestamp).toLocaleString()}
           </p>
         </div>
+        {/* 新增：撰写改写策略按钮 */}
+        {originalEssayFile && searchResult && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateStrategy}
+            disabled={
+              isGeneratingStrategy || 
+              !result.isComplete || 
+              !result.content ||
+              result.currentStep === "生成出错，请重试"
+            }
+            className="ml-auto"
+            title={
+              !result.isComplete 
+                ? "请等待分稿策略生成完成后再生成改写策略" 
+                : !result.content
+                ? "没有可用的分析结果"
+                : result.currentStep === "生成出错，请重试"
+                ? "请先重新生成分稿策略"
+                : "基于当前分析结果生成Essay改写策略"
+            }
+          >
+            {isGeneratingStrategy ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                撰写改写策略
+              </>
+            )}
+          </Button>
+        )}
       </CardHeader>
 
       {/* 加载状态显示 */}

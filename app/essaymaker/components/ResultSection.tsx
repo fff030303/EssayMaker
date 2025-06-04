@@ -58,6 +58,9 @@ interface ResultSectionProps {
   setExpandedSteps: React.Dispatch<React.SetStateAction<string[]>>;
   handleStepClick: (step: string, stepId: string) => void;
   title?: string; // 可选的自定义标题
+  originalEssayFile?: File | null;
+  searchResult?: string;
+  onGenerateStrategy?: (strategyResult: DisplayResult) => void;
 }
 
 export function ResultSection({
@@ -66,6 +69,9 @@ export function ResultSection({
   setExpandedSteps,
   handleStepClick,
   title = "查询过程", // 默认标题
+  originalEssayFile,
+  searchResult,
+  onGenerateStrategy,
 }: ResultSectionProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -111,7 +117,12 @@ export function ResultSection({
       {/* 分析结果显示区域 */}
       <div className="lg:col-span-8">
         <div className="h-full max-h-[calc(100vh-84px)] p-5 overflow-visible">
-          <ResultDisplay result={result} />
+          <ResultDisplay 
+            result={result} 
+            originalEssayFile={originalEssayFile}
+            searchResult={searchResult}
+            onGenerateStrategy={onGenerateStrategy}
+          />
         </div>
       </div>
     </div>

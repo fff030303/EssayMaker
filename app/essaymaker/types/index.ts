@@ -28,6 +28,8 @@ export interface DisplayResult {
   errorMessage?: string;
   // 🆕 添加写作需求字段，用于推荐信助理
   writingRequirements?: string;
+  // 🆕 添加步骤内容映射，用于保存每个步骤的具体内容
+  _stepContents?: Record<string, string>;
 }
 
 export interface QueryResponse {

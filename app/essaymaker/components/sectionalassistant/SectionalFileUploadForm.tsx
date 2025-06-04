@@ -51,11 +51,13 @@ import { useStreamResponse } from "../../hooks/useStreamResponse";
 interface SectionalFileUploadFormProps {
   onStepChange?: (step: number) => void;
   setResult?: (result: DisplayResult | null) => void;
+  onDataUpdate?: (file: File | null, searchData: string) => void;
 }
 
 export function SectionalFileUploadForm({
   onStepChange,
   setResult,
+  onDataUpdate,
 }: SectionalFileUploadFormProps) {
   const [userInput, setUserInput] = useState("");
   const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
@@ -284,33 +286,13 @@ export function SectionalFileUploadForm({
 
     setIsLoading(true);
 
-    // 🆕 在调用API之前立即创建结果对象并设置，使结果区域立即显示
-    const resultObject: DisplayResult = {
-      content: "",
-      steps: [],
-      timestamp: new Date().toISOString(),
-      isComplete: false,
-      currentStep: "分稿策略生成中",
-    };
-
-    // 🆕 立即更新结果状态，使结果区域马上显示
-    if (setResult) {
-      setResult(resultObject);
-    }
-
-    // 🆕 显示处理中提示
-    toast({
-      title: "正在处理",
-      description: "分稿策略正在生成中...",
-    });
-
     try {
       console.log("开始调用分稿助理API...");
       
       // 准备文件数组（初稿文件 + 支持文件）
       const allFiles = [originalEssayFile, ...supportFiles];
       
-      // 调用分稿助理API
+      // 调用分稿助理API并处理流式响应
       const response = await apiService.streamSectionalQuery(
         userInput,
         allFiles
@@ -318,63 +300,86 @@ export function SectionalFileUploadForm({
 
       console.log("分稿助理API响应:", response);
 
-      // 处理流式响应
       if (response instanceof ReadableStream) {
         console.log("开始处理流式响应...");
 
+        // 🆕 用于累积steps的本地状态
+        let accumulatedSteps: string[] = [];
+        // 🆕 用于保存每个步骤的完整内容数据
+        let stepContents: Record<string, string> = {};
+
+        // 使用processStream处理流响应，但添加步骤累积逻辑
         await processStream(response, {
-          onUpdate: (result) => {
-            if (setResult) {
-              // 简单的步骤累积逻辑，不使用回调函数
-              const updatedResult = {
-                ...result,
-                currentStep: result.currentStep || "分稿策略生成中",
-              };
-              
-              // 如果有新的 currentStep，将其添加到步骤列表中
-              if (result.currentStep && !result.steps?.includes(result.currentStep)) {
-                updatedResult.steps = [...(result.steps || []), result.currentStep];
-              }
-              
-              setResult(updatedResult);
-            }
-          },
-          onComplete: (result) => {
-            if (setResult) {
-              setResult({
-                ...result,
-                currentStep: "分稿策略生成完成",
-                isComplete: true,
+          realTimeStreaming: true,
+          onUpdate: (result: DisplayResult) => {
+            // 🆕 累积所有步骤，避免被新步骤覆盖
+            if (result.steps && result.steps.length > 0) {
+              result.steps.forEach(step => {
+                if (!accumulatedSteps.includes(step)) {
+                  accumulatedSteps.push(step);
+                }
+                // 保存该步骤对应的内容
+                stepContents[step] = result.content;
               });
             }
+            
+            // 如果有当前步骤且不在累积列表中，添加进去
+            if (result.currentStep && !accumulatedSteps.includes(result.currentStep)) {
+              accumulatedSteps.push(result.currentStep);
+              stepContents[result.currentStep] = result.content;
+            }
+
+            // 更新结果，使用累积的步骤
+            if (setResult) {
+              const updatedResult: DisplayResult = {
+                ...result,
+                steps: [...accumulatedSteps], // 使用累积的步骤
+                // 添加步骤内容映射
+                _stepContents: { ...stepContents },
+              } as DisplayResult;
+              setResult(updatedResult);
+            }
+
+            // 传递原始文件和搜索结果数据
+            if (onDataUpdate && result.content) {
+              onDataUpdate(originalEssayFile, result.content);
+            }
+          },
+          onComplete: (finalResult: DisplayResult) => {
+            // 完成时的回调
+            // 确保最终结果包含所有累积的步骤
+            const allSteps = finalResult.steps && finalResult.steps.length > 0 
+              ? [...new Set([...accumulatedSteps, ...finalResult.steps])]
+              : [...accumulatedSteps];
+            
+            // 保存最终内容到所有步骤
+            allSteps.forEach(step => {
+              if (!stepContents[step]) {
+                stepContents[step] = finalResult.content;
+              }
+            });
+
+            if (setResult) {
+              const finalResultWithSteps: DisplayResult = {
+                ...finalResult,
+                steps: allSteps,
+                // 添加步骤内容映射
+                _stepContents: { ...stepContents },
+              } as DisplayResult;
+              setResult(finalResultWithSteps);
+            }
+            
+            if (onDataUpdate && finalResult.content) {
+              onDataUpdate(originalEssayFile, finalResult.content);
+            }
+
             toast({
               title: "生成成功",
               description: "分稿策略已生成完成",
             });
             
-            // 🆕 移除自动跳转，让用户在当前页面查看结果
-            // 用户可以通过导航栏手动切换到第二步
-            console.log("分稿策略生成完成，结果已在下方显示");
-          },
-          onError: (error) => {
-            console.error("生成分稿策略时出错:", error);
-            toast({
-              variant: "destructive",
-              title: "生成失败",
-              description: "生成分稿策略时发生错误，请重试",
-            });
-
-            // 🆕 出错时也保持结果对象，显示错误状态
-            if (setResult) {
-              setResult({
-                ...resultObject,
-                currentStep: "生成出错，请重试",
-                isComplete: true,
-              });
-            }
-          },
-          // 🆕 启用实时流式处理，让步骤能够实时显示
-          realTimeStreaming: true,
+            console.log("分稿策略生成完成，累积步骤:", allSteps);
+          }
         });
       }
     } catch (error) {
@@ -388,10 +393,14 @@ export function SectionalFileUploadForm({
       // 🆕 出错时也保持结果对象，显示错误状态
       if (setResult) {
         setResult({
-          ...resultObject,
+          content: "",
+          steps: [],
           currentStep: "请求失败，请重试",
+          timestamp: new Date().toISOString(),
           isComplete: true,
-        });
+          isError: true,
+          errorMessage: error instanceof Error ? error.message : "未知错误",
+        } as DisplayResult);
       }
     } finally {
       setIsLoading(false);
@@ -419,128 +428,130 @@ export function SectionalFileUploadForm({
           </div>
 
           {/* 初稿文件上传 */}
-          <div className="space-y-2">
-            <Label>原始初稿文件 *</Label>
-            <div 
-              className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                isDraggingOriginal 
-                  ? 'border-blue-400 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDragOver={handleOriginalDragOver}
-              onDragLeave={handleOriginalDragLeave}
-              onDrop={handleOriginalDrop}
-            >
-              {originalEssayFile ? (
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm">{originalEssayFile.name}</span>
-                    <span className="text-xs text-gray-500">
-                      ({(originalEssayFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
+          <div className="columns-2">
+            <div className="space-y-2">
+              <Label>原始初稿文件 *</Label>
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                  isDraggingOriginal 
+                    ? 'border-blue-400 bg-blue-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragOver={handleOriginalDragOver}
+                onDragLeave={handleOriginalDragLeave}
+                onDrop={handleOriginalDrop}
+              >
+                {originalEssayFile ? (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <span className="text-sm">{originalEssayFile.name}</span>
+                      <span className="text-xs text-gray-500">
+                        ({(originalEssayFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={removeOriginalFile}
+                      disabled={isLoading}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={removeOriginalFile}
-                    disabled={isLoading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
+                ) : (
+                  <div className="text-center">
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600 mb-2">
+                      {isDraggingOriginal ? '松开鼠标上传文件' : '点击上传或拖拽文件到此处'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      支持 PDF、Word、TXT 格式，最大 10MB
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-2"
+                      onClick={() => originalFileInputRef.current?.click()}
+                      disabled={isLoading}
+                    >
+                      选择文件
+                    </Button>
+                  </div>
+                )}
+                <input
+                  ref={originalFileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleOriginalFileUpload}
+                  className="hidden"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            {/* 支持文件上传 */}
+            <div className="space-y-2">
+              <Label>支持文件（可选）</Label>
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                  isDraggingSupport 
+                    ? 'border-blue-400 bg-blue-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragOver={handleSupportDragOver}
+                onDragLeave={handleSupportDragLeave}
+                onDrop={handleSupportDrop}
+              >
+                {supportFiles.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {supportFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-sm">{file.name}</span>
+                          <span className="text-xs text-gray-500">
+                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSupportFile(index)}
+                          disabled={isLoading}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="text-center">
                   <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                   <p className="text-sm text-gray-600 mb-2">
-                    {isDraggingOriginal ? '松开鼠标上传文件' : '点击上传或拖拽文件到此处'}
+                    {isDraggingSupport ? '松开鼠标上传文件' : '上传相关参考文件（最多5个）'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    支持 PDF、Word、TXT 格式，最大 10MB
+                    如：申请要求、学校信息、课程描述等
                   </p>
                   <Button
                     variant="outline"
                     className="mt-2"
-                    onClick={() => originalFileInputRef.current?.click()}
-                    disabled={isLoading}
+                    onClick={() => supportFilesInputRef.current?.click()}
+                    disabled={isLoading || supportFiles.length >= 5}
                   >
-                    选择文件
+                    添加文件
                   </Button>
                 </div>
-              )}
-              <input
-                ref={originalFileInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx,.txt"
-                onChange={handleOriginalFileUpload}
-                className="hidden"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          {/* 支持文件上传 */}
-          <div className="space-y-2">
-            <Label>支持文件（可选）</Label>
-            <div 
-              className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                isDraggingSupport 
-                  ? 'border-blue-400 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDragOver={handleSupportDragOver}
-              onDragLeave={handleSupportDragLeave}
-              onDrop={handleSupportDrop}
-            >
-              {supportFiles.length > 0 && (
-                <div className="space-y-2 mb-4">
-                  {supportFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm">{file.name}</span>
-                        <span className="text-xs text-gray-500">
-                          ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeSupportFile(index)}
-                        disabled={isLoading}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="text-center">
-                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-2">
-                  {isDraggingSupport ? '松开鼠标上传文件' : '上传相关参考文件（最多5个）'}
-                </p>
-                <p className="text-xs text-gray-500">
-                  如：申请要求、学校信息、课程描述等
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-2"
-                  onClick={() => supportFilesInputRef.current?.click()}
-                  disabled={isLoading || supportFiles.length >= 5}
-                >
-                  添加文件
-                </Button>
+                <input
+                  ref={supportFilesInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt"
+                  multiple
+                  onChange={handleSupportFilesUpload}
+                  className="hidden"
+                  disabled={isLoading}
+                />
               </div>
-              <input
-                ref={supportFilesInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx,.txt"
-                multiple
-                onChange={handleSupportFilesUpload}
-                className="hidden"
-                disabled={isLoading}
-              />
             </div>
           </div>
 

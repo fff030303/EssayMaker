@@ -69,6 +69,10 @@ export function SectionalAssistantMain({
   // 本地状态管理
   const [localResult, setLocalResult] = useState<DisplayResult | null>(null);
   const [expandedSteps, setExpandedSteps] = useState<string[]>([]);
+  
+  // 新增：存储原始文件和搜索结果数据，用于改写策略生成
+  const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
+  const [searchResult, setSearchResult] = useState<string>("");
 
   // 使用传入的状态或本地状态
   const currentResult = result || localResult;
@@ -82,6 +86,12 @@ export function SectionalAssistantMain({
     }
   };
 
+  // 新增：处理文件和搜索结果数据传递
+  const handleDataUpdate = (file: File | null, searchData: string) => {
+    setOriginalEssayFile(file);
+    setSearchResult(searchData);
+  };
+
   // 处理步骤点击
   const handleStepClick = (step: string, stepId: string) => {
     // 切换展开/折叠状态
@@ -91,72 +101,86 @@ export function SectionalAssistantMain({
         : [...prev, stepId]
     );
 
-    // 解析步骤内容
-    const stepData = parseStepContent(step);
+    // 🆕 优先从步骤内容映射中获取具体内容
+    let stepContent = "";
+    
+    // 使用类型断言来访问_stepContents属性
+    const resultWithStepContents = currentResult as DisplayResult & { _stepContents?: Record<string, string> };
+    
+    if (resultWithStepContents?._stepContents && resultWithStepContents._stepContents[step]) {
+      // 如果有保存的步骤内容，直接使用
+      stepContent = resultWithStepContents._stepContents[step];
+      console.log(`从步骤内容映射中获取内容: ${step}`, stepContent.substring(0, 100) + "...");
+    } else {
+      // 如果没有步骤内容映射，使用原有的解析逻辑
+      console.log(`使用原有解析逻辑: ${step}`);
+      
+      // 解析步骤内容
+      const stepData = parseStepContent(step);
 
-    // 处理null/undefined的内容并确保有字符串类型
-    const getFormattedContent = (): string => {
-      // 分析查询类型，优先使用details（嵌入的内容）
-      if (stepData.type === "analysis" && stepData.details) {
-        return stepData.details;
-      }
-      // 生成内容类型，优先使用details
-      else if (stepData.type === "generation") {
-        // 检查内容是否重复（防止前后内容重复）
-        const details = stepData.details || "";
-        if (details.length > 0) {
-          // 尝试查找重复部分
-          const halfLength = Math.floor(details.length / 2);
-          const firstHalf = details.substring(0, halfLength);
-          const secondHalf = details.substring(halfLength);
-
-          // 如果两半内容基本相同（超过80%相似），则只返回一半
-          if (
-            firstHalf.length > 100 &&
-            secondHalf.includes(firstHalf.substring(0, firstHalf.length * 0.8))
-          ) {
-            return firstHalf;
-          }
-          return details;
+      // 处理null/undefined的内容并确保有字符串类型
+      const getFormattedContent = (): string => {
+        // 分析查询类型，优先使用details（嵌入的内容）
+        if (stepData.type === "analysis" && stepData.details) {
+          return stepData.details;
         }
-        return stepData.content || "";
-      }
-      // 搜索和网页内容类型，优先使用details
-      else if (stepData.type === "search" || stepData.type === "web") {
-        return stepData.details || stepData.content || "";
-      }
-      // 其他类型，带标题显示
-      else if (stepData.content) {
-        // 检查内容是否重复
-        const content = stepData.content;
-        if (content.length > 500) {
-          // 尝试查找重复部分
-          const halfLength = Math.floor(content.length / 2);
-          const firstHalf = content.substring(0, halfLength);
-          const secondHalf = content.substring(halfLength);
+        // 生成内容类型，优先使用details
+        else if (stepData.type === "generation") {
+          // 检查内容是否重复（防止前后内容重复）
+          const details = stepData.details || "";
+          if (details.length > 0) {
+            // 尝试查找重复部分
+            const halfLength = Math.floor(details.length / 2);
+            const firstHalf = details.substring(0, halfLength);
+            const secondHalf = details.substring(halfLength);
 
-          // 如果两半内容基本相同，则只返回一半
-          if (
-            firstHalf.length > 100 &&
-            secondHalf.includes(firstHalf.substring(0, firstHalf.length * 0.8))
-          ) {
-            return `## ${stepData.title}\n\n${firstHalf}`;
+            // 如果两半内容基本相同（超过80%相似），则只返回一半
+            if (
+              firstHalf.length > 100 &&
+              secondHalf.includes(firstHalf.substring(0, firstHalf.length * 0.8))
+            ) {
+              return firstHalf;
+            }
+            return details;
           }
+          return stepData.content || "";
         }
-        return `## ${stepData.title}\n\n${content}`;
-      }
-      // 默认返回空字符串
-      return "";
-    };
+        // 搜索和网页内容类型，优先使用details
+        else if (stepData.type === "search" || stepData.type === "web") {
+          return stepData.details || stepData.content || "";
+        }
+        // 其他类型，带标题显示
+        else if (stepData.content) {
+          // 检查内容是否重复
+          const content = stepData.content;
+          if (content.length > 500) {
+            // 尝试查找重复部分
+            const halfLength = Math.floor(content.length / 2);
+            const firstHalf = content.substring(0, halfLength);
+            const secondHalf = content.substring(halfLength);
 
-    // 获取格式化后的内容
-    const formattedContent = getFormattedContent();
+            // 如果两半内容基本相同，则只返回一半
+            if (
+              firstHalf.length > 100 &&
+              secondHalf.includes(firstHalf.substring(0, firstHalf.length * 0.8))
+            ) {
+              return `## ${stepData.title}\n\n${firstHalf}`;
+            }
+          }
+          return `## ${stepData.title}\n\n${content}`;
+        }
+        // 默认返回空字符串
+        return "";
+      };
+
+      stepContent = getFormattedContent();
+    }
 
     // 更新分稿助理的结果显示
     if (currentResult) {
       const updatedResult: DisplayResult = {
         ...currentResult,
-        content: formattedContent, // 直接替换内容
+        content: stepContent, // 使用步骤特定的内容
         // 添加一个标记，表示这是步骤点击显示的内容，而不是流式生成的内容
         _isStepContent: true,
       };
@@ -178,6 +202,7 @@ export function SectionalAssistantMain({
         <SectionalFileUploadForm
           onStepChange={onStepChange}
           setResult={handleResultUpdate}
+          onDataUpdate={handleDataUpdate}
         />
 
         {/* 使用 ResultSection 组件展示分稿内容 */}
@@ -188,6 +213,9 @@ export function SectionalAssistantMain({
             setExpandedSteps={setExpandedSteps}
             handleStepClick={handleStepClick}
             title="查询过程"
+            originalEssayFile={originalEssayFile}
+            searchResult={searchResult}
+            onGenerateStrategy={handleResultUpdate}
           />
         )}
       </div>

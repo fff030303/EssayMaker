@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { getCasAuthUrl } from "@/lib/auth";
 import { useState, useEffect } from "react";
-import { log } from "@/lib/logger";
+import { info } from "@/lib/logger";
 
 interface CasLoginButtonProps {
   showDebugOptions?: boolean;
@@ -22,7 +22,7 @@ export function CasLoginButton({
     setSessionId(newSessionId);
 
     try {
-      log.info(`[CAS登录${newSessionId}] 初始化CAS登录按钮`, {
+      info(`[CAS登录${newSessionId}] 初始化CAS登录按钮`, {
         userAgent: navigator.userAgent,
         referrer: document.referrer,
         cookies: document.cookie ? "有Cookie" : "无Cookie",
@@ -69,7 +69,7 @@ export function CasLoginButton({
       const finalAuthUrl = authUrlObj.toString();
 
       // 记录登录尝试
-      log.info(`[CAS登录${sessionId}] 准备跳转到CAS认证URL`, {
+      info(`[CAS登录${sessionId}] 准备跳转到CAS认证URL`, {
         originalUrl: authUrl,
         finalUrl: finalAuthUrl,
         hostname,

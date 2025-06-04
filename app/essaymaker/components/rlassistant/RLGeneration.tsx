@@ -239,7 +239,7 @@ export function RLGeneration({
           customRolePrompt: customRolePrompt,
           customTaskPrompt: customTaskPrompt,
           customOutputFormatPrompt: customOutputFormatPrompt,
-          writingRequirements: fullWritingRequirements,
+          writingRequirements: writingRequirements,
         },
         { content: "", error: true },
         false,
