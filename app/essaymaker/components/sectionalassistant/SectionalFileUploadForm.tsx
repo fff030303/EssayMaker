@@ -283,6 +283,27 @@ export function SectionalFileUploadForm({
     }
 
     setIsLoading(true);
+
+    // 🆕 在调用API之前立即创建结果对象并设置，使结果区域立即显示
+    const resultObject: DisplayResult = {
+      content: "",
+      steps: [],
+      timestamp: new Date().toISOString(),
+      isComplete: false,
+      currentStep: "分稿策略生成中",
+    };
+
+    // 🆕 立即更新结果状态，使结果区域马上显示
+    if (setResult) {
+      setResult(resultObject);
+    }
+
+    // 🆕 显示处理中提示
+    toast({
+      title: "正在处理",
+      description: "分稿策略正在生成中...",
+    });
+
     try {
       console.log("开始调用分稿助理API...");
       
@@ -304,10 +325,18 @@ export function SectionalFileUploadForm({
         await processStream(response, {
           onUpdate: (result) => {
             if (setResult) {
-              setResult({
+              // 简单的步骤累积逻辑，不使用回调函数
+              const updatedResult = {
                 ...result,
                 currentStep: result.currentStep || "分稿策略生成中",
-              });
+              };
+              
+              // 如果有新的 currentStep，将其添加到步骤列表中
+              if (result.currentStep && !result.steps?.includes(result.currentStep)) {
+                updatedResult.steps = [...(result.steps || []), result.currentStep];
+              }
+              
+              setResult(updatedResult);
             }
           },
           onComplete: (result) => {
@@ -315,6 +344,7 @@ export function SectionalFileUploadForm({
               setResult({
                 ...result,
                 currentStep: "分稿策略生成完成",
+                isComplete: true,
               });
             }
             toast({
@@ -322,12 +352,9 @@ export function SectionalFileUploadForm({
               description: "分稿策略已生成完成",
             });
             
-            // 自动跳转到第二步
-            if (onStepChange) {
-              setTimeout(() => {
-                onStepChange(2);
-              }, 1000);
-            }
+            // 🆕 移除自动跳转，让用户在当前页面查看结果
+            // 用户可以通过导航栏手动切换到第二步
+            console.log("分稿策略生成完成，结果已在下方显示");
           },
           onError: (error) => {
             console.error("生成分稿策略时出错:", error);
@@ -337,7 +364,17 @@ export function SectionalFileUploadForm({
               description: "生成分稿策略时发生错误，请重试",
             });
 
+            // 🆕 出错时也保持结果对象，显示错误状态
+            if (setResult) {
+              setResult({
+                ...resultObject,
+                currentStep: "生成出错，请重试",
+                isComplete: true,
+              });
+            }
           },
+          // 🆕 启用实时流式处理，让步骤能够实时显示
+          realTimeStreaming: true,
         });
       }
     } catch (error) {
@@ -347,6 +384,15 @@ export function SectionalFileUploadForm({
         title: "请求失败",
         description: error instanceof Error ? error.message : "未知错误",
       });
+
+      // 🆕 出错时也保持结果对象，显示错误状态
+      if (setResult) {
+        setResult({
+          ...resultObject,
+          currentStep: "请求失败，请重试",
+          isComplete: true,
+        });
+      }
     } finally {
       setIsLoading(false);
     }

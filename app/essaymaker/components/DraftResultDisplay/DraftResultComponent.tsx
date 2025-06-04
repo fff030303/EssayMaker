@@ -61,6 +61,7 @@
 
 "use client";
 
+import React from "react";
 import {
   Card,
   CardHeader,
@@ -103,10 +104,146 @@ import {
 } from "./utils";
 import { markdownComponents } from "./MarkdownComponents";
 import type { DraftResultDisplayProps } from "./types";
+import type { DisplayResult } from "../../types";
 
 // 导入全局流式生成相关
 import { useStreaming } from "../../contexts/StreamingContext";
 import { useGlobalStreamResponse } from "../../hooks/useGlobalStreamResponse";
+
+// 🆕 导入新的独立ReasoningCard组件
+import { ReasoningCard } from "./ReasoningCard";
+
+// 新增：内容类型接口
+interface ContentSegment {
+  content_type: 'reasoning' | 'resume' | 'default';
+  content: string;
+  isComplete?: boolean;
+}
+
+// 新增：解析多段内容的函数
+const parseMultiSegmentContent = (content: string): ContentSegment[] => {
+  if (!content) return [];
+
+  // 🆕 首先检查内容格式类型
+  const trimmedContent = content.trim();
+  
+  // 检查是否包含JSON格式的行（以data:开头或包含content_type字段）
+  const hasJsonFormat = trimmedContent.includes('"content_type"') || 
+                       trimmedContent.includes('data: {') ||
+                       trimmedContent.split('\n').some(line => {
+                         const trimmed = line.trim();
+                         return (trimmed.startsWith('data: {') || 
+                                trimmed.startsWith('{')) && 
+                                trimmed.includes('"type"') && 
+                                trimmed.includes('"content_type"');
+                       });
+
+  // 如果不包含JSON格式，直接作为普通内容处理
+  if (!hasJsonFormat) {
+    console.log("检测到普通文本内容，不进行JSON解析");
+    return [{
+      content_type: 'default',
+      content: content,
+      isComplete: false
+    }];
+  }
+
+  // 🆕 处理后端返回的多个独立JSON对象格式（每行一个JSON）
+  const lines = content.trim().split('\n');
+  const segments: ContentSegment[] = [];
+
+  for (const line of lines) {
+    let trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+
+    // 🆕 处理SSE格式的'data: '前缀
+    if (trimmedLine.startsWith('data: ')) {
+      trimmedLine = trimmedLine.substring(6); // 移除'data: '前缀
+    }
+
+    // 跳过SSE的其他控制消息
+    if (trimmedLine === '' || trimmedLine.startsWith('event:') || trimmedLine.startsWith('id:')) {
+      continue;
+    }
+
+    // 🆕 只对看起来像JSON的行进行解析（减少错误日志）
+    if (!trimmedLine.startsWith('{') || !trimmedLine.includes('"content_type"')) {
+      console.log("跳过非JSON格式行:", trimmedLine.substring(0, 30) + "...");
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmedLine);
+      
+      // 处理标准格式：{ "type": "content", "content": "...", "content_type": "reasoning" }
+      if (parsed.type === "content" && parsed.content_type && parsed.content) {
+        segments.push({
+          content_type: parsed.content_type || 'default',
+          content: parsed.content || '',
+          isComplete: parsed.isComplete
+        });
+        continue;
+      }
+      
+      // 处理简化格式：{ "content_type": "reasoning", "content": "..." }
+      if (parsed.content_type && parsed.content) {
+        segments.push({
+          content_type: parsed.content_type || 'default',
+          content: parsed.content || '',
+          isComplete: parsed.isComplete
+        });
+        continue;
+      }
+    } catch (e) {
+      // 只有在期望是JSON但解析失败时才记录错误
+      console.log("JSON解析失败:", trimmedLine.substring(0, 50) + "...");
+      continue;
+    }
+  }
+
+  // 如果没有解析到任何段落，尝试把整个内容作为单个段落
+  if (segments.length === 0) {
+    // 尝试解析整个内容为单个JSON
+    try {
+      const parsed = JSON.parse(content);
+      
+      if (parsed.type === "content" && parsed.content_type && parsed.content) {
+        return [{
+          content_type: parsed.content_type || 'default',
+          content: parsed.content || '',
+          isComplete: parsed.isComplete
+        }];
+      }
+      
+      if (parsed.content_type && parsed.content) {
+        return [{
+          content_type: parsed.content_type || 'default',
+          content: parsed.content || '',
+          isComplete: parsed.isComplete
+        }];
+      }
+
+      // 处理数组格式（备用格式）
+      if (Array.isArray(parsed)) {
+        return parsed.map((segment: any) => ({
+          content_type: segment.content_type || 'default',
+          content: segment.content || '',
+          isComplete: segment.isComplete
+        }));
+      }
+    } catch (e) {
+      // 最后的备用方案：作为普通文本处理
+      console.log("内容不是JSON格式，作为普通文本处理");
+      return [{
+        content_type: 'default',
+        content: content,
+        isComplete: false
+      }];
+    }
+  }
+
+  return segments;
+};
 
 export function DraftResultDisplay({
   result,
@@ -138,11 +275,23 @@ export function DraftResultDisplay({
     ? globalTask.result 
     : result;
 
+  // 新增：解析多段内容
+  const contentSegments = effectiveResult?.content 
+    ? parseMultiSegmentContent(effectiveResult.content)
+    : [];
+
+  // 🆕 分离reasoning和非reasoning内容
+  const reasoningSegments = contentSegments.filter(seg => seg.content_type === 'reasoning');
+  const nonReasoningSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
+
   // 添加日志查看后端返回的数据
   useEffect(() => {
     if (effectiveResult) {
       console.log("后端返回的数据:", effectiveResult);
       console.log("内容长度:", effectiveResult.content?.length || 0);
+      console.log("解析的段落:", contentSegments);
+      console.log("reasoning段落数量:", reasoningSegments.length);
+      console.log("非reasoning段落数量:", nonReasoningSegments.length);
       console.log("是否完成:", effectiveResult.isComplete);
       console.log("当前步骤:", effectiveResult.currentStep);
       console.log("时间戳:", effectiveResult.timestamp);
@@ -152,7 +301,7 @@ export function DraftResultDisplay({
         console.log("任务ID:", globalTask.id);
       }
     }
-  }, [effectiveResult, enableGlobalStreaming, globalTask]);
+  }, [effectiveResult, enableGlobalStreaming, globalTask, contentSegments, reasoningSegments, nonReasoningSegments]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const [copying, setCopying] = useState(false);
@@ -172,6 +321,38 @@ export function DraftResultDisplay({
   const [userManuallyExpanded, setUserManuallyExpanded] = useState(false);
   // 添加一个状态来跟踪用户是否手动滚动过
   const [userManuallyScrolled, setUserManuallyScrolled] = useState(false);
+
+  // 🆕 渲染非reasoning内容段落的函数
+  const renderNonReasoningSegment = (segment: ContentSegment, index: number) => {
+    const unwrappedContent = unwrapMarkdownCodeBlock(segment.content);
+    const contentType = detectContentType(unwrappedContent);
+
+    if (contentType === "html") {
+      return (
+        <div
+          key={index}
+          className="html-content mb-4"
+          dangerouslySetInnerHTML={{
+            __html: sanitizeHtml(unwrappedContent),
+          }}
+        />
+      );
+    } else {
+      const extractedContent = extractMarkdownFromHtml(unwrappedContent);
+      const markdownContent = processMarkdownLineBreaks(extractedContent);
+      
+      return (
+        <div key={index} className="markdown-segment mb-4">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents as any}
+          >
+            {markdownContent}
+          </ReactMarkdown>
+        </div>
+      );
+    }
+  };
 
   // 新增: 每次result.timestamp变化时重置显示内容和状态
   useEffect(() => {
@@ -210,8 +391,17 @@ export function DraftResultDisplay({
 
     setCopying(true);
     try {
+      // 新增：只复制resume类型的内容，忽略reasoning
+      let contentToCopy = "";
+      if (contentSegments.length > 0) {
+        const resumeSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
+        contentToCopy = resumeSegments.map(seg => seg.content).join('\n\n');
+      } else {
+        contentToCopy = effectiveResult.content;
+      }
+
       // 🆕 使用新的清理函数去除Markdown格式，获取纯文本
-      const cleanContent = cleanMarkdownToPlainText(effectiveResult.content);
+      const cleanContent = cleanMarkdownToPlainText(contentToCopy);
 
       // 尝试使用现代clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -250,53 +440,98 @@ export function DraftResultDisplay({
   };
 
   // 处理下载内容
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!effectiveResult?.content) return;
 
-    // 🆕 使用新的清理函数去除Markdown格式，获取纯文本
-    const cleanContent = cleanMarkdownToPlainText(effectiveResult.content);
+    try {
+      // 获取要下载的内容
+      let contentToDownload = "";
+      if (contentSegments.length > 0) {
+        const resumeSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
+        contentToDownload = resumeSegments.map(seg => seg.content).join('\n\n');
+      } else {
+        contentToDownload = effectiveResult.content;
+      }
 
-    // 创建Word文档内容
-    const wordContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>${title}</title>
-        <style>
-          body { font-family: "Microsoft YaHei", sans-serif; line-height: 1.6; }
-          p { margin: 0 0 1em 0; }
-        </style>
-      </head>
-      <body>
-        ${cleanContent
-          .split("\n")
-          .map((line) => `<p>${line}</p>`)
-          .join("")}
-      </body>
-      </html>
-    `;
+      // 使用新的docx生成工具生成真正的Word文档
+      const { generateWordDocument } = await import('../../utils/docxGenerator');
+      
+      await generateWordDocument(contentToDownload, title);
 
-    // 创建Blob对象
-    const blob = new Blob([wordContent], { 
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    // 使用title作为文件名，并添加日期
-    a.download = `${title}-${new Date()
-      .toLocaleDateString()
-      .replace(/\//g, "-")}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      toast({
+        title: "下载成功",
+        description: `${title}已下载为Word文档`,
+      });
+    } catch (error) {
+      console.error('下载Word文档失败:', error);
+      
+      // 如果新方法失败，回退到原来的方法（HTML格式，兼容性较差）
+      const fallbackDownload = () => {
+        if (!effectiveResult?.content) return;
 
-    toast({
-      title: "下载成功",
-      description: `${title}已下载为Word文档（已去除格式）`,
-    });
+        // 获取要下载的内容
+        let contentToDownload = "";
+        if (contentSegments.length > 0) {
+          const resumeSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
+          contentToDownload = resumeSegments.map(seg => seg.content).join('\n\n');
+        } else {
+          contentToDownload = effectiveResult.content;
+        }
+        
+        const cleanContent = cleanMarkdownToPlainText(contentToDownload);
+
+        // 创建HTML格式的Word文档内容
+        const wordContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+            <style>
+              body { font-family: "Microsoft YaHei", sans-serif; line-height: 1.6; margin: 20px; }
+              p { margin: 0 0 1em 0; }
+            </style>
+          </head>
+          <body>
+            <h1>${title}</h1>
+            ${cleanContent
+              .split("\n")
+              .map((line) => `<p>${line}</p>`)
+              .join("")}
+          </body>
+          </html>
+        `;
+
+        // 创建并下载文件
+        const blob = new Blob([wordContent], { 
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title}-${new Date().toLocaleDateString().replace(/\//g, "-")}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+
+      try {
+        fallbackDownload();
+        toast({
+          title: "下载成功（兼容模式）",
+          description: `${title}已下载，如果Word无法打开请用WPS或其他编辑器`,
+          variant: "destructive",
+        });
+      } catch (fallbackError) {
+        console.error('回退下载方法也失败:', fallbackError);
+        toast({
+          title: "下载失败",
+          description: "文档下载失败，请稍后重试",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   // 处理收起/展开功能
@@ -660,45 +895,52 @@ export function DraftResultDisplay({
           <style jsx global>
             {scrollbarStyles}
           </style>
-          {/* 优化的内容渲染区域 - 支持HTML和Markdown */}
-          <div className="markdown-content">
-            {(() => {
-              // 先解包可能被代码块包裹的 markdown 内容
-              const unwrappedContent = unwrapMarkdownCodeBlock(contentToRender);
-              const contentType = detectContentType(unwrappedContent);
+          
+          {/* 🆕 新的内容渲染区域 */}
+          <div className="content-segments">
+            {/* 先显示reasoning卡片（如果有的话） */}
+            <ReasoningCard 
+              reasoningSegments={reasoningSegments}
+              isComplete={effectiveResult?.isComplete || false}
+            />
+            
+            {/* 然后显示非reasoning内容 */}
+            {nonReasoningSegments.length > 0 ? (
+              nonReasoningSegments.map((segment, index) => renderNonReasoningSegment(segment, index))
+            ) : contentSegments.length === 0 ? (
+              // 回退到原始渲染方式（当没有解析到任何段落时）
+              <div className="markdown-content">
+                {(() => {
+                  // 先解包可能被代码块包裹的 markdown 内容
+                  const unwrappedContent = unwrapMarkdownCodeBlock(contentToRender);
+                  const contentType = detectContentType(unwrappedContent);
 
-              if (contentType === "html") {
-                // 渲染HTML内容
-                return (
-                  <div
-                    className="html-content"
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeHtml(unwrappedContent),
-                    }}
-                  />
-                );
-              } else {
-                // 渲染Markdown内容
-                const extractedContent =
-                  extractMarkdownFromHtml(unwrappedContent);
-                const markdownContent =
-                  processMarkdownLineBreaks(extractedContent);
-                console.log("渲染Markdown内容:", {
-                  original: contentToRender.substring(0, 100) + "...",
-                  unwrapped: unwrappedContent.substring(0, 100) + "...",
-                  extracted: extractedContent.substring(0, 100) + "...",
-                  processed: markdownContent.substring(0, 100) + "...",
-                });
-                return (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={markdownComponents as any}
-                  >
-                    {markdownContent}
-                  </ReactMarkdown>
-                );
-              }
-            })()}
+                  if (contentType === "html") {
+                    // 渲染HTML内容
+                    return (
+                      <div
+                        className="html-content"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHtml(unwrappedContent),
+                        }}
+                      />
+                    );
+                  } else {
+                    // 渲染Markdown内容
+                    const extractedContent = extractMarkdownFromHtml(unwrappedContent);
+                    const markdownContent = processMarkdownLineBreaks(extractedContent);
+                    return (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={markdownComponents as any}
+                      >
+                        {markdownContent}
+                      </ReactMarkdown>
+                    );
+                  }
+                })()}
+              </div>
+            ) : null}
           </div>
 
           {/* 收起/展开指示器 - 在内容中间显示 */}

@@ -158,7 +158,14 @@ export function useStreamResponse() {
                   try {
                     const data = JSON.parse(line);
                     if (data.type === "content" && data.content) {
-                      accumulatedContent += data.content;
+                      // 🆕 如果有content_type，保留原始JSON格式
+                      if (data.content_type) {
+                        // 保留完整的JSON结构，让DraftResultDisplay来处理
+                        accumulatedContent += line + "\n";
+                      } else {
+                        // 兼容旧格式，只提取content
+                        accumulatedContent += data.content;
+                      }
                       contentReceivedThisIteration = true;
                     } else if (data.type === "step") {
                       currentStep = data.step || currentStep;
@@ -170,17 +177,28 @@ export function useStreamResponse() {
                       try {
                         const jsonStr = line.slice(6);
                         const data = JSON.parse(jsonStr);
+                        // 🆕 如果有content_type，保留原始JSON格式
                         if (data.type === "content" && data.content) {
-                          accumulatedContent += data.content;
+                          if (data.content_type) {
+                            // 保留完整的JSON结构
+                            accumulatedContent += line + "\n";
+                          } else {
+                            // 兼容旧格式
+                            accumulatedContent += data.content;
+                          }
                           contentReceivedThisIteration = true;
                         }
                       } catch (sseError) {
                         console.error("解析SSE数据失败:", sseError);
                       }
                     } else {
-                      // Plain text chunk
-                      accumulatedContent += line + "\n"; // Add back newline as it was split
-                      contentReceivedThisIteration = true;
+                      // 🆕 只有确实不是JSON格式的内容才当作普通文本处理
+                      if (!line.includes('"content_type"') && !line.includes('"type": "content"')) {
+                        accumulatedContent += line + "\n";
+                        contentReceivedThisIteration = true;
+                      } else {
+                        console.log("跳过无法解析的JSON行:", line.substring(0, 50) + "...");
+                      }
                     }
                   }
                 }

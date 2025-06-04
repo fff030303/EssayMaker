@@ -550,6 +550,7 @@ export function FirstStep({
           <SectionalAssistantMain
             onStepChange={onStepChange}
             setResult={setResult}
+            result={result}
           />
         </div>
       ) : internalAssistantType === "draft" ? (

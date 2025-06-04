@@ -570,7 +570,7 @@ export const apiService = {
   // 生成推荐信
   async generateRecommendationLetter(
     resumeMaterial: File,
-    writingRequirements: string,
+    writing_requirements: string,
     recommenderNumber: string,
     supportFiles: File[] = [],
     customRolePrompt: string = "",
@@ -585,7 +585,7 @@ export const apiService = {
       console.log("推荐信素材文件:", resumeMaterial.name);
       console.log("推荐人数量:", recommenderNumber);
       console.log("支持文件数量:", supportFiles.length);
-      console.log("写作需求:", writingRequirements);
+      console.log("写作需求:", writing_requirements);
       console.log("自定义提示词:", {
         role: customRolePrompt,
         task: customTaskPrompt,
@@ -610,7 +610,7 @@ export const apiService = {
       }
 
       // 使用writing_requirements作为写作需求字段名
-      formData.append("writing_requirements", writingRequirements);
+      formData.append("writing_requirements", writing_requirements);
       
       // 添加推荐人数量
       formData.append("recommender_number", recommenderNumber);
@@ -770,7 +770,7 @@ export const apiService = {
     customRolePrompt: string = "",
     customTaskPrompt: string = "",
     customOutputFormatPrompt: string = "",
-    writingRequirements: string = ""
+    writing_requirements: string = ""
   ) {
     try {
       const apiKey = getApiKey();
@@ -778,7 +778,7 @@ export const apiService = {
 
       console.log("准备格式化推荐信, API地址:", apiUrl);
       console.log("原始推荐信内容长度:", rawLetter.length);
-      console.log("写作需求:", writingRequirements);
+      console.log("写作需求:", writing_requirements);
       console.log("自定义提示词:", {
         role: customRolePrompt,
         task: customTaskPrompt,
@@ -791,7 +791,7 @@ export const apiService = {
       formData.append("custom_role_prompt", customRolePrompt);
       formData.append("custom_task_prompt", customTaskPrompt);
       formData.append("custom_output_format_prompt", customOutputFormatPrompt);
-      formData.append("writing_requirements", writingRequirements);
+      formData.append("writing_requirements", writing_requirements);
 
       // 打印上传的表单数据
       for (let [key, value] of formData.entries()) {
@@ -856,7 +856,7 @@ export const apiService = {
     }
   },
 
-  // PS分稿助理专用API - 使用essay-rewrite策略生成
+  // PS分稿助理专用API - 只调用搜索分析（第一步）
   async streamSectionalQuery(
     queryText: string,
     files?: File[],
@@ -866,76 +866,34 @@ export const apiService = {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
 
-      console.log("PS分稿助理API调用:", {
-        url: `${apiUrl}/api/essay-rewrite/generate-strategy`,
+      console.log("PS分稿助理API调用 - 第一步搜索分析:", {
+        url: `${apiUrl}/api/essay-rewrite/search-and-analyze`,
         queryLength: queryText.length,
         filesCount: files?.length || 0,
         hasCourseInfo: !!courseInfo
       });
 
-      // 检查是否有原始初稿文件
-      if (!files || files.length === 0) {
-        throw new Error("PS分稿助理需要上传原始初稿文件");
+      // 准备搜索分析的用户输入
+      let searchUserInput = queryText;
+      if (courseInfo) {
+        searchUserInput = `${queryText}\n\n课程信息：${courseInfo}`;
       }
 
       // 第一个文件作为原始初稿文件，其余作为支持文件
-      const originalEssayFile = files[0];
-      const supportFiles = files.slice(1);
+      const supportFiles = files ? files.slice(1) : [];
 
-      // 创建FormData对象
-      const formData = new FormData();
-      
-      // 添加必需参数
-      formData.append("user_input", queryText);
-      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
-      
-      // 添加课程信息到用户输入中（如果有）
-      if (courseInfo) {
-        const enhancedInput = `${queryText}\n\n课程信息：${courseInfo}`;
-        formData.set("user_input", enhancedInput);
-      }
-
-      // 添加支持文件（如果有）
-      if (supportFiles.length > 0) {
-        supportFiles.forEach((file, index) => {
-          formData.append("support_files", file, file.name);
-          console.log(`添加支持文件${index + 1}: ${file.name}`);
-        });
-      }
-
-      // 添加默认的自定义提示词参数
-      formData.append("custom_web_searcher_role", "");
-      formData.append("custom_web_searcher_task", "");
-      formData.append("custom_strategy_generator_role", "");
-      formData.append("custom_strategy_generator_task", "");
-      formData.append("custom_strategy_generator_output_format", "");
-
-      const response = await fetch(`${apiUrl}/api/essay-rewrite/generate-strategy`, {
-        method: "POST",
-        headers: {
-          "X-API-Key": apiKey,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("PS分稿助理API错误:", {
-          status: response.status,
-          statusText: response.statusText,
-          errorText
-        });
-        throw new Error(`PS分稿助理请求失败: ${response.status} - ${errorText}`);
-      }
-
-      return response.body;
+      // 调用第一步：搜索分析API
+      return await this.streamEssayRewriteSearchAndAnalyze(
+        searchUserInput,
+        supportFiles
+      );
     } catch (error) {
       console.error("PS分稿助理API调用失败:", error);
       throw error;
     }
   },
 
-  // Essay重写搜索分析API - 第一步：搜索和分析
+  // 第一步：Essay重写搜索分析API
   async streamEssayRewriteSearchAndAnalyze(
     userInput: string,
     supportFiles: File[] = [],
@@ -1004,6 +962,150 @@ export const apiService = {
       return response.body;
     } catch (error) {
       console.error("Essay重写搜索分析API调用失败:", error);
+      throw error;
+    }
+  },
+
+  // 第二步：Essay重写策略生成API
+  async streamEssayRewriteGenerateStrategy(
+    userInput: string,
+    searchResult: string,
+    originalEssayFile: File,
+    analysisResult: string = "",
+    customStrategyGeneratorRole: string = "",
+    customStrategyGeneratorTask: string = "",
+    customStrategyGeneratorOutputFormat: string = ""
+  ) {
+    try {
+      const apiKey = getApiKey();
+      const apiUrl = getApiUrl();
+
+      console.log("Essay重写策略生成API调用:", {
+        url: `${apiUrl}/api/essay-rewrite/generate-strategy`,
+        userInputLength: userInput.length,
+        searchResultLength: searchResult.length,
+        originalEssayFile: originalEssayFile.name,
+        analysisResultLength: analysisResult.length,
+        hasCustomPrompts: !!(customStrategyGeneratorRole || customStrategyGeneratorTask || customStrategyGeneratorOutputFormat)
+      });
+
+      // 创建FormData对象
+      const formData = new FormData();
+      
+      // 添加必需参数
+      formData.append("user_input", userInput);
+      formData.append("search_result", searchResult);
+      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+
+      // 添加可选参数
+      formData.append("analysis_result", analysisResult);
+
+      // 添加自定义提示词参数
+      formData.append("custom_strategy_generator_role", customStrategyGeneratorRole);
+      formData.append("custom_strategy_generator_task", customStrategyGeneratorTask);
+      formData.append("custom_strategy_generator_output_format", customStrategyGeneratorOutputFormat);
+
+      // 打印FormData内容用于调试
+      console.log("Essay重写策略生成FormData内容:");
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+        } else if (typeof value === "string" && value.length > 100) {
+          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+      const response = await fetch(`${apiUrl}/api/essay-rewrite/generate-strategy`, {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Essay重写策略生成API错误:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        throw new Error(`Essay重写策略生成失败: ${response.status} - ${errorText}`);
+      }
+
+      return response.body;
+    } catch (error) {
+      console.error("Essay重写策略生成API调用失败:", error);
+      throw error;
+    }
+  },
+
+  // 第三步：Essay重写API
+  async streamEssayRewriteRewriteEssay(
+    rewriteStrategy: string,
+    originalEssayFile: File,
+    customEssayRewriterRole: string = "",
+    customEssayRewriterTask: string = "",
+    customEssayRewriterOutputFormat: string = ""
+  ) {
+    try {
+      const apiKey = getApiKey();
+      const apiUrl = getApiUrl();
+
+      console.log("Essay重写API调用:", {
+        url: `${apiUrl}/api/essay-rewrite/rewrite-essay`,
+        rewriteStrategyLength: rewriteStrategy.length,
+        originalEssayFile: originalEssayFile.name,
+        hasCustomPrompts: !!(customEssayRewriterRole || customEssayRewriterTask || customEssayRewriterOutputFormat)
+      });
+
+      // 创建FormData对象
+      const formData = new FormData();
+      
+      // 添加必需参数
+      formData.append("rewrite_strategy", rewriteStrategy);
+      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+
+      // 添加自定义提示词参数
+      formData.append("custom_essay_rewriter_role", customEssayRewriterRole);
+      formData.append("custom_essay_rewriter_task", customEssayRewriterTask);
+      formData.append("custom_essay_rewriter_output_format", customEssayRewriterOutputFormat);
+
+      // 打印FormData内容用于调试
+      console.log("Essay重写FormData内容:");
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+        } else if (typeof value === "string" && value.length > 100) {
+          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+      const response = await fetch(`${apiUrl}/api/essay-rewrite/rewrite-essay`, {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Essay重写API错误:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        throw new Error(`Essay重写失败: ${response.status} - ${errorText}`);
+      }
+
+      return response.body;
+    } catch (error) {
+      console.error("Essay重写API调用失败:", error);
       throw error;
     }
   },
@@ -1108,98 +1210,6 @@ export const apiService = {
       return response.body;
     } catch (error) {
       console.error("随便问问API调用失败:", error);
-      throw error;
-    }
-  },
-
-  // Essay重写策略生成API
-  async generateEssayRewriteStrategy(
-    userInput: string,
-    originalEssayFile: File,
-    supportFiles: File[] = [],
-    customWebSearcherRole: string = "",
-    customWebSearcherTask: string = "",
-    customStrategyGeneratorRole: string = "",
-    customStrategyGeneratorTask: string = "",
-    customStrategyGeneratorOutputFormat: string = ""
-  ) {
-    try {
-      const apiKey = getApiKey();
-      const apiUrl = getApiUrl();
-
-      console.log("Essay重写策略生成API调用:", {
-        url: `${apiUrl}/api/essay-rewrite/generate-strategy`,
-        userInputLength: userInput.length,
-        originalEssayFile: originalEssayFile.name,
-        supportFilesCount: supportFiles.length,
-        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask || customStrategyGeneratorRole || customStrategyGeneratorTask || customStrategyGeneratorOutputFormat)
-      });
-
-      // 创建FormData对象
-      const formData = new FormData();
-      
-      // 添加必需参数
-      formData.append("user_input", userInput);
-      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
-
-      // 添加支持文件（如果有）
-      if (supportFiles && supportFiles.length > 0) {
-        supportFiles.forEach((file, index) => {
-          formData.append("support_files", file, file.name);
-          console.log(`添加支持文件${index + 1}: ${file.name}`);
-        });
-      }
-
-      // 添加自定义提示词参数
-      formData.append("custom_web_searcher_role", customWebSearcherRole);
-      formData.append("custom_web_searcher_task", customWebSearcherTask);
-      formData.append("custom_strategy_generator_role", customStrategyGeneratorRole);
-      formData.append("custom_strategy_generator_task", customStrategyGeneratorTask);
-      formData.append("custom_strategy_generator_output_format", customStrategyGeneratorOutputFormat);
-
-      // 打印FormData内容用于调试
-      console.log("Essay重写策略FormData内容:");
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
-        } else if (typeof value === "string" && value.length > 100) {
-          console.log(`${key}: String - ${value.length} 字符 (前50字符: ${value.substring(0, 50)}...)`);
-        } else {
-          console.log(`${key}: ${value}`);
-        }
-      }
-
-      const response = await fetch(`${apiUrl}/api/essay-rewrite/generate-strategy`, {
-        method: "POST",
-        headers: {
-          "X-API-Key": apiKey,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Essay重写策略API错误:", {
-          status: response.status,
-          statusText: response.statusText,
-          errorText
-        });
-        throw new Error(`Essay重写策略生成失败: ${response.status} - ${errorText}`);
-      }
-
-      // 判断响应类型
-      const contentType = response.headers.get("content-type");
-
-      if (contentType && contentType.includes("text/event-stream")) {
-        console.log("接收到流式响应");
-        return response.body;
-      } else {
-        console.log("接收到普通响应");
-        const text = await response.text();
-        return text;
-      }
-    } catch (error) {
-      console.error("Essay重写策略API调用失败:", error);
       throw error;
     }
   },

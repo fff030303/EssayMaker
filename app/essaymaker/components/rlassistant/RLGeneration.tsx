@@ -117,15 +117,43 @@ export function RLGeneration({
     setIsGenerating(true);
     try {
       console.log("调用格式化推荐信API...");
-      const requirementsToUse = writingRequirements || result.writingRequirements || "";
-      console.log("使用的写作需求:", requirementsToUse);
       
+      // 🆕 整合完整的写作需求字符串
+      let fullWritingRequirements = "";
+      
+      // 基础写作需求（来自第一步）
+      const baseRequirements = writingRequirements || result.writingRequirements || "";
+      if (baseRequirements) {
+        fullWritingRequirements += baseRequirements;
+      }
+      
+      // 添加自定义角色提示词
+      if (customRolePrompt.trim()) {
+        if (fullWritingRequirements) fullWritingRequirements += "\n\n";
+        fullWritingRequirements += `角色设定：${customRolePrompt.trim()}`;
+      }
+      
+      // 添加自定义任务提示词
+      if (customTaskPrompt.trim()) {
+        if (fullWritingRequirements) fullWritingRequirements += "\n\n";
+        fullWritingRequirements += `任务要求：${customTaskPrompt.trim()}`;
+      }
+      
+      // 添加自定义输出格式提示词
+      if (customOutputFormatPrompt.trim()) {
+        if (fullWritingRequirements) fullWritingRequirements += "\n\n";
+        fullWritingRequirements += `输出格式要求：${customOutputFormatPrompt.trim()}`;
+      }
+      
+      console.log("整合后的写作需求:", fullWritingRequirements);
+      
+      // 🆕 调用API时只传递整合后的写作需求字符串，其他提示词参数设为空
       const response = await apiService.formatRecommendationLetter(
         result.content,
-        customRolePrompt,
-        customTaskPrompt,
-        customOutputFormatPrompt,
-        requirementsToUse
+        "", // customRolePrompt 已整合到 fullWritingRequirements 中
+        "", // customTaskPrompt 已整合到 fullWritingRequirements 中  
+        "", // customOutputFormatPrompt 已整合到 fullWritingRequirements 中
+        fullWritingRequirements // 传递整合后的完整写作需求
       );
 
       console.log("API响应:", response);
@@ -206,30 +234,35 @@ export function RLGeneration({
             <div className="flex flex-col">
               {/* 自定义提示词输入区域 - 在双列布局上方 */}
               <div className="mb-6 p-6 border rounded-lg bg-card hidden">
-                <h3 className="text-lg font-semibold mb-4">自定义提示词设置</h3>
+                <h3 className="text-lg font-semibold mb-4">额外写作要求（可选）</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  在这里可以添加额外的写作要求，这些要求将与第一步的要求一起传递给AI
+                </p>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="role-prompt">角色提示词</Label>
+                    <Label htmlFor="role-prompt">角色设定要求</Label>
                     <Input
                       id="role-prompt"
                       value={customRolePrompt}
                       onChange={(e) => setCustomRolePrompt(e.target.value)}
                       className="mt-1"
+                      placeholder="例如：以计算机科学教授的身份撰写..."
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="task-prompt">任务提示词</Label>
+                    <Label htmlFor="task-prompt">任务要求</Label>
                     <Input
                       id="task-prompt"
                       value={customTaskPrompt}
                       onChange={(e) => setCustomTaskPrompt(e.target.value)}
                       className="mt-1"
+                      placeholder="例如：重点突出学生的编程能力和创新思维..."
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="format-prompt">输出格式提示词</Label>
+                    <Label htmlFor="format-prompt">输出格式要求</Label>
                     <Textarea
                       id="format-prompt"
                       value={customOutputFormatPrompt}
@@ -238,6 +271,7 @@ export function RLGeneration({
                       }
                       className="mt-1"
                       rows={3}
+                      placeholder="例如：推荐信长度控制在800-1000字，包含具体的项目实例..."
                     />
                   </div>
                 </div>
@@ -303,30 +337,35 @@ export function RLGeneration({
             <div className="w-full max-w-[1300px] mx-auto">
               {/* 自定义提示词输入区域 */}
               <div className="mb-6 p-6 border rounded-lg bg-card hidden">
-                <h3 className="text-lg font-semibold mb-4">自定义提示词设置</h3>
+                <h3 className="text-lg font-semibold mb-4">额外写作要求（可选）</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  在这里可以添加额外的写作要求，这些要求将与第一步的要求一起传递给AI
+                </p>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="role-prompt">角色提示词</Label>
+                    <Label htmlFor="role-prompt">角色设定要求</Label>
                     <Input
                       id="role-prompt"
                       value={customRolePrompt}
                       onChange={(e) => setCustomRolePrompt(e.target.value)}
                       className="mt-1"
+                      placeholder="例如：以计算机科学教授的身份撰写..."
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="task-prompt">任务提示词</Label>
+                    <Label htmlFor="task-prompt">任务要求</Label>
                     <Input
                       id="task-prompt"
                       value={customTaskPrompt}
                       onChange={(e) => setCustomTaskPrompt(e.target.value)}
                       className="mt-1"
+                      placeholder="例如：重点突出学生的编程能力和创新思维..."
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="format-prompt">输出格式提示词</Label>
+                    <Label htmlFor="format-prompt">输出格式要求</Label>
                     <Textarea
                       id="format-prompt"
                       value={customOutputFormatPrompt}
@@ -335,6 +374,7 @@ export function RLGeneration({
                       }
                       className="mt-1"
                       rows={3}
+                      placeholder="例如：推荐信长度控制在800-1000字，包含具体的项目实例..."
                     />
                   </div>
                 </div>

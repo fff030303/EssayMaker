@@ -373,6 +373,8 @@ export function RLFileUploadForm({
               setResult({
                 ...result,
                 currentStep: result.currentStep || "推荐信分析中",
+                // 🆕 确保写作需求被保留
+                writingRequirements: fullWritingRequirements,
               });
             }
           },
@@ -384,6 +386,8 @@ export function RLFileUploadForm({
               setResult({
                 ...result,
                 currentStep: "推荐信分析完成",
+                // 🆕 确保写作需求被保留
+                writingRequirements: fullWritingRequirements,
               });
             }
             toast({
@@ -405,6 +409,8 @@ export function RLFileUploadForm({
                 timestamp: new Date().toISOString(),
                 isComplete: true,
                 currentStep: "出错",
+                // 🆕 即使出错也保留写作需求
+                writingRequirements: fullWritingRequirements,
               });
             }
           },
@@ -429,6 +435,8 @@ export function RLFileUploadForm({
               timestamp: new Date().toISOString(),
               isComplete: true,
               currentStep: "推荐信分析完成",
+              // 🆕 确保写作需求被保留
+              writingRequirements: fullWritingRequirements,
             });
           }
         }
@@ -448,6 +456,8 @@ export function RLFileUploadForm({
           timestamp: new Date().toISOString(),
           isComplete: true,
           currentStep: "出错",
+          // 🆕 即使出错也保留写作需求
+          writingRequirements: fullWritingRequirements,
         });
       }
     } finally {

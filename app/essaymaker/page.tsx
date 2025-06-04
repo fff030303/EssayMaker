@@ -38,6 +38,7 @@ import { StreamingProvider } from "./contexts/StreamingContext";
 
 // 导入分稿助理组件
 import { SectionalAssistantMain } from "./components/sectionalassistant/SectionalAssistantMain";
+import { ResultSection } from "./components/ResultSection";
 
 export default function EssayMakerPage() {
   // 移除侧边栏状态
@@ -773,32 +774,21 @@ export default function EssayMakerPage() {
                   } else if (isSectionalAssistant) {
                     console.log("[PAGE] ✅ 渲染 分稿助理");
                     return (
-                      <>
-                        {currentStep === 1 && (
-                          <SectionalAssistantMain
-                            onStepChange={handleStepChange}
-                            setResult={setResult}
-                            isSectionalGenerating={isSectionalGenerating}
-                          />
-                        )}
-                        {currentStep === 2 && (
-                          <div className="flex items-center justify-center h-full">
-                            <div className="text-center p-8 max-w-md">
-                              <h2 className="text-2xl font-bold mb-4">分稿策略展示</h2>
-                              <p className="text-muted-foreground mb-6">
-                                第二步界面开发中，敬请期待...
-                              </p>
-                              <Button
-                                variant="outline"
-                                onClick={() => handleStepChange(1)}
-                              >
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                返回第一步
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center p-8 max-w-md">
+                          <h2 className="text-2xl font-bold mb-4">分稿助理</h2>
+                          <p className="text-muted-foreground mb-6">
+                            分稿助理的所有功能都在第一步完成，请返回第一步查看结果
+                          </p>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleStepChange(1)}
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            返回第一步
+                          </Button>
+                        </div>
+                      </div>
                     );
                   } else {
                     console.log(

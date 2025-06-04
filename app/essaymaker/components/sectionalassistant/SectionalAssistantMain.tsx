@@ -187,7 +187,7 @@ export function SectionalAssistantMain({
             expandedSteps={expandedSteps}
             setExpandedSteps={setExpandedSteps}
             handleStepClick={handleStepClick}
-            title="分稿过程"
+            title="查询过程"
           />
         )}
       </div>
