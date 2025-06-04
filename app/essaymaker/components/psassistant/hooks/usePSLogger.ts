@@ -34,11 +34,12 @@
 
 "use client";
 
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
 import { DisplayResult } from "../../../types";
 
 export function usePSLogger() {
-  const { data: session } = useSession();
+  // const { data: session } = useSession();
+  const session = null; // 临时禁用session功能
 
   // 记录报告结果
   const logReportResult = async (
@@ -49,10 +50,12 @@ export function usePSLogger() {
     errorMessage?: string
   ) => {
     // 检查用户是否已登录
-    if (!session?.user?.email) {
-      console.log("[PSLogger] 用户未登录，跳过日志记录");
-      return;
-    }
+    // if (!session?.user?.email) {
+    //   console.log("[PSLogger] 用户未登录，跳过日志记录");
+    //   return;
+    // }
+    console.log("[PSLogger] Session功能已禁用，跳过日志记录");
+    return;
 
     // 构建文件名列表
     const fileNames = [];
@@ -93,8 +96,8 @@ export function usePSLogger() {
           isSuccess: isSuccess,
           duration: duration,
           errorMessage: errorMessage || null,
-          name: session.user.name || "未知",
-          unitName: (session.user as any)?.unitName || "未知",
+          name: "未知", // session?.user?.name || "未知",
+          unitName: "未知", // (session?.user as any)?.unitName || "未知",
         }),
       });
 
@@ -118,10 +121,12 @@ export function usePSLogger() {
     errorMessage?: string
   ) => {
     // 检查用户是否已登录
-    if (!session?.user?.email) {
-      console.log("[PSLogger] 用户未登录，跳过日志记录");
-      return;
-    }
+    // if (!session?.user?.email) {
+    //   console.log("[PSLogger] 用户未登录，跳过日志记录");
+    //   return;
+    // }
+    console.log("[PSLogger] Session功能已禁用，跳过日志记录");
+    return;
 
     // 对于初稿生成，如果有purifiedContent说明已处理文件内容
     const fileContent =
@@ -159,8 +164,8 @@ export function usePSLogger() {
           isSuccess: isSuccess,
           duration: duration,
           errorMessage: errorMessage || null,
-          name: session.user.name || "未知",
-          unitName: (session.user as any)?.unitName || "未知",
+          name: "未知", // session?.user?.name || "未知",
+          unitName: "未知", // (session?.user as any)?.unitName || "未知",
         }),
       });
 
@@ -185,10 +190,12 @@ export function usePSLogger() {
     errorMessage?: string
   ) => {
     // 检查用户是否已登录
-    if (!session?.user?.email) {
-      console.log("[PSLogger] 用户未登录，跳过日志记录");
-      return;
-    }
+    // if (!session?.user?.email) {
+    //   console.log("[PSLogger] 用户未登录，跳过日志记录");
+    //   return;
+    // }
+    console.log("[PSLogger] Session功能已禁用，跳过日志记录");
+    return;
 
     // 构建文件名列表（可能包含多种来源的文件信息）
     const fileNames = [];
@@ -252,8 +259,8 @@ export function usePSLogger() {
           isSuccess: isSuccess,
           duration: duration,
           errorMessage: errorMessage || null,
-          name: session.user.name || "未知",
-          unitName: (session.user as any)?.unitName || "未知",
+          name: "未知", // session?.user?.name || "未知",
+          unitName: "未知", // (session?.user as any)?.unitName || "未知",
         }),
       });
 

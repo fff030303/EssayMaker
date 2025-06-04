@@ -1,54 +1,57 @@
-import { useSession } from "next-auth/react";
-import { useToast } from "@/hooks/use-toast";
+"use client";
 
-/**
- * RL助理日志记录Hook - 推荐信助理专用
- *
- * 功能：记录推荐信助理的使用结果到数据库
- *
- * 核心特性：
- * 1. 结果记录：
- *    - 一次调用完成所有记录
- *    - 支持成功和失败状态
- *    - 记录请求元数据和结果数据
- *    - 自动计算处理耗时
- *
- * 2. 多种场景：
- *    - 推荐信分析结果记录
- *    - 推荐信生成结果记录
- *    - 完整流程结果记录
- *    - 错误状态记录
- *
- * 3. 数据结构：
- *    - assistantType: RL_ASSISTANT
- *    - endpoint: 调用的API端点
- *    - requestMetadata: 请求相关的元数据
- *    - resultData: AI生成的结果内容
- *    - isSuccess: 成功/失败状态
- *    - duration: 处理耗时（毫秒）
- *    - errorMessage: 错误信息（如果有）
- *
- * 使用方法：
- * ```tsx
- * const { logAnalysisResult, logFormatResult, logCompleteResult } = useRLLogger();
- *
- * // 记录分析结果
- * await logAnalysisResult(requestData, result, isSuccess, duration, errorMessage);
- *
- * // 记录格式化结果
- * await logFormatResult(requestData, result, isSuccess, duration, errorMessage);
- *
- * // 记录完整结果
- * await logCompleteResult(requestData, result, isSuccess, duration, errorMessage);
- * ```
- *
- * @author EssayMaker Team
- * @version 1.0.0
- */
+// import { useSession } from "next-auth/react";
+// import { useToast } from "@/hooks/use-toast";
+import { DisplayResult } from "../../../types";
+
+// /**
+//  * RL助理日志记录Hook - 推荐信助理专用
+//  *
+//  * 功能：记录推荐信助理的使用结果到数据库
+//  *
+//  * 核心特性：
+//  * 1. 结果记录：
+//  *    - 一次调用完成所有记录
+//  *    - 支持成功和失败状态
+//  *    - 记录请求元数据和结果数据
+//  *    - 自动计算处理耗时
+//  *
+//  * 2. 多种场景：
+//  *    - 推荐信分析结果记录
+//  *    - 推荐信生成结果记录
+//  *    - 完整流程结果记录
+//  *    - 错误状态记录
+//  *
+//  * 3. 数据结构：
+//  *    - assistantType: RL_ASSISTANT
+//  *    - endpoint: 调用的API端点
+//  *    - requestMetadata: 请求相关的元数据
+//  *    - resultData: AI生成的结果内容
+//  *    - isSuccess: 成功/失败状态
+//  *    - duration: 处理耗时（毫秒）
+//  *    - errorMessage: 错误信息（如果有）
+//  *
+//  * 使用方法：
+//  * ```tsx
+//  * const { logAnalysisResult, logFormatResult, logCompleteResult } = useRLLogger();
+//  *
+//  * // 记录分析结果
+//  * await logAnalysisResult(requestData, result, isSuccess, duration, errorMessage);
+//  *
+//  * // 记录格式化结果
+//  * await logFormatResult(requestData, result, isSuccess, duration, errorMessage);
+//  *
+//  * // 记录完整结果
+//  * await logCompleteResult(requestData, result, isSuccess, duration, errorMessage);
+//  * ```
+//  *
+//  * @author EssayMaker Team
+//  * @version 1.0.0
+//  */
 
 export function useRLLogger() {
-  const { data: session } = useSession();
-  const { toast } = useToast();
+  // const { data: session } = useSession();
+  const session = null; // 临时禁用session功能
 
   /**
    * 通用的结果记录方法
@@ -64,10 +67,12 @@ export function useRLLogger() {
   ) => {
     try {
       // 检查用户是否已登录
-      if (!session?.user?.email) {
-        console.warn("[RLLogger] 用户未登录，跳过日志记录");
-        return;
-      }
+      // if (!session?.user?.email) {
+      //   console.warn("[RLLogger] 用户未登录，跳过日志记录");
+      //   return;
+      // }
+      console.log("[RLLogger] Session功能已禁用，跳过日志记录");
+      return;
 
       // 调用日志记录API
       const response = await fetch("/api/essaymaker/llm-logs", {
@@ -83,8 +88,8 @@ export function useRLLogger() {
           isSuccess,
           duration,
           errorMessage,
-          name: session.user.name || "未知",
-          unitName: (session.user as any)?.unitName || null,
+          name: "未知", // session.user.name || "未知",
+          unitName: "未知", // (session.user as any)?.unitName || null,
         }),
       });
 
