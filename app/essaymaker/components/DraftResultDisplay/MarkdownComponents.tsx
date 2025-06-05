@@ -49,7 +49,6 @@ import React from "react";
 
 export const markdownComponents = {
   h1: ({ children }: { children: React.ReactNode }) => {
-    console.log("渲染H1:", children);
     return (
       <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-900 border-b border-gray-200 pb-2">
         {children}
@@ -57,7 +56,6 @@ export const markdownComponents = {
     );
   },
   h2: ({ children }: { children: React.ReactNode }) => {
-    console.log("渲染H2:", children);
     return (
       <h2 className="text-xl font-bold mt-5 mb-3 text-gray-900">{children}</h2>
     );
@@ -75,7 +73,6 @@ export const markdownComponents = {
     <h6 className="text-sm font-bold mt-3 mb-2 text-gray-700">{children}</h6>
   ),
   p: ({ children }: { children: React.ReactNode }) => {
-    console.log("渲染段落:", children);
     return <p className="mb-4 leading-relaxed text-gray-700">{children}</p>;
   },
   br: () => <br className="my-1" />,
@@ -153,7 +150,6 @@ export const markdownComponents = {
     );
   },
   strong: ({ children }: { children: React.ReactNode }) => {
-    console.log("渲染粗体:", children);
     return <strong className="font-bold text-gray-900">{children}</strong>;
   },
   em: ({ children }: { children: React.ReactNode }) => (

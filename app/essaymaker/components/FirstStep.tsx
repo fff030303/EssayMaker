@@ -125,6 +125,8 @@ interface FirstStepProps {
   onStrategyGeneratingChange?: (isGenerating: boolean) => void;
   // 🆕 新增：数据保存回调
   onDataSave?: (originalFile: File | null, strategyContent: string) => void;
+  // 🆕 新增：清空所有内容回调
+  onClearAll?: () => void;
 }
 
 export function FirstStep({
@@ -170,6 +172,7 @@ export function FirstStep({
   onStrategyGenerate,
   onStrategyGeneratingChange,
   onDataSave,
+  onClearAll,
 }: FirstStepProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -562,6 +565,7 @@ export function FirstStep({
             onStrategyGenerate={onStrategyGenerate}
             onStrategyGeneratingChange={onStrategyGeneratingChange}
             onDataSave={onDataSave}
+            onClearAll={onClearAll}
           />
         </div>
       ) : internalAssistantType === "draft" ? (

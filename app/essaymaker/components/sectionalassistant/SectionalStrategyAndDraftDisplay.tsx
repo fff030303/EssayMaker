@@ -56,7 +56,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Send } from "lucide-react";
 import { DisplayResult } from "../../types";
 import { DraftResultDisplay } from "../DraftResultDisplay";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "@/components/ui/use-toast";
 import { apiService } from "@/lib/api";
@@ -73,6 +73,10 @@ interface SectionalStrategyAndDraftDisplayProps {
   onGeneratingStateChange: (isGenerating: boolean) => void;
   originalFile: File | null;
   strategyContent: string;
+  // 🆕 新增：清空所有内容回调
+  onClearAll?: () => void;
+  // 🆕 新增：清空时间戳，用于触发清空操作
+  clearTimestamp?: number;
 }
 
 export function SectionalStrategyAndDraftDisplay({
@@ -83,6 +87,8 @@ export function SectionalStrategyAndDraftDisplay({
   onGeneratingStateChange,
   originalFile,
   strategyContent,
+  onClearAll,
+  clearTimestamp,
 }: SectionalStrategyAndDraftDisplayProps) {
   const [isGeneratingFinalDraft, setIsGeneratingFinalDraft] = useState(false);
   
@@ -90,6 +96,71 @@ export function SectionalStrategyAndDraftDisplay({
   const [customEssayRewriterRole, setCustomEssayRewriterRole] = useState<string>("");
   const [customEssayRewriterTask, setCustomEssayRewriterTask] = useState<string>("");
   const [customEssayRewriterOutputFormat, setCustomEssayRewriterOutputFormat] = useState<string>("");
+
+  // 🆕 新增：清空内部状态的函数
+  const handleClearInternalState = useCallback(() => {
+    console.log("[SectionalStrategyAndDraftDisplay] 🧹 开始清空内部状态");
+    console.log("[SectionalStrategyAndDraftDisplay] 清空前状态:", {
+      customEssayRewriterRole: customEssayRewriterRole.length,
+      customEssayRewriterTask: customEssayRewriterTask.length,
+      customEssayRewriterOutputFormat: customEssayRewriterOutputFormat.length,
+      isGeneratingFinalDraft,
+    });
+    
+    setCustomEssayRewriterRole("");
+    setCustomEssayRewriterTask("");
+    setCustomEssayRewriterOutputFormat("");
+    setIsGeneratingFinalDraft(false);
+    
+    console.log("[SectionalStrategyAndDraftDisplay] ✅ 内部状态已清空");
+  }, []);
+
+  // 🆕 新增：监听外部清空调用
+  useEffect(() => {
+    if (onClearAll) {
+      // 当父组件传入onClearAll回调时，可以通过某种方式触发清空
+      // 但我们需要一个触发机制，这里先设置清空函数
+      console.log("[SectionalStrategyAndDraftDisplay] 注册清空回调");
+    }
+  }, [onClearAll]);
+
+  // 🆕 新增：监听清空时间戳变化，直接触发清空
+  useEffect(() => {
+    console.log("[SectionalStrategyAndDraftDisplay] 🔍 clearTimestamp useEffect 触发:", {
+      clearTimestamp,
+      clearTimestampExists: !!clearTimestamp,
+      clearTimestampValue: clearTimestamp,
+      isGreaterThanZero: clearTimestamp && clearTimestamp > 0,
+    });
+    
+    if (clearTimestamp && clearTimestamp > 0) {
+      console.log("[SectionalStrategyAndDraftDisplay] 收到清空时间戳:", clearTimestamp, "，执行清空操作");
+      
+      // 直接在这里执行清空操作，不调用回调函数
+      console.log("[SectionalStrategyAndDraftDisplay] 🧹 开始清空内部状态");
+      console.log("[SectionalStrategyAndDraftDisplay] 清空前状态:", {
+        customEssayRewriterRole: customEssayRewriterRole.length,
+        customEssayRewriterTask: customEssayRewriterTask.length,
+        customEssayRewriterOutputFormat: customEssayRewriterOutputFormat.length,
+        isGeneratingFinalDraft,
+      });
+      
+      setCustomEssayRewriterRole("");
+      setCustomEssayRewriterTask("");
+      setCustomEssayRewriterOutputFormat("");
+      setIsGeneratingFinalDraft(false);
+      
+      console.log("[SectionalStrategyAndDraftDisplay] ✅ 内部状态已清空");
+      
+      // 🆕 添加toast通知确认清空操作
+      toast({
+        title: "第二步内容已清空",
+        description: "自定义提示词和状态已重置",
+      });
+    } else {
+      console.log("[SectionalStrategyAndDraftDisplay] ❌ clearTimestamp 不满足条件，不执行清空");
+    }
+  }, [clearTimestamp, customEssayRewriterRole, customEssayRewriterTask, customEssayRewriterOutputFormat, isGeneratingFinalDraft]);
 
   // 处理生成最终稿件
   const handleGenerateFinalDraft = useCallback(async () => {
@@ -120,9 +191,11 @@ export function SectionalStrategyAndDraftDisplay({
         outputFormat: customEssayRewriterOutputFormat,
       });
       
-      // 🆕 修改：传递自定义提示词参数
+      console.log("传递给第三步API的改写策略内容长度:", strategyResult.content.length);
+      
+      // 🆕 修改：只传递第二步生成的改写策略，不使用第一步的搜索结果
       const response = await apiService.streamEssayRewriteRewriteEssay(
-        strategyContent || strategyResult.content,
+        strategyResult.content,  // 只传递第二步生成的改写策略
         originalFile,
         customEssayRewriterRole,
         customEssayRewriterTask,

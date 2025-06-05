@@ -168,6 +168,22 @@ export default function EssayMakerPage() {
   const [sectionalOriginalFile, setSectionalOriginalFile] = useState<File | null>(null);
   const [sectionalStrategyContent, setSectionalStrategyContent] = useState<string>("");
 
+  // 🆕 新增：清空时间戳，用于触发子组件清空
+  const [sectionalClearTimestamp, setSectionalClearTimestamp] = useState<number>(0);
+
+  // 🆕 添加监听器来调试时间戳变化
+  useEffect(() => {
+    if (sectionalClearTimestamp > 0) {
+      console.log("[PAGE] 🚀 sectionalClearTimestamp 状态已更新:", sectionalClearTimestamp);
+      console.log("[PAGE] 🔍 当前第二步渲染状态:", {
+        isSectionalAssistant,
+        currentStep,
+        sectionalStrategyResult: !!sectionalStrategyResult,
+        sectionalFinalDraft: !!sectionalFinalDraft,
+      });
+    }
+  }, [sectionalClearTimestamp, isSectionalAssistant, currentStep, sectionalStrategyResult, sectionalFinalDraft]);
+
   // 添加CV和RL助理的生成状态
   const [isCVGenerating, setIsCVGenerating] = useState<boolean>(false);
   const [isRLGenerating, setIsRLGenerating] = useState<boolean>(false);
@@ -555,6 +571,45 @@ export default function EssayMakerPage() {
     setIsSectionalStrategyGenerating,
   ]);
 
+  // 🆕 专门用于清空分稿助理所有内容的函数
+  const clearSectionalAssistantAll = useCallback(() => {
+    console.log("[PAGE] 🧹 开始清空分稿助理所有内容");
+    
+    // 清空第一步的结果
+    setResult(null);
+    console.log("[PAGE] ✅ 已清空第一步结果");
+    
+    // 清空第二步的改写策略结果
+    setSectionalStrategyResult(null);
+    setIsSectionalStrategyGenerating(false);
+    console.log("[PAGE] ✅ 已清空第二步改写策略");
+    
+    // 清空第三步的最终文稿
+    setSectionalFinalDraft(null);
+    setIsSectionalFinalGenerating(false);
+    console.log("[PAGE] ✅ 已清空第三步最终稿件");
+    
+    // 清空数据文件
+    setSectionalOriginalFile(null);
+    setSectionalStrategyContent("");
+    console.log("[PAGE] ✅ 已清空数据文件");
+    
+    // 🆕 更新清空时间戳，触发子组件清空
+    const newTimestamp = Date.now();
+    setSectionalClearTimestamp(newTimestamp);
+    console.log("[PAGE] 🚀 已更新清空时间戳:", newTimestamp);
+    
+    console.log("[PAGE] ✅ 分稿助理所有内容已清空完成");
+  }, [
+    setResult,
+    setSectionalStrategyResult,
+    setIsSectionalStrategyGenerating,
+    setSectionalFinalDraft,
+    setIsSectionalFinalGenerating,
+    setSectionalOriginalFile,
+    setSectionalStrategyContent,
+  ]);
+
   return (
     <StreamingProvider>
       <div
@@ -659,6 +714,7 @@ export default function EssayMakerPage() {
                     setSectionalOriginalFile(originalFile);
                     setSectionalStrategyContent(strategyContent);
                   }}
+                  onClearAll={clearSectionalAssistantAll}
                 />
               </div>
 
@@ -848,6 +904,8 @@ export default function EssayMakerPage() {
                         onGeneratingStateChange={setIsSectionalFinalGenerating}
                         originalFile={sectionalOriginalFile}
                         strategyContent={sectionalStrategyContent}
+                        onClearAll={clearSectionalAssistantAll}
+                        clearTimestamp={sectionalClearTimestamp}
                       />
                     );
                   } else {

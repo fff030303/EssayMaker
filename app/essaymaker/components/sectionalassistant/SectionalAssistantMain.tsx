@@ -62,6 +62,8 @@ interface SectionalAssistantMainProps {
   onStrategyGeneratingChange?: (isGenerating: boolean) => void;
   // 🆕 新增：数据保存回调
   onDataSave?: (originalFile: File | null, strategyContent: string) => void;
+  // 🆕 新增：清空所有内容回调
+  onClearAll?: () => void;
 }
 
 export function SectionalAssistantMain({
@@ -73,6 +75,7 @@ export function SectionalAssistantMain({
   onStrategyGenerate,
   onStrategyGeneratingChange,
   onDataSave,
+  onClearAll,
 }: SectionalAssistantMainProps) {
   // 本地状态管理
   const [localResult, setLocalResult] = useState<DisplayResult | null>(null);
@@ -270,6 +273,7 @@ export function SectionalAssistantMain({
           setResult={handleResultUpdate}
           onDataUpdate={handleDataUpdate}
           onScrollToResult={handleScrollToResult}
+          onClearAll={onClearAll}
         />
 
         {/* 🆕 滚动目标区域 */}

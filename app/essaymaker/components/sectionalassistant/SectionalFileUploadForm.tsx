@@ -52,6 +52,7 @@ interface SectionalFileUploadFormProps {
   setResult?: (result: DisplayResult | null) => void;
   onDataUpdate?: (file: File | null, searchData: string) => void;
   onScrollToResult?: () => void;
+  onClearAll?: () => void;
 }
 
 export function SectionalFileUploadForm({
@@ -59,6 +60,7 @@ export function SectionalFileUploadForm({
   setResult,
   onDataUpdate,
   onScrollToResult,
+  onClearAll,
 }: SectionalFileUploadFormProps) {
   const [userInput, setUserInput] = useState("");
   const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
@@ -833,11 +835,29 @@ export function SectionalFileUploadForm({
                 setCustomWebSearcherTask("");
                 setCustomWebSearcherOutputFormat("");
 
+                // 🆕 清空生成的结果
+                if (setResult) {
+                  setResult(null);
+                }
+
+                // 🆕 重置文件输入框的值
+                if (originalFileInputRef.current) {
+                  originalFileInputRef.current.value = "";
+                }
+                if (supportFilesInputRef.current) {
+                  supportFilesInputRef.current.value = "";
+                }
+
                 // 显示清空提示
                 toast({
                   title: "已清空",
-                  description: "所有内容已重置",
+                  description: "所有内容和结果已重置",
                 });
+
+                // 🆕 调用清空所有内容回调
+                if (onClearAll) {
+                  onClearAll();
+                }
               }}
               disabled={isLoading}
             >
