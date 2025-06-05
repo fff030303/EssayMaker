@@ -300,7 +300,7 @@ export function SectionalStrategyAndDraftDisplay({
     return (
       <div className="flex flex-col items-center justify-center min-h-full">
         <div className="text-center p-8 max-w-md mb-8">
-          <h2 className="text-2xl font-bold mb-4">Essay改写策略</h2>
+          <h2 className="text-2xl font-bold mb-4">个人陈述改写策略</h2>
           <p className="text-muted-foreground mb-6">
             请先在第一步完成分稿查询，然后点击"撰写改写策略"按钮生成改写策略。
           </p>
@@ -322,7 +322,7 @@ export function SectionalStrategyAndDraftDisplay({
               <Card className="mb-6">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Essay重写自定义提示词设置</CardTitle>
+                    <CardTitle className="text-lg">生成的个人陈述</CardTitle>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -388,7 +388,7 @@ export function SectionalStrategyAndDraftDisplay({
                   <div className="rounded-lg overflow-visible flex-grow h-full">
                     <DraftResultDisplay
                       result={strategyResult}
-                      title="Essay改写策略"
+                      title="个人陈述改写策略"
                       key="strategy-result"
                       headerActions={
                         <Button
@@ -431,7 +431,7 @@ export function SectionalStrategyAndDraftDisplay({
                   <div className="rounded-lg overflow-visible flex-grow h-full">
                     <DraftResultDisplay
                       result={finalDraft}
-                      title="生成的Essay稿件"
+                      title="生成的个人陈述"
                       key="final-draft"
                     />
                   </div>
@@ -508,7 +508,7 @@ export function SectionalStrategyAndDraftDisplay({
               <div className="space-y-6">
                 <DraftResultDisplay
                   result={strategyResult}
-                  title="Essay改写策略"
+                  title="个人陈述改写策略"
                   key="strategy-result-single"
                   headerActions={
                     <Button
