@@ -1,8 +1,16 @@
 "use client";
 
-// import { useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 // import { useToast } from "@/hooks/use-toast";
 import { DisplayResult } from "../../../types";
+
+// =================================================================
+// 🔧 开发模式开关 - 通过注释控制认证
+// =================================================================
+// 注释下面这行 = 关闭认证（本地开发模式）
+// 取消注释 = 开启认证（生产模式）
+const ENABLE_AUTH_CHECK = true;
+// =================================================================
 
 // /**
 //  * RL助理日志记录Hook - 推荐信助理专用
@@ -50,8 +58,7 @@ import { DisplayResult } from "../../../types";
 //  */
 
 export function useRLLogger() {
-  // const { data: session } = useSession();
-  const session = null; // 临时禁用session功能
+  const { data: session } = useSession();
 
   /**
    * 通用的结果记录方法
@@ -66,13 +73,37 @@ export function useRLLogger() {
     errorMessage?: string
   ) => {
     try {
-      // 检查用户是否已登录
-      // if (!session?.user?.email) {
-      //   console.warn("[RLLogger] 用户未登录，跳过日志记录");
-      //   return;
-      // }
-      console.log("[RLLogger] Session功能已禁用，跳过日志记录");
-      return;
+      // 🔧 认证检查 - 可通过顶部开关控制
+      if (ENABLE_AUTH_CHECK) {
+        // 生产模式：检查用户是否已登录
+        if (!session?.user?.email) {
+          console.warn("[RLLogger] 用户未登录，跳过日志记录");
+          return;
+        }
+      }
+
+      // 获取用户信息（开发模式使用模拟数据）
+      const userInfo =
+        ENABLE_AUTH_CHECK && session?.user
+          ? {
+              email: session.user.email,
+              name: session.user.name || "未知",
+              unitName: (session.user as any)?.unitName || null,
+            }
+          : {
+              email: "dev@local.test",
+              name: "开发者",
+              unitName: "本地开发",
+            };
+
+      console.log("[RLLogger] 开始记录日志:", {
+        assistantType,
+        endpoint,
+        isSuccess,
+        duration,
+        userEmail: userInfo.email,
+        mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+      });
 
       // 调用日志记录API
       const response = await fetch("/api/essaymaker/llm-logs", {
@@ -88,13 +119,14 @@ export function useRLLogger() {
           isSuccess,
           duration,
           errorMessage,
-          name: "未知", // session.user.name || "未知",
-          unitName: "未知", // (session.user as any)?.unitName || null,
+          name: userInfo.name,
+          unitName: userInfo.unitName,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`日志记录失败: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`日志记录失败: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
