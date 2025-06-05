@@ -101,6 +101,7 @@ import {
   sanitizeHtml,
   unwrapMarkdownCodeBlock,
   cleanMarkdownToPlainText,
+  removeHtmlKeepMarkdown,
 } from "./utils";
 import { markdownComponents } from "./MarkdownComponents";
 import type { DraftResultDisplayProps } from "./types";
@@ -124,23 +125,20 @@ interface ContentSegment {
 const parseMultiSegmentContent = (content: string): ContentSegment[] => {
   if (!content) return [];
 
-  // 🆕 首先检查内容格式类型
+  // 🆕 处理混合格式：reasoning是JSON行，resume是纯文本
   const trimmedContent = content.trim();
+  const lines = trimmedContent.split('\n');
   
-  // 检查是否包含JSON格式的行（以data:开头或包含content_type字段）
-  const hasJsonFormat = trimmedContent.includes('"content_type"') || 
-                       trimmedContent.includes('data: {') ||
-                       trimmedContent.split('\n').some(line => {
-                         const trimmed = line.trim();
-                         return (trimmed.startsWith('data: {') || 
-                                trimmed.startsWith('{')) && 
-                                trimmed.includes('"type"') && 
-                                trimmed.includes('"content_type"');
-                       });
-
-  // 如果不包含JSON格式，直接作为普通内容处理
-  if (!hasJsonFormat) {
-    console.log("检测到普通文本内容，不进行JSON解析");
+  // 检查是否包含reasoning类型的JSON行
+  const reasoningLines = lines.filter(line => {
+    const trimmed = line.trim();
+    return (trimmed.startsWith('data: {') || trimmed.startsWith('{')) && 
+           trimmed.includes('"content_type": "reasoning"');
+  });
+  
+  // 如果没有reasoning行，说明是纯文本内容
+  if (reasoningLines.length === 0) {
+    console.log("检测到纯文本内容（无reasoning），不进行JSON解析");
     return [{
       content_type: 'default',
       content: content,
@@ -148,9 +146,14 @@ const parseMultiSegmentContent = (content: string): ContentSegment[] => {
     }];
   }
 
-  // 🆕 处理后端返回的多个独立JSON对象格式（每行一个JSON）
-  const lines = content.trim().split('\n');
+  console.log("检测到包含reasoning的混合格式，开始解析:", {
+    reasoningLines: reasoningLines.length,
+    totalLines: lines.length
+  });
+
+  // 🆕 分离reasoning（JSON格式）和其他内容（纯文本）
   const segments: ContentSegment[] = [];
+  let nonReasoningContent = "";
 
   for (const line of lines) {
     let trimmedLine = line.trim();
@@ -158,7 +161,7 @@ const parseMultiSegmentContent = (content: string): ContentSegment[] => {
 
     // 🆕 处理SSE格式的'data: '前缀
     if (trimmedLine.startsWith('data: ')) {
-      trimmedLine = trimmedLine.substring(6); // 移除'data: '前缀
+      trimmedLine = trimmedLine.substring(6);
     }
 
     // 跳过SSE的其他控制消息
@@ -166,81 +169,54 @@ const parseMultiSegmentContent = (content: string): ContentSegment[] => {
       continue;
     }
 
-    // 🆕 只对看起来像JSON的行进行解析（减少错误日志）
-    if (!trimmedLine.startsWith('{') || !trimmedLine.includes('"content_type"')) {
-      console.log("跳过非JSON格式行:", trimmedLine.substring(0, 30) + "...");
-      continue;
-    }
-
-    try {
-      const parsed = JSON.parse(trimmedLine);
-      
-      // 处理标准格式：{ "type": "content", "content": "...", "content_type": "reasoning" }
-      if (parsed.type === "content" && parsed.content_type && parsed.content) {
-        segments.push({
-          content_type: parsed.content_type || 'default',
-          content: parsed.content || '',
-          isComplete: parsed.isComplete
-        });
-        continue;
+    // 🆕 检查是否是reasoning的JSON行
+    if (trimmedLine.startsWith('{') && trimmedLine.includes('"content_type": "reasoning"')) {
+      try {
+        const parsed = JSON.parse(trimmedLine);
+        
+        if (parsed.type === "content" && parsed.content_type === 'reasoning' && parsed.content) {
+          segments.push({
+            content_type: 'reasoning',
+            content: parsed.content || '',
+            isComplete: parsed.isComplete
+          });
+          continue;
+        }
+        
+        // 处理简化格式
+        if (parsed.content_type === 'reasoning' && parsed.content) {
+          segments.push({
+            content_type: 'reasoning',
+            content: parsed.content || '',
+            isComplete: parsed.isComplete
+          });
+          continue;
+        }
+      } catch (e) {
+        console.log("reasoning JSON解析失败:", trimmedLine.substring(0, 50) + "...");
+        // 解析失败，当作普通文本处理
+        nonReasoningContent += line + "\n";
       }
-      
-      // 处理简化格式：{ "content_type": "reasoning", "content": "..." }
-      if (parsed.content_type && parsed.content) {
-        segments.push({
-          content_type: parsed.content_type || 'default',
-          content: parsed.content || '',
-          isComplete: parsed.isComplete
-        });
-        continue;
-      }
-    } catch (e) {
-      // 只有在期望是JSON但解析失败时才记录错误
-      console.log("JSON解析失败:", trimmedLine.substring(0, 50) + "...");
-      continue;
-    }
-  }
-
-  // 如果没有解析到任何段落，尝试把整个内容作为单个段落
-  if (segments.length === 0) {
-    // 尝试解析整个内容为单个JSON
-    try {
-      const parsed = JSON.parse(content);
-      
-      if (parsed.type === "content" && parsed.content_type && parsed.content) {
-        return [{
-          content_type: parsed.content_type || 'default',
-          content: parsed.content || '',
-          isComplete: parsed.isComplete
-        }];
-      }
-      
-      if (parsed.content_type && parsed.content) {
-        return [{
-          content_type: parsed.content_type || 'default',
-          content: parsed.content || '',
-          isComplete: parsed.isComplete
-        }];
-      }
-
-      // 处理数组格式（备用格式）
-      if (Array.isArray(parsed)) {
-        return parsed.map((segment: any) => ({
-          content_type: segment.content_type || 'default',
-          content: segment.content || '',
-          isComplete: segment.isComplete
-        }));
-      }
-    } catch (e) {
-      // 最后的备用方案：作为普通文本处理
-      console.log("内容不是JSON格式，作为普通文本处理");
-      return [{
-        content_type: 'default',
-        content: content,
-        isComplete: false
-      }];
+    } else {
+      // 🆕 非reasoning行，直接添加到普通内容中
+      nonReasoningContent += line + "\n";
     }
   }
+
+  // 🆕 如果有非reasoning内容，添加为default类型段落
+  if (nonReasoningContent.trim()) {
+    segments.push({
+      content_type: 'default',
+      content: nonReasoningContent.trim(),
+      isComplete: false
+    });
+  }
+
+  console.log("成功解析混合格式内容:", {
+    reasoningSegments: segments.filter(s => s.content_type === 'reasoning').length,
+    defaultSegments: segments.filter(s => s.content_type === 'default').length,
+    segments: segments.map(s => ({ type: s.content_type, length: s.content.length }))
+  });
 
   return segments;
 };
@@ -283,6 +259,33 @@ export function DraftResultDisplay({
   // 🆕 分离reasoning和非reasoning内容
   const reasoningSegments = contentSegments.filter(seg => seg.content_type === 'reasoning');
   const nonReasoningSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
+
+  // 🆕 监控resume内容生成，用于自动收起thinking
+  const [shouldCollapseReasoning, setShouldCollapseReasoning] = useState(false);
+  // 🆕 添加状态来跟踪是否已经触发过自动收起
+  const [hasTriggeredAutoCollapse, setHasTriggeredAutoCollapse] = useState(false);
+  
+  // 🆕 监控非reasoning内容的出现，当有实际内容时收起reasoning（只触发一次）
+  useEffect(() => {
+    if (nonReasoningSegments.length > 0 && !hasTriggeredAutoCollapse) {
+      // 检查是否有实际的内容（不只是空白）
+      const hasActualContent = nonReasoningSegments.some(seg => 
+        seg.content && seg.content.trim().length > 0
+      );
+      
+      if (hasActualContent) {
+        console.log("首次检测到resume内容开始生成，准备自动收起thinking");
+        setShouldCollapseReasoning(true);
+        setHasTriggeredAutoCollapse(true); // 🆕 标记已触发，避免重复
+        
+        // 🆕 延迟重置shouldCollapseReasoning，给ReasoningCard足够时间响应
+        setTimeout(() => {
+          setShouldCollapseReasoning(false);
+          console.log("重置shouldCollapseReasoning，允许用户手动展开");
+        }, 100);
+      }
+    }
+  }, [nonReasoningSegments, hasTriggeredAutoCollapse]);
 
   // 添加日志查看后端返回的数据
   useEffect(() => {
@@ -362,6 +365,8 @@ export function DraftResultDisplay({
     setUserManuallyExpanded(false); // 重置用户手动展开状态
     setUserManuallyScrolled(false); // 重置用户手动滚动状态
     setAutoScroll(true); // 重置自动滚动状态
+    setShouldCollapseReasoning(false); // 🆕 重置thinking自动收起状态
+    setHasTriggeredAutoCollapse(false); // 🆕 重置自动收起触发状态
     lastUpdateRef.current = Date.now();
   }, [effectiveResult?.timestamp]);
 
@@ -453,10 +458,19 @@ export function DraftResultDisplay({
         contentToDownload = effectiveResult.content;
       }
 
-      // 使用新的docx生成工具生成真正的Word文档
-      const { generateWordDocument } = await import('../../utils/docxGenerator');
+      // 🆕 去除HTML代码，保留Markdown格式
+      const processedContent = removeHtmlKeepMarkdown(contentToDownload);
       
-      await generateWordDocument(contentToDownload, title);
+      console.log('下载内容处理:', {
+        原始内容长度: contentToDownload.length,
+        处理后长度: processedContent.length,
+        原始预览: contentToDownload.substring(0, 200) + "...",
+        处理后预览: processedContent.substring(0, 200) + "..."
+      });
+      
+      // 使用格式化Word生成器处理Markdown
+      const { generateWordDocumentWithFormatting } = await import('../../utils/docxGenerator');
+      await generateWordDocumentWithFormatting(processedContent, title);
 
       toast({
         title: "下载成功",
@@ -465,11 +479,11 @@ export function DraftResultDisplay({
     } catch (error) {
       console.error('下载Word文档失败:', error);
       
-      // 如果新方法失败，回退到原来的方法（HTML格式，兼容性较差）
-      const fallbackDownload = () => {
-        if (!effectiveResult?.content) return;
-
-        // 获取要下载的内容
+      // 如果格式化下载失败，尝试纯文本下载
+      try {
+        console.log('尝试使用纯文本生成器...');
+        const { generateWordDocument } = await import('../../utils/docxGenerator');
+        
         let contentToDownload = "";
         if (contentSegments.length > 0) {
           const resumeSegments = contentSegments.filter(seg => seg.content_type !== 'reasoning');
@@ -479,52 +493,14 @@ export function DraftResultDisplay({
         }
         
         const cleanContent = cleanMarkdownToPlainText(contentToDownload);
+        await generateWordDocument(cleanContent, title);
 
-        // 创建HTML格式的Word文档内容
-        const wordContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>${title}</title>
-            <style>
-              body { font-family: "Microsoft YaHei", sans-serif; line-height: 1.6; margin: 20px; }
-              p { margin: 0 0 1em 0; }
-            </style>
-          </head>
-          <body>
-            <h1>${title}</h1>
-            ${cleanContent
-              .split("\n")
-              .map((line) => `<p>${line}</p>`)
-              .join("")}
-          </body>
-          </html>
-        `;
-
-        // 创建并下载文件
-        const blob = new Blob([wordContent], { 
-          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${title}-${new Date().toLocaleDateString().replace(/\//g, "-")}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      };
-
-      try {
-        fallbackDownload();
         toast({
-          title: "下载成功（兼容模式）",
-          description: `${title}已下载，如果Word无法打开请用WPS或其他编辑器`,
-          variant: "destructive",
+          title: "下载成功（纯文本）",
+          description: `${title}已下载为Word文档`,
         });
       } catch (fallbackError) {
-        console.error('回退下载方法也失败:', fallbackError);
+        console.error('纯文本docx生成也失败:', fallbackError);
         toast({
           title: "下载失败",
           description: "文档下载失败，请稍后重试",
@@ -858,7 +834,7 @@ export function DraftResultDisplay({
                 size="sm"
                 className="w-8 h-8 p-0 rounded-full"
                 onClick={handleDownload}
-                title="下载为文件"
+                title="下载Word文档"
               >
                 <Download className="h-4 w-4" />
               </Button>
@@ -902,6 +878,7 @@ export function DraftResultDisplay({
             <ReasoningCard 
               reasoningSegments={reasoningSegments}
               isComplete={effectiveResult?.isComplete || false}
+              shouldAutoCollapse={shouldCollapseReasoning}
             />
             
             {/* 然后显示非reasoning内容 */}

@@ -867,7 +867,7 @@ export const apiService = {
       const apiUrl = getApiUrl();
 
       console.log("PS分稿助理API调用 - 第一步搜索分析:", {
-        url: `${apiUrl}/api/essay-rewrite/search-and-analyze`,
+        url: `${apiUrl}/api/ps-final-draft/search-and-analyze`,
         queryLength: queryText.length,
         filesCount: files?.length || 0,
         hasCourseInfo: !!courseInfo,
@@ -898,17 +898,18 @@ export const apiService = {
     userInput: string,
     supportFiles: File[] = [],
     customWebSearcherRole: string = "",
-    customWebSearcherTask: string = ""
+    customWebSearcherTask: string = "",
+    customWebSearcherOutputFormat: string = ""
   ) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
 
       console.log("Essay重写搜索分析API调用:", {
-        url: `${apiUrl}/api/essay-rewrite/search-and-analyze`,
+        url: `${apiUrl}/api/ps-final-draft/search-and-analyze`,
         userInputLength: userInput.length,
         supportFilesCount: supportFiles.length,
-        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask),
+        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask || customWebSearcherOutputFormat),
       });
 
       // 创建FormData对象
@@ -928,6 +929,7 @@ export const apiService = {
       // 添加自定义提示词参数
       formData.append("custom_web_searcher_role", customWebSearcherRole);
       formData.append("custom_web_searcher_task", customWebSearcherTask);
+      formData.append("custom_web_searcher_output_format", customWebSearcherOutputFormat);
 
       // 打印FormData内容用于调试
       console.log("Essay重写搜索分析FormData内容:");
@@ -947,7 +949,7 @@ export const apiService = {
       }
 
       const response = await fetch(
-        `${apiUrl}/api/essay-rewrite/search-and-analyze`,
+        `${apiUrl}/api/ps-final-draft/search-and-analyze`,
         {
           method: "POST",
           headers: {
@@ -990,7 +992,7 @@ export const apiService = {
       const apiUrl = getApiUrl();
 
       console.log("Essay重写策略生成API调用:", {
-        url: `${apiUrl}/api/essay-rewrite/generate-strategy`,
+        url: `${apiUrl}/api/ps-final-draft/generate-strategy`,
         searchResultLength: searchResult.length,
         originalEssayFile: originalEssayFile.name,
         analysisResultLength: analysisResult.length,
@@ -1024,7 +1026,7 @@ export const apiService = {
         }
       }
 
-      const response = await fetch(`${apiUrl}/api/essay-rewrite/generate-strategy`, {
+      const response = await fetch(`${apiUrl}/api/ps-final-draft/generate-strategy`, {
         method: "POST",
         headers: {
           "X-API-Key": apiKey,
@@ -1062,7 +1064,7 @@ export const apiService = {
       const apiUrl = getApiUrl();
 
       console.log("Essay重写API调用:", {
-        url: `${apiUrl}/api/essay-rewrite/rewrite-essay`,
+        url: `${apiUrl}/api/ps-final-draft/rewrite-essay`,
         rewriteStrategyLength: rewriteStrategy.length,
         originalEssayFile: originalEssayFile.name,
         hasCustomPrompts: !!(customEssayRewriterRole || customEssayRewriterTask || customEssayRewriterOutputFormat)
@@ -1092,7 +1094,7 @@ export const apiService = {
         }
       }
 
-      const response = await fetch(`${apiUrl}/api/essay-rewrite/rewrite-essay`, {
+      const response = await fetch(`${apiUrl}/api/ps-final-draft/rewrite-essay`, {
         method: "POST",
         headers: {
           "X-API-Key": apiKey,
@@ -1231,7 +1233,7 @@ export const apiService = {
       const apiUrl = getApiUrl();
 
       console.log("Essay重写策略生成API调用:", {
-        url: `${apiUrl}/api/essay-rewrite/generate-strategy`,
+        url: `${apiUrl}/api/ps-final-draft/generate-strategy`,
         userInputLength: userInput.length,
         originalEssayFile: originalEssayFile.name,
         supportFilesCount: supportFiles.length,
@@ -1297,7 +1299,7 @@ export const apiService = {
       }
 
       const response = await fetch(
-        `${apiUrl}/api/essay-rewrite/generate-strategy`,
+        `${apiUrl}/api/ps-final-draft/generate-strategy`,
         {
           method: "POST",
           headers: {

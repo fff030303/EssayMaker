@@ -50,7 +50,7 @@
 
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Loader2, Edit } from "lucide-react";
+import { FileText, Loader2, Edit, RefreshCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DisplayResult } from "../types";
@@ -58,6 +58,8 @@ import { useMemo, useState } from "react";
 import DOMPurify from "dompurify";
 import { apiService } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 // 检测内容类型的函数
 const detectContentType = (content: string): 'html' | 'markdown' => {
@@ -457,6 +459,8 @@ interface ResultDisplayProps {
   onGenerateStrategy?: (strategyResult: DisplayResult) => void;
   originalEssayFile?: File | null;
   searchResult?: string;
+  // 新增：步骤跳转回调
+  onStepChange?: (step: number) => void;
 }
 
 export function ResultDisplay({ 
@@ -464,10 +468,17 @@ export function ResultDisplay({
   title = "分析结果", 
   onGenerateStrategy,
   originalEssayFile,
-  searchResult
+  searchResult,
+  onStepChange
 }: ResultDisplayProps) {
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
   const { toast } = useToast();
+  
+  // 🆕 新增：自定义策略生成提示词状态
+  const [customStrategyGeneratorRole, setCustomStrategyGeneratorRole] = useState<string>("");
+  const [customStrategyGeneratorTask, setCustomStrategyGeneratorTask] = useState<string>("");
+  const [customStrategyGeneratorOutputFormat, setCustomStrategyGeneratorOutputFormat] = useState<string>("");
+  const [showCustomPrompts, setShowCustomPrompts] = useState(false);
 
   if (!result) return null;
 
@@ -510,11 +521,26 @@ export function ResultDisplay({
 
     setIsGeneratingStrategy(true);
 
+    // 🆕 立即跳转到第二步
+    if (onStepChange) {
+      onStepChange(2);
+    }
+
     try {
+      console.log("调用策略生成API，自定义提示词:", {
+        role: customStrategyGeneratorRole,
+        task: customStrategyGeneratorTask,
+        outputFormat: customStrategyGeneratorOutputFormat,
+      });
+      
+      // 🆕 修改：传递自定义提示词参数
       const streamResponse = await apiService.streamEssayRewriteGenerateStrategy(
         searchResult,
         originalEssayFile,
-        result.content || "" // 使用当前分析结果作为analysisResult
+        result.content || "", // 使用当前分析结果作为analysisResult
+        customStrategyGeneratorRole,
+        customStrategyGeneratorTask,
+        customStrategyGeneratorOutputFormat
       );
 
       if (!streamResponse) {
@@ -626,41 +652,118 @@ export function ResultDisplay({
             {new Date(result.timestamp).toLocaleString()}
           </p>
         </div>
-        {/* 新增：撰写改写策略按钮 */}
+        {/* 新增：撰写改写策略按钮和自定义提示词 */}
         {originalEssayFile && searchResult && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateStrategy}
-            disabled={
-              isGeneratingStrategy || 
-              !result.isComplete || 
-              !result.content ||
-              result.currentStep === "生成出错，请重试"
-            }
-            className="ml-auto"
-            title={
-              !result.isComplete 
-                ? "请等待分稿策略生成完成后再生成改写策略" 
-                : !result.content
-                ? "没有可用的分析结果"
-                : result.currentStep === "生成出错，请重试"
-                ? "请先重新生成分稿策略"
-                : "基于当前分析结果生成Essay改写策略"
-            }
-          >
-            {isGeneratingStrategy ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                生成中...
-              </>
-            ) : (
-              <>
-                <Edit className="h-4 w-4 mr-2" />
-                撰写改写策略
-              </>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateStrategy}
+                disabled={
+                  isGeneratingStrategy || 
+                  !result.isComplete || 
+                  !result.content ||
+                  result.currentStep === "生成出错，请重试"
+                }
+                title={
+                  !result.isComplete 
+                    ? "请等待分稿策略生成完成后再生成改写策略" 
+                    : !result.content
+                    ? "没有可用的分析结果"
+                    : result.currentStep === "生成出错，请重试"
+                    ? "请先重新生成分稿策略"
+                    : "基于当前分析结果生成Essay改写策略"
+                }
+              >
+                {isGeneratingStrategy ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    撰写改写策略
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCustomPrompts(!showCustomPrompts)}
+                className="text-xs"
+              >
+                {showCustomPrompts ? "隐藏" : "显示"}提示词设置
+              </Button>
+            </div>
+            
+            {/* 🆕 自定义策略生成提示词输入区域 */}
+            {showCustomPrompts && (
+              <Card className="mt-2">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">策略生成自定义提示词</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs px-2 py-1 h-6"
+                      onClick={() => {
+                        setCustomStrategyGeneratorRole("");
+                        setCustomStrategyGeneratorTask("");
+                        setCustomStrategyGeneratorOutputFormat("");
+                        toast({
+                          title: "已清空",
+                          description: "策略生成提示词已重置",
+                        });
+                      }}
+                    >
+                      <RefreshCcw className="h-3 w-3 mr-1" />
+                      重置
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3 pt-0">
+                  <div>
+                    <Label htmlFor="strategy-role" className="text-xs">策略生成角色提示词</Label>
+                    <Textarea
+                      id="strategy-role"
+                      value={customStrategyGeneratorRole}
+                      onChange={(e) => setCustomStrategyGeneratorRole(e.target.value)}
+                      className="mt-1 min-h-[50px] text-xs"
+                      placeholder="例如：你是一位专业的Essay改写策略专家，擅长分析学术写作需求..."
+                      disabled={isGeneratingStrategy}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="strategy-task" className="text-xs">策略生成任务提示词</Label>
+                    <Textarea
+                      id="strategy-task"
+                      value={customStrategyGeneratorTask}
+                      onChange={(e) => setCustomStrategyGeneratorTask(e.target.value)}
+                      className="mt-1 min-h-[50px] text-xs"
+                      placeholder="例如：请根据搜索结果和原稿分析，制定详细的Essay改写策略..."
+                      disabled={isGeneratingStrategy}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="strategy-format" className="text-xs">策略生成输出格式提示词</Label>
+                    <Textarea
+                      id="strategy-format"
+                      value={customStrategyGeneratorOutputFormat}
+                      onChange={(e) => setCustomStrategyGeneratorOutputFormat(e.target.value)}
+                      className="mt-1 min-h-[50px] text-xs"
+                      placeholder="例如：请按照结构化格式输出改写策略，包含分析要点、改进建议等..."
+                      disabled={isGeneratingStrategy}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </Button>
+          </div>
         )}
       </CardHeader>
 

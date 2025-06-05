@@ -61,6 +61,7 @@ interface ResultSectionProps {
   originalEssayFile?: File | null;
   searchResult?: string;
   onGenerateStrategy?: (strategyResult: DisplayResult) => void;
+  onStepChange?: (step: number) => void;
 }
 
 export function ResultSection({
@@ -72,6 +73,7 @@ export function ResultSection({
   originalEssayFile,
   searchResult,
   onGenerateStrategy,
+  onStepChange,
 }: ResultSectionProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -122,6 +124,7 @@ export function ResultSection({
             originalEssayFile={originalEssayFile}
             searchResult={searchResult}
             onGenerateStrategy={onGenerateStrategy}
+            onStepChange={onStepChange}
           />
         </div>
       </div>

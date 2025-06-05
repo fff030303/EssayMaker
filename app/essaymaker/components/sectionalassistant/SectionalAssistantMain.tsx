@@ -43,7 +43,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { DisplayResult } from "../../types";
 import { SectionalFileUploadForm } from "./SectionalFileUploadForm";
 import { FullScreenLoadingAnimation } from "../LoadingAnimation";
@@ -57,6 +57,11 @@ interface SectionalAssistantMainProps {
   isLoading?: boolean;
   // 新增：分稿生成状态
   isSectionalGenerating?: boolean;
+  // 🆕 新增：改写策略相关props
+  onStrategyGenerate?: (result: DisplayResult) => void;
+  onStrategyGeneratingChange?: (isGenerating: boolean) => void;
+  // 🆕 新增：数据保存回调
+  onDataSave?: (originalFile: File | null, strategyContent: string) => void;
 }
 
 export function SectionalAssistantMain({
@@ -65,6 +70,9 @@ export function SectionalAssistantMain({
   result,
   isLoading,
   isSectionalGenerating = false,
+  onStrategyGenerate,
+  onStrategyGeneratingChange,
+  onDataSave,
 }: SectionalAssistantMainProps) {
   // 本地状态管理
   const [localResult, setLocalResult] = useState<DisplayResult | null>(null);
@@ -73,6 +81,9 @@ export function SectionalAssistantMain({
   // 新增：存储原始文件和搜索结果数据，用于改写策略生成
   const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
   const [searchResult, setSearchResult] = useState<string>("");
+
+  // 🆕 新增：创建滚动目标的引用
+  const scrollTargetRef = useRef<HTMLDivElement>(null);
 
   // 使用传入的状态或本地状态
   const currentResult = result || localResult;
@@ -84,12 +95,67 @@ export function SectionalAssistantMain({
     } else {
       setLocalResult(newResult);
     }
+    
+    // 🆕 新增：当结果首次出现时也触发滚动
+    if (newResult && !currentResult) {
+      console.log("检测到查询结果首次出现，触发滚动");
+      setTimeout(() => {
+        handleScrollToResult();
+      }, 100);
+    }
   };
 
   // 新增：处理文件和搜索结果数据传递
   const handleDataUpdate = (file: File | null, searchData: string) => {
     setOriginalEssayFile(file);
     setSearchResult(searchData);
+    
+    // 🆕 保存数据到父组件
+    if (onDataSave) {
+      onDataSave(file, searchData);
+    }
+  };
+
+  // 🆕 简化：直接滚动到目标区域
+  const handleScrollToResult = () => {
+    if (scrollTargetRef.current) {
+      // 获取目标元素相对于页面顶部的位置
+      const targetElement = scrollTargetRef.current;
+      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+      
+      // 向上偏移一些像素，确保目标区域完全可见
+      const scrollPosition = Math.max(0, targetPosition - 100);
+      
+      // 执行页面滚动
+      window.scrollTo({
+        top: scrollPosition,
+        behavior: 'smooth'
+      });
+      
+      console.log("自动滚动到查询结果区域，目标位置:", scrollPosition);
+    } else {
+      console.log("滚动目标引用不存在");
+    }
+  };
+
+  // 🆕 新增：处理改写策略生成
+  const handleStrategyGenerate = (strategyResult: DisplayResult) => {
+    console.log("收到改写策略结果:", strategyResult);
+    
+    // 通知父组件策略生成状态
+    if (onStrategyGeneratingChange) {
+      onStrategyGeneratingChange(!strategyResult.isComplete);
+    }
+    
+    // 传递策略结果给父组件，但不再自动跳转（因为在点击按钮时已经跳转）
+    if (onStrategyGenerate) {
+      onStrategyGenerate(strategyResult);
+    }
+    
+    // 如果生成完成，记录日志
+    if (strategyResult.isComplete) {
+      console.log("改写策略生成完成，内容长度:", strategyResult.content.length);
+    }
   };
 
   // 处理步骤点击
@@ -203,21 +269,31 @@ export function SectionalAssistantMain({
           onStepChange={onStepChange}
           setResult={handleResultUpdate}
           onDataUpdate={handleDataUpdate}
+          onScrollToResult={handleScrollToResult}
         />
 
-        {/* 使用 ResultSection 组件展示分稿内容 */}
-        {currentResult && (
-          <ResultSection
-            result={currentResult}
-            expandedSteps={expandedSteps}
-            setExpandedSteps={setExpandedSteps}
-            handleStepClick={handleStepClick}
-            title="查询过程"
-            originalEssayFile={originalEssayFile}
-            searchResult={searchResult}
-            onGenerateStrategy={handleResultUpdate}
-          />
-        )}
+        {/* 🆕 滚动目标区域 */}
+        <div ref={scrollTargetRef} className="w-full">
+          {/* 使用 ResultSection 组件展示分稿内容 */}
+          {currentResult ? (
+            <ResultSection
+              result={currentResult}
+              expandedSteps={expandedSteps}
+              setExpandedSteps={setExpandedSteps}
+              handleStepClick={handleStepClick}
+              title="查询过程"
+              originalEssayFile={originalEssayFile}
+              searchResult={searchResult}
+              onGenerateStrategy={handleStrategyGenerate}
+              onStepChange={onStepChange}
+            />
+          ) : (
+            /* 占位区域，确保滚动目标始终存在 */
+            <div className="w-full h-20 flex items-center justify-center">
+              <div className="text-gray-400 text-sm">查询结果将显示在此处</div>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

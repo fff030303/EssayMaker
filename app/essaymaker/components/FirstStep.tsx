@@ -120,6 +120,11 @@ interface FirstStepProps {
   setCurrentAssistantType?: (type: 'sectional' | 'networking' | 'general' | null) => void; // 添加设置助理类型的方法
   onCvClick?: () => void; // 添加CV助理按钮点击回调
   onRlClick?: () => void; // 添加RL助理按钮点击回调
+  // 🆕 新增：改写策略相关props
+  onStrategyGenerate?: (result: DisplayResult) => void;
+  onStrategyGeneratingChange?: (isGenerating: boolean) => void;
+  // 🆕 新增：数据保存回调
+  onDataSave?: (originalFile: File | null, strategyContent: string) => void;
 }
 
 export function FirstStep({
@@ -162,6 +167,9 @@ export function FirstStep({
   setCurrentAssistantType,
   onCvClick,
   onRlClick,
+  onStrategyGenerate,
+  onStrategyGeneratingChange,
+  onDataSave,
 }: FirstStepProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -551,6 +559,9 @@ export function FirstStep({
             onStepChange={onStepChange}
             setResult={setResult}
             result={result}
+            onStrategyGenerate={onStrategyGenerate}
+            onStrategyGeneratingChange={onStrategyGeneratingChange}
+            onDataSave={onDataSave}
           />
         </div>
       ) : internalAssistantType === "draft" ? (

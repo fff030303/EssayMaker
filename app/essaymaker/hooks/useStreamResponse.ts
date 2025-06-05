@@ -158,12 +158,12 @@ export function useStreamResponse() {
                   try {
                     const data = JSON.parse(line);
                     if (data.type === "content" && data.content) {
-                      // 🆕 如果有content_type，保留原始JSON格式
-                      if (data.content_type) {
-                        // 保留完整的JSON结构，让DraftResultDisplay来处理
+                      // 🆕 精确控制：只对reasoning保留JSON，resume提取纯文本
+                      if (data.content_type === 'reasoning') {
+                        // reasoning类型：保留完整JSON结构，供ReasoningCard解析
                         accumulatedContent += line + "\n";
                       } else {
-                        // 兼容旧格式，只提取content
+                        // resume类型或其他类型：只提取纯文本内容，确保格式正确
                         accumulatedContent += data.content;
                       }
                       contentReceivedThisIteration = true;
@@ -177,13 +177,13 @@ export function useStreamResponse() {
                       try {
                         const jsonStr = line.slice(6);
                         const data = JSON.parse(jsonStr);
-                        // 🆕 如果有content_type，保留原始JSON格式
+                        // 🆕 精确控制：只对reasoning保留JSON，resume提取纯文本
                         if (data.type === "content" && data.content) {
-                          if (data.content_type) {
-                            // 保留完整的JSON结构
+                          if (data.content_type === 'reasoning') {
+                            // reasoning类型：保留完整JSON结构，供ReasoningCard解析
                             accumulatedContent += line + "\n";
                           } else {
-                            // 兼容旧格式
+                            // resume类型或其他类型：只提取纯文本内容，确保格式正确
                             accumulatedContent += data.content;
                           }
                           contentReceivedThisIteration = true;

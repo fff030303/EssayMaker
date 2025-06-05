@@ -9,7 +9,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Send } from "lucide-react";
 import { scrollbarStyles } from "./utils/styles";
 import { FirstStep } from "./components/FirstStep";
 import { SecondStep } from "./components/SecondStep";
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import { ButtonType } from "./components/QuickActionButtons";
 import { Card, CardHeader } from "@/components/ui/card";
-import { DraftResultDisplay } from "./components/DraftResultDisplay";
+import { DraftResultDisplay } from "./components/DraftResultDisplay/DraftResultComponent";
 import { RLGeneration } from "./components/rlassistant/RLGeneration";
 // 移除侧边栏导入
 // import { useSidebar } from "@/components/ui/sidebar";
@@ -38,7 +38,11 @@ import { StreamingProvider } from "./contexts/StreamingContext";
 
 // 导入分稿助理组件
 import { SectionalAssistantMain } from "./components/sectionalassistant/SectionalAssistantMain";
+import { SectionalStrategyAndDraftDisplay } from "./components/sectionalassistant/SectionalStrategyAndDraftDisplay";
 import { ResultSection } from "./components/ResultSection";
+
+// 导入API服务
+import { apiService } from "@/lib/api";
 
 export default function EssayMakerPage() {
   // 移除侧边栏状态
@@ -148,6 +152,22 @@ export default function EssayMakerPage() {
   // 🆕 添加RL助理写作需求状态
   const [rlWritingRequirements, setRlWritingRequirements] = useState<string>("");
 
+  // 🆕 新增：分稿助理改写策略结果状态
+  const [sectionalStrategyResult, setSectionalStrategyResult] = useState<DisplayResult | null>(null);
+
+  // 🆕 新增：分稿助理改写策略生成状态
+  const [isSectionalStrategyGenerating, setIsSectionalStrategyGenerating] = useState(false);
+
+  // 🆕 新增：分稿助理最终稿件状态
+  const [sectionalFinalDraft, setSectionalFinalDraft] = useState<DisplayResult | null>(null);
+
+  // 🆕 新增：分稿助理最终稿件生成状态
+  const [isSectionalFinalGenerating, setIsSectionalFinalGenerating] = useState(false);
+
+  // 🆕 新增：分稿助理原始文件和改写策略数据
+  const [sectionalOriginalFile, setSectionalOriginalFile] = useState<File | null>(null);
+  const [sectionalStrategyContent, setSectionalStrategyContent] = useState<string>("");
+
   // 添加CV和RL助理的生成状态
   const [isCVGenerating, setIsCVGenerating] = useState<boolean>(false);
   const [isRLGenerating, setIsRLGenerating] = useState<boolean>(false);
@@ -221,6 +241,14 @@ export default function EssayMakerPage() {
         setFormattedLetter(null);
         // 🆕 清理RL助理写作需求状态
         setRlWritingRequirements("");
+        // 🆕 清理分稿助理改写策略状态
+        setSectionalStrategyResult(null);
+        setIsSectionalStrategyGenerating(false);
+        // 🆕 清理分稿助理最终稿件状态
+        setSectionalFinalDraft(null);
+        setIsSectionalFinalGenerating(false);
+        setSectionalOriginalFile(null);
+        setSectionalStrategyContent("");
       };
 
       if (type === "draft") {
@@ -496,6 +524,37 @@ export default function EssayMakerPage() {
     handleStepChange,
   ]);
 
+  // 清除查询和结果
+  const clearQuery = useCallback(() => {
+    setQuery("");
+    setResult(null);
+    setFinalDraft(null);
+    setFinalDraftResult(null);
+    setUserDirection("");
+    setUserRequirements("");
+    setTranscriptAnalysis(null);
+    setOtherFiles([]);
+    setFormattedResume(null);
+    setFormattedLetter(null);
+    setRlWritingRequirements("");
+    setSectionalStrategyResult(null);
+    setIsSectionalStrategyGenerating(false);
+  }, [
+    setQuery,
+    setResult,
+    setFinalDraft,
+    setFinalDraftResult,
+    setUserDirection,
+    setUserRequirements,
+    setTranscriptAnalysis,
+    setOtherFiles,
+    setFormattedResume,
+    setFormattedLetter,
+    setRlWritingRequirements,
+    setSectionalStrategyResult,
+    setIsSectionalStrategyGenerating,
+  ]);
+
   return (
     <StreamingProvider>
       <div
@@ -594,6 +653,12 @@ export default function EssayMakerPage() {
                       ? "sectional"
                       : "custom"
                   }
+                  onStrategyGenerate={setSectionalStrategyResult}
+                  onStrategyGeneratingChange={setIsSectionalStrategyGenerating}
+                  onDataSave={(originalFile, strategyContent) => {
+                    setSectionalOriginalFile(originalFile);
+                    setSectionalStrategyContent(strategyContent);
+                  }}
                 />
               </div>
 
@@ -773,22 +838,17 @@ export default function EssayMakerPage() {
                     );
                   } else if (isSectionalAssistant) {
                     console.log("[PAGE] ✅ 渲染 分稿助理");
+                    
                     return (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center p-8 max-w-md">
-                          <h2 className="text-2xl font-bold mb-4">分稿助理</h2>
-                          <p className="text-muted-foreground mb-6">
-                            分稿助理的所有功能都在第一步完成，请返回第一步查看结果
-                          </p>
-                          <Button
-                            variant="outline"
-                            onClick={() => handleStepChange(1)}
-                          >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            返回第一步
-                          </Button>
-                        </div>
-                      </div>
+                      <SectionalStrategyAndDraftDisplay
+                        strategyResult={sectionalStrategyResult}
+                        finalDraft={sectionalFinalDraft}
+                        onStepChange={handleStepChange}
+                        onFinalDraftChange={setSectionalFinalDraft}
+                        onGeneratingStateChange={setIsSectionalFinalGenerating}
+                        originalFile={sectionalOriginalFile}
+                        strategyContent={sectionalStrategyContent}
+                      />
                     );
                   } else {
                     console.log(
@@ -907,6 +967,20 @@ export default function EssayMakerPage() {
         {isSectionalGenerating && isSectionalAssistant && (
           <FullScreenLoadingAnimation 
             text="正在生成分稿策略，请勿切换页面..." 
+          />
+        )}
+
+        {/* 🆕 分稿助理改写策略生成全屏加载动画 */}
+        {isSectionalStrategyGenerating && isSectionalAssistant && currentStep !== 2 && (
+          <FullScreenLoadingAnimation 
+            text="正在生成Essay改写策略，可通过底边栏切换到第二步查看进度..." 
+          />
+        )}
+
+        {/* 🆕 分稿助理最终稿件生成全屏加载动画 */}
+        {isSectionalFinalGenerating && isSectionalAssistant && currentStep !== 2 && (
+          <FullScreenLoadingAnimation 
+            text="正在生成最终Essay稿件，可通过底边栏切换到第二步查看进度..." 
           />
         )}
       </div>
