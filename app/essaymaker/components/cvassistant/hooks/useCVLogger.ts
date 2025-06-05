@@ -1,7 +1,15 @@
 "use client";
 
-// import { useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 // import { useToast } from "@/hooks/use-toast";
+
+// =================================================================
+// 🔧 开发模式开关 - 通过注释控制认证
+// =================================================================
+// 注释下面这行 = 关闭认证（本地开发模式）
+// 取消注释 = 开启认证（生产模式）
+const ENABLE_AUTH_CHECK = true;
+// =================================================================
 
 // /**
 //  * CV助理日志记录Hook - 极简版
@@ -49,8 +57,7 @@
 //  */
 
 export function useCVLogger() {
-  // const { data: session } = useSession();
-  const session = null; // 临时禁用session功能
+  const { data: session } = useSession();
 
   /**
    * 通用的结果记录方法
@@ -65,13 +72,37 @@ export function useCVLogger() {
     errorMessage?: string
   ) => {
     try {
-      // 检查用户是否已登录
-      // if (!session?.user?.email) {
-      //   console.warn("[CVLogger] 用户未登录，跳过日志记录");
-      //   return;
-      // }
-      console.log("[CVLogger] Session功能已禁用，跳过日志记录");
-      return;
+      // 🔧 认证检查 - 可通过顶部开关控制
+      if (ENABLE_AUTH_CHECK) {
+        // 生产模式：检查用户是否已登录
+        if (!session?.user?.email) {
+          console.warn("[CVLogger] 用户未登录，跳过日志记录");
+          return;
+        }
+      }
+
+      // 获取用户信息（开发模式使用模拟数据）
+      const userInfo =
+        ENABLE_AUTH_CHECK && session?.user
+          ? {
+              email: session.user.email,
+              name: session.user.name || "未知",
+              unitName: (session.user as any)?.unitName || null,
+            }
+          : {
+              email: "dev@local.test",
+              name: "开发者",
+              unitName: "本地开发",
+            };
+
+      console.log("[CVLogger] 开始记录日志:", {
+        assistantType,
+        endpoint,
+        isSuccess,
+        duration,
+        userEmail: userInfo.email,
+        mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+      });
 
       // 调用日志记录API
       const response = await fetch("/api/essaymaker/llm-logs", {
@@ -87,13 +118,14 @@ export function useCVLogger() {
           isSuccess,
           duration,
           errorMessage,
-          name: "未知", // session.user.name || "未知",
-          unitName: "未知", // (session.user as any)?.unitName || null,
+          name: userInfo.name,
+          unitName: userInfo.unitName,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`日志记录失败: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`日志记录失败: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
@@ -102,6 +134,69 @@ export function useCVLogger() {
       console.error("[CVLogger] 日志记录失败:", error);
       // 日志记录失败不应影响主要功能，所以不抛出异常
     }
+  };
+
+  /**
+   * 过滤reasoning数据的辅助函数
+   * 从结果数据中移除reasoning相关内容，只保留实际的简历内容
+   */
+  const filterReasoningData = (resultData: any) => {
+    if (!resultData) return resultData;
+
+    // 创建一个副本以避免修改原始数据
+    const filteredData = { ...resultData };
+
+    // 如果content包含reasoning数据，需要过滤
+    if (filteredData.content && typeof filteredData.content === "string") {
+      // 检查是否包含reasoning JSON数据
+      const lines = filteredData.content.split("\n");
+      const filteredLines = lines.filter((line: string) => {
+        if (line.trim()) {
+          try {
+            // 🆕 处理 "data: {JSON}" 格式
+            if (line.startsWith("data: ")) {
+              const jsonStr = line.slice(6); // 移除 "data: " 前缀
+              const data = JSON.parse(jsonStr);
+              // 过滤掉reasoning类型的数据
+              return data.content_type !== "reasoning";
+            }
+
+            // 🆕 处理纯JSON格式
+            const data = JSON.parse(line);
+            // 过滤掉reasoning类型的数据
+            return data.content_type !== "reasoning";
+          } catch {
+            // 如果不是JSON格式，保留该行
+            return true;
+          }
+        }
+        return true;
+      });
+
+      // 重新组合过滤后的内容
+      filteredData.content = filteredLines.join("\n").trim();
+    }
+
+    // 移除其他可能包含reasoning数据的字段
+    if (filteredData.reasoningSegments) {
+      delete filteredData.reasoningSegments;
+    }
+
+    if (filteredData._reasoningData) {
+      delete filteredData._reasoningData;
+    }
+
+    console.log("[CVLogger] 过滤reasoning数据:", {
+      原始内容长度: resultData.content?.length || 0,
+      过滤后内容长度: filteredData.content?.length || 0,
+      原始行数: resultData.content?.split("\n").length || 0,
+      过滤后行数: filteredData.content?.split("\n").length || 0,
+      已移除reasoning字段: ["reasoningSegments", "_reasoningData"].filter(
+        (field) => resultData[field]
+      ),
+    });
+
+    return filteredData;
   };
 
   /**
@@ -124,6 +219,9 @@ export function useCVLogger() {
     }
     const fileContent = fileNames.length > 0 ? fileNames.join(", ") : "未上传";
 
+    // 🆕 过滤reasoning数据，只保留实际的简历内容
+    const filteredResult = filterReasoningData(result);
+
     await logResult(
       "CV_ASSISTANT",
       "/api/essaymaker/analyze",
@@ -135,9 +233,12 @@ export function useCVLogger() {
         timestamp: new Date().toISOString(),
       },
       {
-        content: result?.content || "",
-        currentStep: result?.currentStep || "",
+        content: filteredResult?.content || "",
+        currentStep: filteredResult?.currentStep || "",
         error: !isSuccess,
+        // 🆕 添加标记表明已过滤reasoning数据
+        _reasoningFiltered: true,
+        _originalContentLength: result?.content?.length || 0,
       },
       isSuccess,
       duration,
@@ -155,6 +256,9 @@ export function useCVLogger() {
     duration?: number,
     errorMessage?: string
   ) => {
+    // 🆕 过滤reasoning数据，只保留实际的简历内容
+    const filteredResult = filterReasoningData(result);
+
     await logResult(
       "CV_ASSISTANT",
       "/api/essaymaker/format-resume",
@@ -167,9 +271,12 @@ export function useCVLogger() {
         timestamp: new Date().toISOString(),
       },
       {
-        content: result?.content || "",
-        currentStep: result?.currentStep || "",
+        content: filteredResult?.content || "",
+        currentStep: filteredResult?.currentStep || "",
         error: !isSuccess,
+        // 🆕 添加标记表明已过滤reasoning数据
+        _reasoningFiltered: true,
+        _originalContentLength: result?.content?.length || 0,
       },
       isSuccess,
       duration,

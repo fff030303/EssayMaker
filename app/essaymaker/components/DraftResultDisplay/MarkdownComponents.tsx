@@ -1,38 +1,38 @@
 /**
  * MarkdownComponents 组件文件
- * 
+ *
  * 功能：提供ReactMarkdown的自定义组件配置
- * 
+ *
  * 核心特性：
  * 1. 自定义渲染组件：
  *    - 标题组件（H1-H6）：统一样式和层级
  *    - 段落组件：优化行高和间距
  *    - 列表组件：美化项目符号和缩进
  *    - 链接组件：安全的外部链接处理
- * 
+ *
  * 2. 样式定制：
  *    - 统一的颜色主题
  *    - 响应式字体大小
  *    - 合理的间距设计
  *    - 优雅的视觉层次
- * 
+ *
  * 3. 交互增强：
  *    - 链接悬浮效果
  *    - 代码块语法高亮
  *    - 表格响应式布局
  *    - 图片自适应显示
- * 
+ *
  * 4. 安全性：
  *    - 外部链接安全属性
  *    - XSS防护机制
  *    - 内容过滤处理
- * 
+ *
  * 5. 可访问性：
  *    - 语义化HTML结构
  *    - 键盘导航支持
  *    - 屏幕阅读器友好
  *    - 对比度优化
- * 
+ *
  * 组件映射：
  * - a：链接组件，支持外部链接安全打开
  * - p：段落组件，优化行高和间距
@@ -40,7 +40,7 @@
  * - ul/ol：列表组件，美化样式
  * - code：代码组件，支持内联和块级
  * - table：表格组件，响应式设计
- * 
+ *
  * @author EssayMaker Team
  * @version 1.0.0
  */
@@ -50,7 +50,7 @@ import React from "react";
 export const markdownComponents = {
   h1: ({ children }: { children: React.ReactNode }) => {
     return (
-      <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-900 border-b border-gray-200 pb-2">
+      <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-900 pb-2">
         {children}
       </h1>
     );

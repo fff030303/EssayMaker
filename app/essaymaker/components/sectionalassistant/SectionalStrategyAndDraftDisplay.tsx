@@ -1,51 +1,51 @@
 /**
  * SectionalStrategyAndDraftDisplay 组件
- * 
+ *
  * 功能：分稿助理的策略和稿件展示组件，显示改写策略和生成的最终稿件
- * 
+ *
  * 核心特性：
  * 1. 双栏布局：
  *    - 左侧：改写策略展示
  *    - 右侧：生成的最终稿件
  *    - 响应式布局适配
  *    - 可调整的分栏比例
- * 
+ *
  * 2. 策略展示：
  *    - Essay改写策略分析
  *    - 改进建议提供
  *    - 写作指导建议
  *    - 结构优化建议
- * 
+ *
  * 3. 稿件展示：
  *    - 格式化的最终稿件内容
  *    - 实时生成和更新
  *    - 流式响应处理
  *    - 导出功能支持
- * 
+ *
  * 4. 交互功能：
  *    - 生成最终稿件按钮
  *    - 内容复制和下载
  *    - 编辑和修改选项
  *    - 分享和保存
- * 
+ *
  * 5. 状态管理：
  *    - 加载状态指示
  *    - 错误状态处理
  *    - 生成进度跟踪
  *    - 完成状态确认
- * 
+ *
  * 6. 用户体验：
  *    - 流畅的内容切换
  *    - 清晰的视觉层次
  *    - 直观的操作反馈
  *    - 优雅的动画效果
- * 
+ *
  * 技术实现：
  * - 参考PS助理的实现模式
  * - 支持流式内容更新
  * - Markdown渲染支持
  * - 响应式设计
- * 
+ *
  * @author EssayMaker Team
  * @version 1.0.0
  */
@@ -64,6 +64,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCcw } from "lucide-react";
+import { useSectionalLogger } from "./hooks/useSectionalLogger";
 
 interface SectionalStrategyAndDraftDisplayProps {
   strategyResult: DisplayResult | null;
@@ -91,11 +92,17 @@ export function SectionalStrategyAndDraftDisplay({
   clearTimestamp,
 }: SectionalStrategyAndDraftDisplayProps) {
   const [isGeneratingFinalDraft, setIsGeneratingFinalDraft] = useState(false);
-  
+
   // 🆕 新增：自定义提示词状态
-  const [customEssayRewriterRole, setCustomEssayRewriterRole] = useState<string>("");
-  const [customEssayRewriterTask, setCustomEssayRewriterTask] = useState<string>("");
-  const [customEssayRewriterOutputFormat, setCustomEssayRewriterOutputFormat] = useState<string>("");
+  const [customEssayRewriterRole, setCustomEssayRewriterRole] =
+    useState<string>("");
+  const [customEssayRewriterTask, setCustomEssayRewriterTask] =
+    useState<string>("");
+  const [customEssayRewriterOutputFormat, setCustomEssayRewriterOutputFormat] =
+    useState<string>("");
+
+  // 🆕 新增：日志记录 hook
+  const { logFinalDraftResult } = useSectionalLogger();
 
   // 🆕 新增：清空内部状态的函数
   const handleClearInternalState = useCallback(() => {
@@ -106,12 +113,12 @@ export function SectionalStrategyAndDraftDisplay({
       customEssayRewriterOutputFormat: customEssayRewriterOutputFormat.length,
       isGeneratingFinalDraft,
     });
-    
+
     setCustomEssayRewriterRole("");
     setCustomEssayRewriterTask("");
     setCustomEssayRewriterOutputFormat("");
     setIsGeneratingFinalDraft(false);
-    
+
     console.log("[SectionalStrategyAndDraftDisplay] ✅ 内部状态已清空");
   }, []);
 
@@ -126,16 +133,23 @@ export function SectionalStrategyAndDraftDisplay({
 
   // 🆕 新增：监听清空时间戳变化，直接触发清空
   useEffect(() => {
-    console.log("[SectionalStrategyAndDraftDisplay] 🔍 clearTimestamp useEffect 触发:", {
-      clearTimestamp,
-      clearTimestampExists: !!clearTimestamp,
-      clearTimestampValue: clearTimestamp,
-      isGreaterThanZero: clearTimestamp && clearTimestamp > 0,
-    });
-    
+    console.log(
+      "[SectionalStrategyAndDraftDisplay] 🔍 clearTimestamp useEffect 触发:",
+      {
+        clearTimestamp,
+        clearTimestampExists: !!clearTimestamp,
+        clearTimestampValue: clearTimestamp,
+        isGreaterThanZero: clearTimestamp && clearTimestamp > 0,
+      }
+    );
+
     if (clearTimestamp && clearTimestamp > 0) {
-      console.log("[SectionalStrategyAndDraftDisplay] 收到清空时间戳:", clearTimestamp, "，执行清空操作");
-      
+      console.log(
+        "[SectionalStrategyAndDraftDisplay] 收到清空时间戳:",
+        clearTimestamp,
+        "，执行清空操作"
+      );
+
       // 直接在这里执行清空操作，不调用回调函数
       console.log("[SectionalStrategyAndDraftDisplay] 🧹 开始清空内部状态");
       console.log("[SectionalStrategyAndDraftDisplay] 清空前状态:", {
@@ -144,23 +158,31 @@ export function SectionalStrategyAndDraftDisplay({
         customEssayRewriterOutputFormat: customEssayRewriterOutputFormat.length,
         isGeneratingFinalDraft,
       });
-      
+
       setCustomEssayRewriterRole("");
       setCustomEssayRewriterTask("");
       setCustomEssayRewriterOutputFormat("");
       setIsGeneratingFinalDraft(false);
-      
+
       console.log("[SectionalStrategyAndDraftDisplay] ✅ 内部状态已清空");
-      
+
       // 🆕 添加toast通知确认清空操作
       toast({
         title: "第二步内容已清空",
         description: "自定义提示词和状态已重置",
       });
     } else {
-      console.log("[SectionalStrategyAndDraftDisplay] ❌ clearTimestamp 不满足条件，不执行清空");
+      console.log(
+        "[SectionalStrategyAndDraftDisplay] ❌ clearTimestamp 不满足条件，不执行清空"
+      );
     }
-  }, [clearTimestamp, customEssayRewriterRole, customEssayRewriterTask, customEssayRewriterOutputFormat, isGeneratingFinalDraft]);
+  }, [
+    clearTimestamp,
+    customEssayRewriterRole,
+    customEssayRewriterTask,
+    customEssayRewriterOutputFormat,
+    isGeneratingFinalDraft,
+  ]);
 
   // 处理生成最终稿件
   const handleGenerateFinalDraft = useCallback(async () => {
@@ -176,6 +198,9 @@ export function SectionalStrategyAndDraftDisplay({
     setIsGeneratingFinalDraft(true);
     onGeneratingStateChange(true);
 
+    // 🆕 性能监控：记录开始时间
+    const startTime = Date.now();
+
     // 🆕 立即创建空的最终稿件对象，切换到双列布局
     onFinalDraftChange({
       content: "",
@@ -190,12 +215,15 @@ export function SectionalStrategyAndDraftDisplay({
         task: customEssayRewriterTask,
         outputFormat: customEssayRewriterOutputFormat,
       });
-      
-      console.log("传递给第三步API的改写策略内容长度:", strategyResult.content.length);
-      
+
+      console.log(
+        "传递给第三步API的改写策略内容长度:",
+        strategyResult.content.length
+      );
+
       // 🆕 修改：只传递第二步生成的改写策略，不使用第一步的搜索结果
       const response = await apiService.streamEssayRewriteRewriteEssay(
-        strategyResult.content,  // 只传递第二步生成的改写策略
+        strategyResult.content, // 只传递第二步生成的改写策略
         originalFile,
         customEssayRewriterRole,
         customEssayRewriterTask,
@@ -213,36 +241,76 @@ export function SectionalStrategyAndDraftDisplay({
           const { done, value } = await reader.read();
           if (done) {
             // 🆕 当流结束时，确保设置为完成状态
-            onFinalDraftChange({
+            const finalResult = {
               content: accumulatedContent,
               timestamp: new Date().toISOString(),
               steps: [],
               isComplete: true,
-            });
-            console.log("流结束，最终稿件生成完成，内容长度:", accumulatedContent.length);
+            };
+            onFinalDraftChange(finalResult);
+            console.log(
+              "流结束，最终稿件生成完成，内容长度:",
+              accumulatedContent.length
+            );
+
+            // 🆕 记录成功的最终稿件生成结果
+            const duration = Date.now() - startTime;
+            console.log(
+              "[SectionalStrategyAndDraftDisplay] 准备记录最终稿件生成结果到数据库:",
+              {
+                requestData: {
+                  rewriteStrategy: !!strategyResult.content,
+                  originalEssayFile: !!originalFile,
+                  customEssayRewriterRole,
+                  customEssayRewriterTask,
+                  customEssayRewriterOutputFormat,
+                },
+                resultData: !!finalResult,
+                isSuccess: true,
+                duration,
+              }
+            );
+
+            await logFinalDraftResult(
+              {
+                rewriteStrategy: strategyResult.content,
+                originalEssayFile: originalFile,
+                customEssayRewriterRole,
+                customEssayRewriterTask,
+                customEssayRewriterOutputFormat,
+              },
+              finalResult,
+              true,
+              duration
+            );
+
+            console.log(
+              "[SectionalStrategyAndDraftDisplay] 最终稿件生成结果已记录到数据库"
+            );
+
             break;
           }
 
           const chunk = decoder.decode(value, { stream: true });
           buffer += chunk;
 
-          const lines = buffer.split('\n');
+          const lines = buffer.split("\n");
           buffer = lines.pop() || "";
 
           for (const line of lines) {
             let trimmedLine = line.trim();
             if (!trimmedLine) continue;
 
-            if (trimmedLine.startsWith('data: ')) {
+            if (trimmedLine.startsWith("data: ")) {
               trimmedLine = trimmedLine.substring(6);
             }
 
             try {
               const data = JSON.parse(trimmedLine);
-              
+
               if (data.type === "content") {
                 accumulatedContent += data.content || "";
-                
+
                 // 实时更新UI
                 onFinalDraftChange({
                   content: accumulatedContent,
@@ -252,13 +320,53 @@ export function SectionalStrategyAndDraftDisplay({
                 });
               } else if (data.type === "complete") {
                 // 生成完成
-                onFinalDraftChange({
+                const finalResult = {
                   content: accumulatedContent,
                   timestamp: new Date().toISOString(),
                   steps: [],
                   isComplete: true,
-                });
-                console.log("收到完成信号，最终稿件生成完成，内容长度:", accumulatedContent.length);
+                };
+                onFinalDraftChange(finalResult);
+                console.log(
+                  "收到完成信号，最终稿件生成完成，内容长度:",
+                  accumulatedContent.length
+                );
+
+                // 🆕 记录成功的最终稿件生成结果
+                const duration = Date.now() - startTime;
+                console.log(
+                  "[SectionalStrategyAndDraftDisplay] 准备记录最终稿件生成结果到数据库 (complete):",
+                  {
+                    requestData: {
+                      rewriteStrategy: !!strategyResult.content,
+                      originalEssayFile: !!originalFile,
+                      customEssayRewriterRole,
+                      customEssayRewriterTask,
+                      customEssayRewriterOutputFormat,
+                    },
+                    resultData: !!finalResult,
+                    isSuccess: true,
+                    duration,
+                  }
+                );
+
+                await logFinalDraftResult(
+                  {
+                    rewriteStrategy: strategyResult.content,
+                    originalEssayFile: originalFile,
+                    customEssayRewriterRole,
+                    customEssayRewriterTask,
+                    customEssayRewriterOutputFormat,
+                  },
+                  finalResult,
+                  true,
+                  duration
+                );
+
+                console.log(
+                  "[SectionalStrategyAndDraftDisplay] 最终稿件生成结果已记录到数据库 (complete)"
+                );
+
                 break;
               }
             } catch (parseError) {
@@ -281,19 +389,67 @@ export function SectionalStrategyAndDraftDisplay({
       });
     } catch (error) {
       console.error("生成最终稿件失败:", error);
+
+      // 🆕 记录失败的最终稿件生成结果
+      const duration = Date.now() - startTime;
+      console.log(
+        "[SectionalStrategyAndDraftDisplay] 准备记录失败的最终稿件生成结果到数据库:",
+        {
+          requestData: {
+            rewriteStrategy: !!strategyResult.content,
+            originalEssayFile: !!originalFile,
+            customEssayRewriterRole,
+            customEssayRewriterTask,
+            customEssayRewriterOutputFormat,
+          },
+          resultData: null,
+          isSuccess: false,
+          duration,
+          errorMessage: error instanceof Error ? error.message : "未知错误",
+        }
+      );
+
+      await logFinalDraftResult(
+        {
+          rewriteStrategy: strategyResult.content,
+          originalEssayFile: originalFile,
+          customEssayRewriterRole,
+          customEssayRewriterTask,
+          customEssayRewriterOutputFormat,
+        },
+        null,
+        false,
+        duration,
+        error instanceof Error ? error.message : "未知错误"
+      );
+
+      console.log(
+        "[SectionalStrategyAndDraftDisplay] 失败的最终稿件生成结果已记录到数据库"
+      );
+
       toast({
         variant: "destructive",
         title: "生成失败",
         description: error instanceof Error ? error.message : "未知错误",
       });
-      
+
       // 🆕 如果生成失败，清除最终稿件对象，回到单列布局
       onFinalDraftChange(null);
     } finally {
       setIsGeneratingFinalDraft(false);
       onGeneratingStateChange(false);
     }
-  }, [originalFile, strategyResult, strategyContent, onFinalDraftChange, onGeneratingStateChange, customEssayRewriterRole, customEssayRewriterTask, customEssayRewriterOutputFormat]);
+  }, [
+    originalFile,
+    strategyResult,
+    strategyContent,
+    onFinalDraftChange,
+    onGeneratingStateChange,
+    customEssayRewriterRole,
+    customEssayRewriterTask,
+    customEssayRewriterOutputFormat,
+    logFinalDraftResult,
+  ]);
 
   // 如果没有策略结果，显示引导信息
   if (!strategyResult) {
@@ -344,11 +500,15 @@ export function SectionalStrategyAndDraftDisplay({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="essay-rewriter-role">Essay重写角色提示词</Label>
+                    <Label htmlFor="essay-rewriter-role">
+                      Essay重写角色提示词
+                    </Label>
                     <Textarea
                       id="essay-rewriter-role"
                       value={customEssayRewriterRole}
-                      onChange={(e) => setCustomEssayRewriterRole(e.target.value)}
+                      onChange={(e) =>
+                        setCustomEssayRewriterRole(e.target.value)
+                      }
                       className="mt-1 min-h-[60px]"
                       placeholder="例如：你是一位专业的学术写作专家，擅长根据改写策略优化Essay内容..."
                       disabled={isGeneratingFinalDraft}
@@ -356,11 +516,15 @@ export function SectionalStrategyAndDraftDisplay({
                   </div>
 
                   <div>
-                    <Label htmlFor="essay-rewriter-task">Essay重写任务提示词</Label>
+                    <Label htmlFor="essay-rewriter-task">
+                      Essay重写任务提示词
+                    </Label>
                     <Textarea
                       id="essay-rewriter-task"
                       value={customEssayRewriterTask}
-                      onChange={(e) => setCustomEssayRewriterTask(e.target.value)}
+                      onChange={(e) =>
+                        setCustomEssayRewriterTask(e.target.value)
+                      }
                       className="mt-1 min-h-[60px]"
                       placeholder="例如：请根据提供的改写策略，重新构思和重写Essay，确保逻辑清晰、结构合理..."
                       disabled={isGeneratingFinalDraft}
@@ -368,11 +532,15 @@ export function SectionalStrategyAndDraftDisplay({
                   </div>
 
                   <div>
-                    <Label htmlFor="essay-rewriter-format">Essay重写输出格式提示词</Label>
+                    <Label htmlFor="essay-rewriter-format">
+                      Essay重写输出格式提示词
+                    </Label>
                     <Textarea
                       id="essay-rewriter-format"
                       value={customEssayRewriterOutputFormat}
-                      onChange={(e) => setCustomEssayRewriterOutputFormat(e.target.value)}
+                      onChange={(e) =>
+                        setCustomEssayRewriterOutputFormat(e.target.value)
+                      }
                       className="mt-1 min-h-[60px]"
                       placeholder="例如：请按照标准的学术Essay格式输出，包含引言、主体段落和结论部分..."
                       disabled={isGeneratingFinalDraft}
@@ -401,9 +569,9 @@ export function SectionalStrategyAndDraftDisplay({
                           title={
                             !strategyResult.isComplete
                               ? "请等待改写策略生成完成后再生成最终稿件"
-                              : finalDraft?.isComplete 
-                                ? "重新生成最终稿件"
-                                : "生成最终稿件"
+                              : finalDraft?.isComplete
+                              ? "重新生成最终稿件"
+                              : "生成最终稿件"
                           }
                           variant="default"
                           size="sm"
@@ -417,7 +585,9 @@ export function SectionalStrategyAndDraftDisplay({
                           ) : (
                             <>
                               <Send className="h-3 w-3 mr-1" />
-                              {finalDraft?.isComplete ? "重新生成" : "生成最终稿件"}
+                              {finalDraft?.isComplete
+                                ? "重新生成"
+                                : "生成最终稿件"}
                             </>
                           )}
                         </Button>
@@ -445,7 +615,9 @@ export function SectionalStrategyAndDraftDisplay({
               <Card className="mb-6">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Essay重写自定义提示词设置</CardTitle>
+                    <CardTitle className="text-lg">
+                      Essay重写自定义提示词设置
+                    </CardTitle>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -467,11 +639,15 @@ export function SectionalStrategyAndDraftDisplay({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="essay-rewriter-role-single">Essay重写角色提示词</Label>
+                    <Label htmlFor="essay-rewriter-role-single">
+                      Essay重写角色提示词
+                    </Label>
                     <Textarea
                       id="essay-rewriter-role-single"
                       value={customEssayRewriterRole}
-                      onChange={(e) => setCustomEssayRewriterRole(e.target.value)}
+                      onChange={(e) =>
+                        setCustomEssayRewriterRole(e.target.value)
+                      }
                       className="mt-1 min-h-[60px]"
                       placeholder="例如：你是一位专业的学术写作专家，擅长根据改写策略优化Essay内容..."
                       disabled={isGeneratingFinalDraft}
@@ -479,11 +655,15 @@ export function SectionalStrategyAndDraftDisplay({
                   </div>
 
                   <div>
-                    <Label htmlFor="essay-rewriter-task-single">Essay重写任务提示词</Label>
+                    <Label htmlFor="essay-rewriter-task-single">
+                      Essay重写任务提示词
+                    </Label>
                     <Textarea
                       id="essay-rewriter-task-single"
                       value={customEssayRewriterTask}
-                      onChange={(e) => setCustomEssayRewriterTask(e.target.value)}
+                      onChange={(e) =>
+                        setCustomEssayRewriterTask(e.target.value)
+                      }
                       className="mt-1 min-h-[60px]"
                       placeholder="例如：请根据提供的改写策略，重新构思和重写Essay，确保逻辑清晰、结构合理..."
                       disabled={isGeneratingFinalDraft}
@@ -491,11 +671,15 @@ export function SectionalStrategyAndDraftDisplay({
                   </div>
 
                   <div>
-                    <Label htmlFor="essay-rewriter-format-single">Essay重写输出格式提示词</Label>
+                    <Label htmlFor="essay-rewriter-format-single">
+                      Essay重写输出格式提示词
+                    </Label>
                     <Textarea
                       id="essay-rewriter-format-single"
                       value={customEssayRewriterOutputFormat}
-                      onChange={(e) => setCustomEssayRewriterOutputFormat(e.target.value)}
+                      onChange={(e) =>
+                        setCustomEssayRewriterOutputFormat(e.target.value)
+                      }
                       className="mt-1 min-h-[60px]"
                       placeholder="例如：请按照标准的学术Essay格式输出，包含引言、主体段落和结论部分..."
                       disabled={isGeneratingFinalDraft}
@@ -548,4 +732,4 @@ export function SectionalStrategyAndDraftDisplay({
       </div>
     </div>
   );
-} 
+}

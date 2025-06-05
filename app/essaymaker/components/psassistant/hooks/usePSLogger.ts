@@ -34,12 +34,44 @@
 
 "use client";
 
-// import { useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { DisplayResult } from "../../../types";
 
+// =================================================================
+// 🔧 开发模式开关 - 通过注释控制认证
+// =================================================================
+// 注释下面这行 = 关闭认证（本地开发模式）
+// 取消注释 = 开启认证（生产模式）
+const ENABLE_AUTH_CHECK = true;
+// =================================================================
+
 export function usePSLogger() {
-  // const { data: session } = useSession();
-  const session = null; // 临时禁用session功能
+  const { data: session } = useSession();
+
+  // 获取用户信息的通用方法
+  const getUserInfo = () => {
+    if (ENABLE_AUTH_CHECK && session?.user) {
+      return {
+        email: session.user.email,
+        name: session.user.name || "未知",
+        unitName: (session.user as any)?.unitName || "未知",
+      };
+    } else {
+      return {
+        email: "dev@local.test",
+        name: "开发者",
+        unitName: "本地开发",
+      };
+    }
+  };
+
+  // 检查是否可以记录日志
+  const canLog = () => {
+    if (ENABLE_AUTH_CHECK) {
+      return !!session?.user?.email;
+    }
+    return true; // 开发模式总是允许记录
+  };
 
   // 记录报告结果
   const logReportResult = async (
@@ -49,13 +81,19 @@ export function usePSLogger() {
     duration: number,
     errorMessage?: string
   ) => {
-    // 检查用户是否已登录
-    // if (!session?.user?.email) {
-    //   console.log("[PSLogger] 用户未登录，跳过日志记录");
-    //   return;
-    // }
-    console.log("[PSLogger] Session功能已禁用，跳过日志记录");
-    return;
+    // 🔧 认证检查 - 可通过顶部开关控制
+    if (!canLog()) {
+      console.log("[PSLogger] 用户未登录，跳过日志记录");
+      return;
+    }
+
+    const userInfo = getUserInfo();
+    console.log("[PSLogger] 开始记录报告日志:", {
+      isSuccess,
+      duration,
+      userEmail: userInfo.email,
+      mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+    });
 
     // 构建文件名列表
     const fileNames = [];
@@ -96,8 +134,8 @@ export function usePSLogger() {
           isSuccess: isSuccess,
           duration: duration,
           errorMessage: errorMessage || null,
-          name: "未知", // session?.user?.name || "未知",
-          unitName: "未知", // (session?.user as any)?.unitName || "未知",
+          name: userInfo.name,
+          unitName: userInfo.unitName,
         }),
       });
 
@@ -105,7 +143,12 @@ export function usePSLogger() {
         const result = await response.json();
         console.log("[PSLogger] 报告日志记录成功:", result.resultId);
       } else {
-        console.error("[PSLogger] 报告日志记录失败:", response.status);
+        const errorText = await response.text();
+        console.error(
+          "[PSLogger] 报告日志记录失败:",
+          response.status,
+          errorText
+        );
       }
     } catch (error) {
       console.error("[PSLogger] 报告日志记录异常:", error);
@@ -120,13 +163,19 @@ export function usePSLogger() {
     duration: number,
     errorMessage?: string
   ) => {
-    // 检查用户是否已登录
-    // if (!session?.user?.email) {
-    //   console.log("[PSLogger] 用户未登录，跳过日志记录");
-    //   return;
-    // }
-    console.log("[PSLogger] Session功能已禁用，跳过日志记录");
-    return;
+    // 🔧 认证检查 - 可通过顶部开关控制
+    if (!canLog()) {
+      console.log("[PSLogger] 用户未登录，跳过日志记录");
+      return;
+    }
+
+    const userInfo = getUserInfo();
+    console.log("[PSLogger] 开始记录初稿日志:", {
+      isSuccess,
+      duration,
+      userEmail: userInfo.email,
+      mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+    });
 
     // 对于初稿生成，如果有purifiedContent说明已处理文件内容
     const fileContent =
@@ -164,8 +213,8 @@ export function usePSLogger() {
           isSuccess: isSuccess,
           duration: duration,
           errorMessage: errorMessage || null,
-          name: "未知", // session?.user?.name || "未知",
-          unitName: "未知", // (session?.user as any)?.unitName || "未知",
+          name: userInfo.name,
+          unitName: userInfo.unitName,
         }),
       });
 
@@ -173,7 +222,12 @@ export function usePSLogger() {
         const result = await response.json();
         console.log("[PSLogger] 初稿日志记录成功:", result.resultId);
       } else {
-        console.error("[PSLogger] 初稿日志记录失败:", response.status);
+        const errorText = await response.text();
+        console.error(
+          "[PSLogger] 初稿日志记录失败:",
+          response.status,
+          errorText
+        );
       }
     } catch (error) {
       console.error("[PSLogger] 初稿日志记录异常:", error);
@@ -189,13 +243,19 @@ export function usePSLogger() {
     duration: number,
     errorMessage?: string
   ) => {
-    // 检查用户是否已登录
-    // if (!session?.user?.email) {
-    //   console.log("[PSLogger] 用户未登录，跳过日志记录");
-    //   return;
-    // }
-    console.log("[PSLogger] Session功能已禁用，跳过日志记录");
-    return;
+    // 🔧 认证检查 - 可通过顶部开关控制
+    if (!canLog()) {
+      console.log("[PSLogger] 用户未登录，跳过日志记录");
+      return;
+    }
+
+    const userInfo = getUserInfo();
+    console.log("[PSLogger] 开始记录完整日志:", {
+      isSuccess,
+      duration,
+      userEmail: userInfo.email,
+      mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+    });
 
     // 构建文件名列表（可能包含多种来源的文件信息）
     const fileNames = [];
@@ -259,8 +319,8 @@ export function usePSLogger() {
           isSuccess: isSuccess,
           duration: duration,
           errorMessage: errorMessage || null,
-          name: "未知", // session?.user?.name || "未知",
-          unitName: "未知", // (session?.user as any)?.unitName || "未知",
+          name: userInfo.name,
+          unitName: userInfo.unitName,
         }),
       });
 
@@ -268,7 +328,12 @@ export function usePSLogger() {
         const result = await response.json();
         console.log("[PSLogger] 完整日志记录成功:", result.resultId);
       } else {
-        console.error("[PSLogger] 完整日志记录失败:", response.status);
+        const errorText = await response.text();
+        console.error(
+          "[PSLogger] 完整日志记录失败:",
+          response.status,
+          errorText
+        );
       }
     } catch (error) {
       console.error("[PSLogger] 完整日志记录异常:", error);

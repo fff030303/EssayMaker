@@ -1,42 +1,48 @@
 /**
  * SectionalAssistantMain 组件
- * 
+ *
  * 功能：分稿助理的主界面组件，协调分稿生成的完整流程
- * 
+ *
  * 核心特性：
  * 1. 流程管理：
  *    - 分稿生成流程
  *    - 步骤状态跟踪和切换
  *    - 进度指示和导航
  *    - 流程完成度检测
- * 
+ *
  * 2. 组件协调：
  *    - 文件上传组件集成
  *    - 结果展示组件集成
  *    - 状态在组件间传递
  *    - 统一的错误处理
- * 
+ *
  * 3. 状态管理：
  *    - 当前步骤状态
  *    - 结果数据管理
  *    - 加载状态控制
  *    - 用户交互状态
- * 
+ *
  * 4. 用户体验：
  *    - 平滑的步骤切换
  *    - 清晰的操作指引
  *    - 实时反馈机制
  *    - 错误提示和处理
- * 
+ *
  * 5. 响应式设计：
  *    - 移动端适配
  *    - 布局自适应
  *    - 内容溢出处理
- * 
+ *
+ * 6. 数据存储：
+ *    - 搜索分析结果记录
+ *    - 策略生成结果记录
+ *    - 最终稿件结果记录
+ *    - 完整流程结果记录
+ *
  * 流程步骤：
  * 1. 文件上传：上传初稿文件和支持文件
  * 2. 结果展示：显示分稿策略和建议
- * 
+ *
  * @author EssayMaker Team
  * @version 1.0.0
  */
@@ -49,6 +55,7 @@ import { SectionalFileUploadForm } from "./SectionalFileUploadForm";
 import { FullScreenLoadingAnimation } from "../LoadingAnimation";
 import { ResultSection } from "../ResultSection";
 import { parseStepContent } from "../../utils/helpers";
+import { useSectionalLogger } from "./hooks/useSectionalLogger";
 
 interface SectionalAssistantMainProps {
   onStepChange?: (step: number) => void;
@@ -77,10 +84,18 @@ export function SectionalAssistantMain({
   onDataSave,
   onClearAll,
 }: SectionalAssistantMainProps) {
+  // 🆕 新增：数据存储Hook
+  const {
+    logSearchResult,
+    logStrategyResult,
+    logFinalDraftResult,
+    logCompleteResult,
+  } = useSectionalLogger();
+
   // 本地状态管理
   const [localResult, setLocalResult] = useState<DisplayResult | null>(null);
   const [expandedSteps, setExpandedSteps] = useState<string[]>([]);
-  
+
   // 新增：存储原始文件和搜索结果数据，用于改写策略生成
   const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
   const [searchResult, setSearchResult] = useState<string>("");
@@ -98,7 +113,7 @@ export function SectionalAssistantMain({
     } else {
       setLocalResult(newResult);
     }
-    
+
     // 🆕 新增：当结果首次出现时也触发滚动
     if (newResult && !currentResult) {
       console.log("检测到查询结果首次出现，触发滚动");
@@ -112,7 +127,7 @@ export function SectionalAssistantMain({
   const handleDataUpdate = (file: File | null, searchData: string) => {
     setOriginalEssayFile(file);
     setSearchResult(searchData);
-    
+
     // 🆕 保存数据到父组件
     if (onDataSave) {
       onDataSave(file, searchData);
@@ -124,17 +139,18 @@ export function SectionalAssistantMain({
     if (scrollTargetRef.current) {
       // 获取目标元素相对于页面顶部的位置
       const targetElement = scrollTargetRef.current;
-      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-      
+      const targetPosition =
+        targetElement.getBoundingClientRect().top + window.pageYOffset;
+
       // 向上偏移一些像素，确保目标区域完全可见
       const scrollPosition = Math.max(0, targetPosition - 100);
-      
+
       // 执行页面滚动
       window.scrollTo({
         top: scrollPosition,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
-      
+
       console.log("自动滚动到查询结果区域，目标位置:", scrollPosition);
     } else {
       console.log("滚动目标引用不存在");
@@ -144,17 +160,17 @@ export function SectionalAssistantMain({
   // 🆕 新增：处理改写策略生成
   const handleStrategyGenerate = (strategyResult: DisplayResult) => {
     console.log("收到改写策略结果:", strategyResult);
-    
+
     // 通知父组件策略生成状态
     if (onStrategyGeneratingChange) {
       onStrategyGeneratingChange(!strategyResult.isComplete);
     }
-    
+
     // 传递策略结果给父组件，但不再自动跳转（因为在点击按钮时已经跳转）
     if (onStrategyGenerate) {
       onStrategyGenerate(strategyResult);
     }
-    
+
     // 如果生成完成，记录日志
     if (strategyResult.isComplete) {
       console.log("改写策略生成完成，内容长度:", strategyResult.content.length);
@@ -172,18 +188,26 @@ export function SectionalAssistantMain({
 
     // 🆕 优先从步骤内容映射中获取具体内容
     let stepContent = "";
-    
+
     // 使用类型断言来访问_stepContents属性
-    const resultWithStepContents = currentResult as DisplayResult & { _stepContents?: Record<string, string> };
-    
-    if (resultWithStepContents?._stepContents && resultWithStepContents._stepContents[step]) {
+    const resultWithStepContents = currentResult as DisplayResult & {
+      _stepContents?: Record<string, string>;
+    };
+
+    if (
+      resultWithStepContents?._stepContents &&
+      resultWithStepContents._stepContents[step]
+    ) {
       // 如果有保存的步骤内容，直接使用
       stepContent = resultWithStepContents._stepContents[step];
-      console.log(`从步骤内容映射中获取内容: ${step}`, stepContent.substring(0, 100) + "...");
+      console.log(
+        `从步骤内容映射中获取内容: ${step}`,
+        stepContent.substring(0, 100) + "..."
+      );
     } else {
       // 如果没有步骤内容映射，使用原有的解析逻辑
       console.log(`使用原有解析逻辑: ${step}`);
-      
+
       // 解析步骤内容
       const stepData = parseStepContent(step);
 
@@ -206,7 +230,9 @@ export function SectionalAssistantMain({
             // 如果两半内容基本相同（超过80%相似），则只返回一半
             if (
               firstHalf.length > 100 &&
-              secondHalf.includes(firstHalf.substring(0, firstHalf.length * 0.8))
+              secondHalf.includes(
+                firstHalf.substring(0, firstHalf.length * 0.8)
+              )
             ) {
               return firstHalf;
             }
@@ -231,7 +257,9 @@ export function SectionalAssistantMain({
             // 如果两半内容基本相同，则只返回一半
             if (
               firstHalf.length > 100 &&
-              secondHalf.includes(firstHalf.substring(0, firstHalf.length * 0.8))
+              secondHalf.includes(
+                firstHalf.substring(0, firstHalf.length * 0.8)
+              )
             ) {
               return `## ${stepData.title}\n\n${firstHalf}`;
             }
@@ -261,9 +289,7 @@ export function SectionalAssistantMain({
     <>
       {/* 分稿助理全屏加载动画 - 在第一步界面显示 */}
       {isSectionalGenerating && (
-        <FullScreenLoadingAnimation 
-          text="正在生成分稿策略，请勿切换页面..." 
-        />
+        <FullScreenLoadingAnimation text="正在生成分稿策略，请勿切换页面..." />
       )}
 
       <div className="w-full space-y-6">
@@ -301,4 +327,4 @@ export function SectionalAssistantMain({
       </div>
     </>
   );
-} 
+}
