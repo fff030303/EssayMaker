@@ -108,7 +108,7 @@ export function ResultSection({
     <div ref={resultRef} className="w-full mt-4 mb-0">
       {/* 🆕 查询过程收起时的顶部控制条 */}
       {!isProcessExpanded && (
-        <div className="w-full mb-4">
+        <div className="w-full mb-4 px-5">
           <Card className="shadow-sm">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
