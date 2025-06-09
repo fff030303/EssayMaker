@@ -674,8 +674,8 @@ export function AdvancedInputArea({
                 onClick={() => {
                   const newRequirements = requirements
                     ? requirements +
-                      "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n"
-                    : "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述\n";
+                      "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述。"
+                    : "弃用个人陈述素材整理报告中XX部分素材，直接搜索相关信息（如时事新闻）进行补充，注意进行深入分析和阐述。";
                   setRequirements(newRequirements);
                 }}
               >
@@ -687,8 +687,8 @@ export function AdvancedInputArea({
                 onClick={() => {
                   const newRequirements = requirements
                     ? requirements +
-                      "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n"
-                    : "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节\n";
+                      "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节。"
+                    : "要求在第二段学术基础展示中添加上传成绩单中的XX课程，深入展开与申请方向相关的阐述；补充科研/实习/职业规划经历的细节。";
                   setRequirements(newRequirements);
                 }}
               >
@@ -699,8 +699,8 @@ export function AdvancedInputArea({
                 className="cursor-pointer hover:bg-muted px-3 py-1"
                 onClick={() => {
                   const newRequirements = requirements
-                    ? requirements + "禁止添加素材表中不存在的数据/操作步骤\n"
-                    : "禁止添加素材表中不存在的数据/操作步骤\n";
+                    ? requirements + "禁止添加素材表中不存在的数据/操作步骤。"
+                    : "禁止添加素材表中不存在的数据/操作步骤。";
                   setRequirements(newRequirements);
                 }}
               >
@@ -712,8 +712,8 @@ export function AdvancedInputArea({
                 onClick={() => {
                   const newRequirements = requirements
                     ? requirements +
-                      "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n"
-                    : "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材\n";
+                      "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材。"
+                    : "请选用XX经历作为第三段研究经历深化/第四段实习经历深化的素材。";
                   setRequirements(newRequirements);
                 }}
               >

@@ -628,7 +628,7 @@ export function ResultDisplay({
 
       toast({
         title: "改写策略生成完成",
-        description: "已成功生成Essay改写策略",
+        description: "已成功生成个人陈述改写策略",
       });
 
     } catch (error) {
@@ -645,7 +645,7 @@ export function ResultDisplay({
 
   // 使用Shadcn UI原生Card组件
   return (
-    <Card className="shadow-lg h-[calc(100%-3px)] flex flex-col">
+    <Card className="shadow-lg h-full flex flex-col">
       <CardHeader className="flex flex-row items-center gap-3 pb-4 pt-5 px-5 flex-shrink-0">
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
           <FileText className="h-5 w-5 text-blue-500" />
@@ -697,7 +697,7 @@ export function ResultDisplay({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowCustomPrompts(!showCustomPrompts)}
-                className="text-xs"
+                className="text-xs hidden"
               >
                 {showCustomPrompts ? "隐藏" : "显示"}提示词设置
               </Button>
@@ -779,7 +779,7 @@ export function ResultDisplay({
         </div>
       )}
 
-      <CardContent className="pt-6 px-6 pb-6 overflow-y-auto flex-grow">
+      <CardContent className="pt-6 px-6 pb-6 overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         <style jsx global>
           {htmlStyles}
         </style>

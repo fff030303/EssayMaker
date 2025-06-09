@@ -319,7 +319,7 @@ export function SectionalStrategyAndDraftDisplay({
             // 有最终稿件时的双列布局
             <div className="flex flex-col">
               {/* 🆕 新增：自定义提示词输入区域 - 在双列布局上方 */}
-              <Card className="mb-6">
+              <Card className="mb-6 hidden">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">生成的个人陈述</CardTitle>
@@ -442,7 +442,7 @@ export function SectionalStrategyAndDraftDisplay({
             // 没有最终稿件时的单列布局
             <div className="w-full max-w-[1300px] mx-auto">
               {/* 🆕 新增：自定义提示词输入区域 */}
-              <Card className="mb-6">
+              <Card className="mb-6 hidden">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">Essay重写自定义提示词设置</CardTitle>

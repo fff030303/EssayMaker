@@ -548,8 +548,8 @@ export function SectionalFileUploadForm({
           }
 
           toast({
-            title: "生成成功",
-            description: "分稿策略已生成完成",
+            title: "查询成功",
+            description: "查询结果已生成完成",
           });
 
         } catch (streamError) {
@@ -593,30 +593,105 @@ export function SectionalFileUploadForm({
             <span className="ml-1 text-xs text-red-500">(必填)</span>
             <Textarea
               id="user-input"
-              placeholder="请描述您的查询需求，例如：请提供南加州大学(USC) 经济学硕士课程的详细信息，包括核心课程、选修课程、学分要求、课程大纲和评估方式。"
+              placeholder="请描述您的查询需求，例如：请查询University College London Statistics MSc"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               className="min-h-[120px]"
               disabled={isLoading}
             />
-            <div className="text-sm text-gray-500 text-right">
-              {userInput.length} 字符
-            </div>
           </div>
 
           {/* 🆕 新增：个性化需求定制输入 */}
           <div className="space-y-2">
             <Label htmlFor="personalization-input">个性化需求定制（选填）</Label>
-            <Textarea
-              id="personalization-input"
-              placeholder="请描述您的个性化需求，例如：重点关注实践应用、突出跨学科内容、强调就业前景等..."
-              value={personalizationRequirements}
-              onChange={(e) => setPersonalizationRequirements(e.target.value)}
-              className="min-h-[100px]"
-              disabled={isLoading}
-            />
-            <div className="text-sm text-gray-500 text-right">
-              {personalizationRequirements.length} 字符
+            
+            {/* 快捷标签按钮区域 */}
+            <div className="flex flex-wrap gap-2 mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer hover:bg-muted px-3 py-1 text-xs h-8"
+                onClick={() => {
+                  const newRequirements = personalizationRequirements
+                    ? personalizationRequirements + "禁止在经历中添加任何实验数据和实验步骤。"
+                    : "禁止在经历中添加任何实验数据和实验步骤。";
+                  setPersonalizationRequirements(newRequirements);
+                }}
+                disabled={isLoading}
+              >
+                内容真实性
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer hover:bg-muted px-3 py-1 text-xs h-8"
+                onClick={() => {
+                  const newRequirements = personalizationRequirements
+                    ? personalizationRequirements + "根据经历的场景（S）和目标（T），合理添加细节（A）。"
+                    : "根据经历的场景（S）和目标（T），合理添加细节（A）。";
+                  setPersonalizationRequirements(newRequirements);
+                }}
+                disabled={isLoading}
+              >
+                增加经历细节
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer hover:bg-muted px-3 py-1 text-xs h-8"
+                onClick={() => {
+                  const newRequirements = personalizationRequirements
+                    ? personalizationRequirements + "弃用申请人提供的动机段落全部素材，搜索一个时事新闻作为引入点，并深入叙述从而自然引出申请动机。"
+                    : "弃用申请人提供的动机段落全部素材，搜索一个时事新闻作为引入点，并深入叙述从而自然引出申请动机。";
+                  setPersonalizationRequirements(newRequirements);
+                }}
+                disabled={isLoading}
+              >
+                替换素材
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer hover:bg-muted px-3 py-1 text-xs h-8"
+                onClick={() => {
+                  const newRequirements = personalizationRequirements
+                    ? personalizationRequirements + "请选用XX作为动机段落/科研经历段落/实习经历段落/课外活动段落的素材，并深入叙述，确保行文流畅，有逻辑。"
+                    : "请选用XX作为动机段落/科研经历段落/实习经历段落/课外活动段落的素材，并深入叙述，确保行文流畅，有逻辑。";
+                  setPersonalizationRequirements(newRequirements);
+                }}
+                disabled={isLoading}
+              >
+                选用素材
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer hover:bg-muted px-3 py-1 text-xs h-8"
+                onClick={() => {
+                  const newRequirements = personalizationRequirements
+                    ? personalizationRequirements + "请在教育经历段落选用XX课程，并深入叙述申请人在该课程中学习的专业知识，积累的专业技能/请在Why School段落选用XX课程，并深入叙述申请人能在该课程中学习到的专业知识，积累的专业技能。"
+                    : "请在教育经历段落选用XX课程，并深入叙述申请人在该课程中学习的专业知识，积累的专业技能/请在Why School段落选用XX课程，并深入叙述申请人能在该课程中学习到的专业知识，积累的专业技能。";
+                  setPersonalizationRequirements(newRequirements);
+                }}
+                disabled={isLoading}
+              >
+                选定课程
+              </Button>
+            </div>
+            
+            <div className="relative">
+              <Textarea
+                id="personalization-input"
+                placeholder="例如：重点关注实践应用、突出跨学科内容、强调就业前景等，或点击上方标签快速添加模板..."
+                value={personalizationRequirements}
+                onChange={(e) => setPersonalizationRequirements(e.target.value)}
+                className="min-h-[100px] text-sm placeholder:text-gray-400 w-full max-h-[120px] overflow-y-auto resize-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+                disabled={isLoading}
+              />
             </div>
           </div>
 
@@ -775,7 +850,7 @@ export function SectionalFileUploadForm({
           </div>
 
           {/* 自定义提示词输入框 */}
-          <div className="space-y-4 mt-4">
+          <div className="space-y-4 mt-4 hidden">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-700">自定义提示词设置（可选）</h3>
               <Button
