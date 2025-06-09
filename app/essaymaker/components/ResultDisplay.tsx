@@ -461,6 +461,8 @@ interface ResultDisplayProps {
   searchResult?: string;
   // 新增：步骤跳转回调
   onStepChange?: (step: number) => void;
+  // 🆕 新增：个性化需求参数
+  personalizationRequirements?: string;
 }
 
 export function ResultDisplay({ 
@@ -469,7 +471,8 @@ export function ResultDisplay({
   onGenerateStrategy,
   originalEssayFile,
   searchResult,
-  onStepChange
+  onStepChange,
+  personalizationRequirements
 }: ResultDisplayProps) {
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
   const { toast } = useToast();
@@ -533,14 +536,15 @@ export function ResultDisplay({
         outputFormat: customStrategyGeneratorOutputFormat,
       });
       
-      // 🆕 修改：传递自定义提示词参数
+      // 🆕 修改：传递自定义提示词参数和个性化需求
       const streamResponse = await apiService.streamEssayRewriteGenerateStrategy(
         searchResult,
         originalEssayFile,
         result.content || "", // 使用当前分析结果作为analysisResult
         customStrategyGeneratorRole,
         customStrategyGeneratorTask,
-        customStrategyGeneratorOutputFormat
+        customStrategyGeneratorOutputFormat,
+        personalizationRequirements || "" // 🆕 新增：传递个性化需求参数
       );
 
       if (!streamResponse) {

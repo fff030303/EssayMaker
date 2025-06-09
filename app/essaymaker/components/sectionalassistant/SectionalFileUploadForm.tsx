@@ -50,7 +50,7 @@ import { apiService } from "@/lib/api";
 interface SectionalFileUploadFormProps {
   onStepChange?: (step: number) => void;
   setResult?: (result: DisplayResult | null) => void;
-  onDataUpdate?: (file: File | null, searchData: string) => void;
+  onDataUpdate?: (file: File | null, searchData: string, personalizationRequirements?: string) => void;
   onScrollToResult?: () => void;
   onClearAll?: () => void;
 }
@@ -66,6 +66,9 @@ export function SectionalFileUploadForm({
   const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 🆕 新增：个性化需求定制状态
+  const [personalizationRequirements, setPersonalizationRequirements] = useState("");
   
   // 🆕 新增：自定义提示词状态
   const [customWebSearcherRole, setCustomWebSearcherRole] = useState<string>("");
@@ -311,6 +314,18 @@ export function SectionalFileUploadForm({
       return;
     }
 
+    // 🆕 新增：显示将要发送的所有参数，用于调试
+    console.log("=== 准备发送的所有参数 ===");
+    console.log("用户输入:", userInput);
+    console.log("支持文件数量:", supportFiles.length);
+    console.log("个性化需求:", personalizationRequirements);
+    console.log("个性化需求长度:", personalizationRequirements.length);
+    console.log("个性化需求是否有值:", !!personalizationRequirements.trim());
+    console.log("自定义网络搜索角色:", customWebSearcherRole);
+    console.log("自定义网络搜索任务:", customWebSearcherTask);
+    console.log("自定义网络搜索输出格式:", customWebSearcherOutputFormat);
+    console.log("========================");
+
     setIsLoading(true);
 
     // 🆕 新增：开始生成时立即滚动到查询界面
@@ -333,6 +348,13 @@ export function SectionalFileUploadForm({
         outputFormat: customWebSearcherOutputFormat,
       });
       
+      // 🆕 新增：打印个性化需求参数用于调试
+      console.log("个性化需求参数:", {
+        personalizationRequirements: personalizationRequirements,
+        length: personalizationRequirements.length,
+        hasValue: !!personalizationRequirements.trim()
+      });
+      
       // 🆕 修改：直接调用第一步API，传递自定义提示词
       const response = await apiService.streamEssayRewriteSearchAndAnalyze(
         userInput,
@@ -340,6 +362,7 @@ export function SectionalFileUploadForm({
         customWebSearcherRole,
         customWebSearcherTask,
         customWebSearcherOutputFormat
+        // 🆕 注释：个性化需求参数将在第二步传递，这里不需要
       );
 
       console.log("分稿助理API响应:", response);
@@ -453,7 +476,7 @@ export function SectionalFileUploadForm({
 
                   // 传递数据给父组件
                   if (onDataUpdate) {
-                    onDataUpdate(originalEssayFile, currentStepContent);
+                    onDataUpdate(originalEssayFile, currentStepContent, personalizationRequirements);
                   }
 
                 } else if (data.type === "complete") {
@@ -478,7 +501,7 @@ export function SectionalFileUploadForm({
                   }
 
                   if (onDataUpdate) {
-                    onDataUpdate(originalEssayFile, currentStepContent);
+                    onDataUpdate(originalEssayFile, currentStepContent, personalizationRequirements);
                   }
 
                   console.log("流式处理完成，最终步骤:", accumulatedSteps);
@@ -578,6 +601,22 @@ export function SectionalFileUploadForm({
             />
             <div className="text-sm text-gray-500 text-right">
               {userInput.length} 字符
+            </div>
+          </div>
+
+          {/* 🆕 新增：个性化需求定制输入 */}
+          <div className="space-y-2">
+            <Label htmlFor="personalization-input">个性化需求定制（选填）</Label>
+            <Textarea
+              id="personalization-input"
+              placeholder="请描述您的个性化需求，例如：重点关注实践应用、突出跨学科内容、强调就业前景等..."
+              value={personalizationRequirements}
+              onChange={(e) => setPersonalizationRequirements(e.target.value)}
+              className="min-h-[100px]"
+              disabled={isLoading}
+            />
+            <div className="text-sm text-gray-500 text-right">
+              {personalizationRequirements.length} 字符
             </div>
           </div>
 
@@ -831,6 +870,7 @@ export function SectionalFileUploadForm({
                 setUserInput("");
                 setOriginalEssayFile(null);
                 setSupportFiles([]);
+                setPersonalizationRequirements("");
                 setCustomWebSearcherRole("");
                 setCustomWebSearcherTask("");
                 setCustomWebSearcherOutputFormat("");

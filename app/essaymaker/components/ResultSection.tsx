@@ -62,6 +62,7 @@ interface ResultSectionProps {
   searchResult?: string;
   onGenerateStrategy?: (strategyResult: DisplayResult) => void;
   onStepChange?: (step: number) => void;
+  personalizationRequirements?: string; // 🆕 新增：个性化需求参数
 }
 
 export function ResultSection({
@@ -74,6 +75,7 @@ export function ResultSection({
   searchResult,
   onGenerateStrategy,
   onStepChange,
+  personalizationRequirements,
 }: ResultSectionProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -125,6 +127,7 @@ export function ResultSection({
             searchResult={searchResult}
             onGenerateStrategy={onGenerateStrategy}
             onStepChange={onStepChange}
+            personalizationRequirements={personalizationRequirements}
           />
         </div>
       </div>

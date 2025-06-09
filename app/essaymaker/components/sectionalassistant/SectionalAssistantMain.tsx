@@ -84,6 +84,9 @@ export function SectionalAssistantMain({
   // 新增：存储原始文件和搜索结果数据，用于改写策略生成
   const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
   const [searchResult, setSearchResult] = useState<string>("");
+  
+  // 🆕 新增：存储个性化需求
+  const [personalizationRequirements, setPersonalizationRequirements] = useState<string>("");
 
   // 🆕 新增：创建滚动目标的引用
   const scrollTargetRef = useRef<HTMLDivElement>(null);
@@ -109,9 +112,14 @@ export function SectionalAssistantMain({
   };
 
   // 新增：处理文件和搜索结果数据传递
-  const handleDataUpdate = (file: File | null, searchData: string) => {
+  const handleDataUpdate = (file: File | null, searchData: string, personalizationRequirements?: string) => {
     setOriginalEssayFile(file);
     setSearchResult(searchData);
+    
+    // 🆕 保存个性化需求到状态
+    if (personalizationRequirements) {
+      setPersonalizationRequirements(personalizationRequirements);
+    }
     
     // 🆕 保存数据到父组件
     if (onDataSave) {
@@ -290,6 +298,7 @@ export function SectionalAssistantMain({
               searchResult={searchResult}
               onGenerateStrategy={handleStrategyGenerate}
               onStepChange={onStepChange}
+              personalizationRequirements={personalizationRequirements}
             />
           ) : (
             /* 占位区域，确保滚动目标始终存在 */

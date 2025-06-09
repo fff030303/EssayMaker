@@ -909,7 +909,7 @@ export const apiService = {
         url: `${apiUrl}/api/ps-final-draft/search-and-analyze`,
         userInputLength: userInput.length,
         supportFilesCount: supportFiles.length,
-        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask || customWebSearcherOutputFormat),
+        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask || customWebSearcherOutputFormat)
       });
 
       // 创建FormData对象
@@ -985,7 +985,8 @@ export const apiService = {
     analysisResult: string = "",
     customStrategyGeneratorRole: string = "",
     customStrategyGeneratorTask: string = "",
-    customStrategyGeneratorOutputFormat: string = ""
+    customStrategyGeneratorOutputFormat: string = "",
+    personalizationRequirements: string = ""
   ) {
     try {
       const apiKey = getApiKey();
@@ -996,7 +997,9 @@ export const apiService = {
         searchResultLength: searchResult.length,
         originalEssayFile: originalEssayFile.name,
         analysisResultLength: analysisResult.length,
-        hasCustomPrompts: !!(customStrategyGeneratorRole || customStrategyGeneratorTask || customStrategyGeneratorOutputFormat)
+        hasCustomPrompts: !!(customStrategyGeneratorRole || customStrategyGeneratorTask || customStrategyGeneratorOutputFormat),
+        personalizationRequirements: personalizationRequirements,
+        personalizationRequirementsLength: personalizationRequirements.length,
       });
 
       // 创建FormData对象
@@ -1013,6 +1016,9 @@ export const apiService = {
       formData.append("custom_strategy_generator_role", customStrategyGeneratorRole);
       formData.append("custom_strategy_generator_task", customStrategyGeneratorTask);
       formData.append("custom_strategy_generator_output_format", customStrategyGeneratorOutputFormat);
+
+      // 🆕 新增：添加个性化需求参数
+      formData.append("personalization_requirements", personalizationRequirements);
 
       // 打印FormData内容用于调试
       console.log("Essay重写策略生成FormData内容:");
