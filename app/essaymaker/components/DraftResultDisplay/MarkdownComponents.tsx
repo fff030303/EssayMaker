@@ -73,6 +73,19 @@ export const markdownComponents = {
     <h6 className="text-sm font-bold mt-3 mb-2 text-gray-700">{children}</h6>
   ),
   p: ({ children }: { children: React.ReactNode }) => {
+    // 🆕 特殊处理：检查是否是经历标题
+    const childText = React.Children.toArray(children).join('');
+    const isExperienceTitle = /^经历[一二三四五六七八九十]：/.test(childText);
+    
+    if (isExperienceTitle) {
+      // 经历标题使用特殊样式，确保不缩进
+      return (
+        <p className="mb-3 mt-4 leading-relaxed text-gray-700 font-medium" style={{ marginLeft: 0, paddingLeft: 0 }}>
+          {children}
+        </p>
+      );
+    }
+    
     return <p className="mb-4 leading-relaxed text-gray-700">{children}</p>;
   },
   br: () => <br className="my-1" />,

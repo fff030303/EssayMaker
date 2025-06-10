@@ -87,6 +87,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -97,7 +98,6 @@ import { scrollbarStyles } from "./styles";
 import {
   detectContentType,
   extractMarkdownFromHtml,
-  processMarkdownLineBreaks,
   sanitizeHtml,
   unwrapMarkdownCodeBlock,
   cleanMarkdownToPlainText,
@@ -330,6 +330,14 @@ export function DraftResultDisplay({
     const unwrappedContent = unwrapMarkdownCodeBlock(segment.content);
     const contentType = detectContentType(unwrappedContent);
 
+    console.log(`渲染段落 ${index}:`, {
+      contentType,
+      原始内容长度: segment.content.length,
+      解包后长度: unwrappedContent.length,
+      原始内容预览: segment.content.substring(0, 200) + "...",
+      解包后预览: unwrappedContent.substring(0, 200) + "...",
+    });
+
     if (contentType === "html") {
       return (
         <div
@@ -342,15 +350,72 @@ export function DraftResultDisplay({
       );
     } else {
       const extractedContent = extractMarkdownFromHtml(unwrappedContent);
-      const markdownContent = processMarkdownLineBreaks(extractedContent);
+      // 🆕 强制预处理：确保经历标题不被当作列表项
+      const fixedContent = extractedContent
+        // 在每个经历标题前添加足够的空行来打断列表结构
+        .replace(/(\*\*经历[一二三四五六七八九十]：[^*]+\*\*)/g, '\n\n\n$1')
+        // 移除多余的空行
+        .replace(/\n{4,}/g, '\n\n\n')
+        .trim();
+
+      console.log('内容修复处理:', {
+        原始长度: extractedContent.length,
+        修复后长度: fixedContent.length,
+        经历标题数量: (fixedContent.match(/\*\*经历[一二三四五六七八九十]：/g) || []).length,
+        修复前SEA行: extractedContent.split('\n').find(line => line.includes('SEA')) || '未找到',
+        修复后SEA行: fixedContent.split('\n').find(line => line.includes('SEA')) || '未找到'
+      });
       
       return (
-        <div key={index} className="markdown-segment mb-4">
+        <div key={index} className="markdown-segment mb-4" style={{ 
+          // 🆕 强制重置所有可能影响缩进的样式
+          paddingLeft: 0, 
+          marginLeft: 0,
+          textIndent: 0 
+        }}>
+          <style jsx>{`
+            .markdown-segment p {
+              margin-left: 0 !important;
+              padding-left: 0 !important;
+              text-indent: 0 !important;
+            }
+            .markdown-segment strong {
+              margin-left: 0 !important;
+              padding-left: 0 !important;
+            }
+            .markdown-segment ul {
+              margin-bottom: 2rem !important;
+            }
+          `}</style>
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents as any}
+            remarkPlugins={[remarkGfm, remarkBreaks]}
+            components={{
+              ...markdownComponents,
+              p: ({ children }: { children: React.ReactNode }) => {
+                const childText = React.Children.toArray(children).join('');
+                
+                // 检查是否是经历标题
+                const isExperienceTitle = /^经历[一二三四五六七八九十]：/.test(childText);
+                
+                if (isExperienceTitle) {
+                  // 经历标题使用特殊样式，确保不缩进
+                  return (
+                    <p className="mb-3 mt-6 leading-relaxed text-gray-700 font-medium" style={{ 
+                      marginLeft: 0, 
+                      paddingLeft: 0,
+                      textIndent: 0,
+                      clear: 'both' // 清除浮动
+                    }}>
+                      {children}
+                    </p>
+                  );
+                }
+                
+                return <p className="mb-4 leading-relaxed text-gray-700">{children}</p>;
+              }
+            } as any}
           >
-            {markdownContent}
+            {fixedContent}
           </ReactMarkdown>
         </div>
       );
@@ -905,13 +970,13 @@ export function DraftResultDisplay({
                   } else {
                     // 渲染Markdown内容
                     const extractedContent = extractMarkdownFromHtml(unwrappedContent);
-                    const markdownContent = processMarkdownLineBreaks(extractedContent);
+                    // 🆕 直接使用原始内容，不进行换行处理
                     return (
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={[remarkGfm, remarkBreaks]}
                         components={markdownComponents as any}
                       >
-                        {markdownContent}
+                        {extractedContent}
                       </ReactMarkdown>
                     );
                   }

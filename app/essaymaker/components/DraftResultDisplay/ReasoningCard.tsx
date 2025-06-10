@@ -52,10 +52,10 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import {
   detectContentType,
   extractMarkdownFromHtml,
-  processMarkdownLineBreaks,
   sanitizeHtml,
   unwrapMarkdownCodeBlock,
 } from "./utils";
@@ -248,17 +248,17 @@ export function ReasoningCard({
     } else {
       console.log("ReasoningCard: 使用Markdown渲染模式");
       const extractedContent = extractMarkdownFromHtml(unwrappedContent);
-      const markdownContent = processMarkdownLineBreaks(extractedContent);
+      // 🆕 直接使用原始内容，不进行换行处理
       
       console.log("ReasoningCard: Markdown处理结果:", {
         提取后内容: extractedContent.substring(0, 200) + "...",
-        最终Markdown: markdownContent.substring(0, 200) + "..."
+        最终内容: extractedContent.substring(0, 200) + "..."
       });
       
       return (
         <div className="reasoning-markdown text-sm">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkBreaks]}
             components={{
               ...markdownComponents,
               // 优化样式以适应reasoning卡片
@@ -282,7 +282,7 @@ export function ReasoningCard({
               ),
             } as any}
           >
-            {markdownContent}
+            {extractedContent}
           </ReactMarkdown>
         </div>
       );
