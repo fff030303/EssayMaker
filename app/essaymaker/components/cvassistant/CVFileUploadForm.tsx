@@ -240,7 +240,15 @@ export function CVFileUploadForm({
   const handleSubmit = async () => {
     if (!resumeFile || !setResult) return;
 
-    await generateReport(resumeFile, supportFiles, setResult, onStepChange);
+    await generateReport(
+      resumeFile, 
+      supportFiles, 
+      setResult, 
+      onStepChange,
+      customRolePrompt,
+      customTaskPrompt,
+      customOutputFormatPrompt
+    );
   };
 
   return (
