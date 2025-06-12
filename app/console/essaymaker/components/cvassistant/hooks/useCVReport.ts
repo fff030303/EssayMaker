@@ -72,7 +72,10 @@ export function useCVReport() {
     resumeFile: File,
     supportFiles: File[],
     setResult: (result: DisplayResult | null) => void,
-    onStepChange?: (step: number) => void
+    onStepChange?: (step: number) => void,
+    customRolePrompt: string = "",
+    customTaskPrompt: string = "",
+    customOutputFormatPrompt: string = ""
   ) => {
     if (!resumeFile) {
       toast({
@@ -111,7 +114,10 @@ export function useCVReport() {
     try {
       const response = await apiService.generateResume(
         resumeFile,
-        supportFiles
+        supportFiles,
+        customRolePrompt,
+        customTaskPrompt,
+        customOutputFormatPrompt
       );
       console.log("API响应类型:", typeof response);
 
@@ -140,7 +146,10 @@ export function useCVReport() {
               {
                 fileContent: resumeFile.name,
                 supportFiles: supportFiles.map((f) => f.name),
-                hasCustomPrompt: false,
+                customRolePrompt,
+                customTaskPrompt,
+                customOutputFormatPrompt,
+                hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
               },
               result,
               true,
@@ -160,7 +169,10 @@ export function useCVReport() {
               {
                 fileContent: resumeFile.name,
                 supportFiles: supportFiles.map((f) => f.name),
-                hasCustomPrompt: false,
+                customRolePrompt,
+                customTaskPrompt,
+                customOutputFormatPrompt,
+                hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
               },
               { content: "", error: true },
               false,
@@ -198,7 +210,10 @@ export function useCVReport() {
             {
               fileContent: resumeFile.name,
               supportFiles: supportFiles.map((f) => f.name),
-              hasCustomPrompt: false,
+              customRolePrompt,
+              customTaskPrompt,
+              customOutputFormatPrompt,
+              hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
             },
             { content, isComplete: true, currentStep: "简历生成完成" },
             true,
@@ -224,7 +239,10 @@ export function useCVReport() {
         {
           fileContent: resumeFile.name,
           supportFiles: supportFiles.map((f) => f.name),
-          hasCustomPrompt: false,
+          customRolePrompt,
+          customTaskPrompt,
+          customOutputFormatPrompt,
+          hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
         },
         { content: "", error: true },
         false,
