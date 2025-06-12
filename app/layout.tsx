@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { Providers } from "@/app/components/providers";
 
 const sansFont = Noto_Sans_SC({
   variable: "--font-sans",
@@ -30,10 +31,13 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
       </head>
       <body className={`${sansFont.variable} ${serifFont.variable}`}>
-        {children}
+        <Providers>{children}</Providers>
         <Toaster />
       </body>
     </html>

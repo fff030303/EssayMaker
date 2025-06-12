@@ -1,0 +1,69 @@
+/**
+ * 查询需求描述组件 - 现代化设计
+ */
+
+"use client";
+
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Search, MessageCircle } from "lucide-react";
+import { QUERY_TEMPLATES } from "../constants/templates";
+
+interface QueryInputSectionProps {
+  userInput: string;
+  setUserInput: (value: string) => void;
+  isLoading: boolean;
+}
+
+export function QueryInputSection({
+  userInput,
+  setUserInput,
+  isLoading,
+}: QueryInputSectionProps) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <MessageCircle className="h-4 w-4 text-stone-700" />
+          <h3 className="text-sm font-medium text-stone-800">
+            你要撰写哪个项目的分稿？
+          </h3>
+          <Badge
+            variant="destructive"
+            className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+          >
+            必需
+          </Badge>
+        </div>
+
+        <Textarea
+          placeholder="描述你想了解的课程信息，比如：南加州大学经济学硕士的课程设置和申请要求..."
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          className="min-h-[100px] resize-none border border-stone-200 bg-white text-base placeholder:text-stone-500 focus-visible:ring-1 focus-visible:ring-stone-400 focus-visible:border-stone-400 transition-colors shadow-sm"
+          disabled={isLoading}
+        />
+
+        {userInput.length === 0 && (
+          <div className="space-y-3">
+            <p className="text-sm text-stone-600">或者试试这些热门查询：</p>
+            <div className="flex flex-wrap gap-2">
+              {QUERY_TEMPLATES.slice(0, 6).map((template, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="cursor-pointer bg-stone-200 hover:bg-stone-700 text-stone-700 hover:text-white transition-colors px-3 py-1.5 text-sm font-normal border-stone-300"
+                  onClick={() => setUserInput(template.content)}
+                >
+                  {template.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
