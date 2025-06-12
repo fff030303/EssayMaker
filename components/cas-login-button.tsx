@@ -18,7 +18,9 @@ export function CasLoginButton({
 
   useEffect(() => {
     // 生成CAS会话ID
-    const newSessionId = `cas_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    const newSessionId = `cas_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 10)}`;
     setSessionId(newSessionId);
 
     try {
@@ -40,7 +42,7 @@ export function CasLoginButton({
       const hostname = window.location.hostname;
 
       // 获取CAS认证URL
-      const authUrl = getCasAuthUrl(hostname);
+      const authUrl = getCasAuthUrl();
 
       // 修改认证URL，添加额外参数
       const authUrlObj = new URL(authUrl);
