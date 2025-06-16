@@ -66,6 +66,9 @@ import {
   CheckCircle,
   Files,
   User,
+  FileEdit,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -81,6 +84,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCVReport } from "./hooks/useCVReport";
 import { FullScreenLoadingAnimation } from "../LoadingAnimation";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 interface CVFileUploadFormProps {
   onStepChange?: (step: number) => void;
@@ -135,6 +139,10 @@ export function CVFileUploadForm({
     useState<string>("");
   const [isDraggingResume, setIsDraggingResume] = useState(false);
   const [isDraggingSupport, setIsDraggingSupport] = useState(false);
+  
+  // 新增：文档粘贴模式状态
+  const [isPasteMode, setIsPasteMode] = useState(false);
+  const [pastedResumeText, setPastedResumeText] = useState<string>("");
 
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const supportInputRef = useRef<HTMLInputElement>(null);
@@ -214,6 +222,34 @@ export function CVFileUploadForm({
     });
   };
 
+  // 新增：切换文档粘贴模式
+  const togglePasteMode = () => {
+    const newMode = !isPasteMode;
+    setIsPasteMode(newMode);
+    
+    // 切换模式时清空之前的内容
+    if (newMode) {
+      // 切换到粘贴模式，清空文件
+      setResumeFile(null);
+      if (resumeInputRef.current) {
+        resumeInputRef.current.value = "";
+      }
+    } else {
+      // 切换到文件模式，清空文本
+      setPastedResumeText("");
+    }
+    
+    toast({
+      title: newMode ? "切换到文档粘贴模式" : "切换到文件上传模式",
+      description: newMode ? "现在可以直接粘贴文档内容" : "现在可以上传文件",
+    });
+  };
+
+  // 新增：处理粘贴文本内容
+  const handlePastedTextChange = (text: string) => {
+    setPastedResumeText(text);
+  };
+
   // 删除支持文件
   const handleRemoveSupportFile = (index: number) => {
     setSupportFiles((prev) => prev.filter((_, i) => i !== index));
@@ -262,9 +298,52 @@ export function CVFileUploadForm({
 
   // 使用 useCVReport hook 处理提交
   const handleSubmit = async () => {
-    if (!resumeFile || !setResult) return;
+    if (!setResult) return;
 
-    await generateReport(resumeFile, supportFiles, setResult, onStepChange);
+    // 检查是否有简历内容（文件或粘贴文本）
+    if (isPasteMode) {
+      if (!pastedResumeText.trim()) {
+        toast({
+          variant: "destructive",
+          title: "内容缺失",
+          description: "请粘贴简历内容",
+        });
+        return;
+      }
+      
+      // 粘贴模式：传递 null 文件和粘贴的文档内容
+      await generateReport(
+        null, // 不传递文件
+        supportFiles,
+        setResult,
+        onStepChange,
+        pastedResumeText, // 传递粘贴的文档内容
+        customRolePrompt,
+        customTaskPrompt,
+        customOutputFormatPrompt
+      );
+    } else {
+      if (!resumeFile) {
+        toast({
+          variant: "destructive",
+          title: "文件缺失",
+          description: "请上传个人简历素材表",
+        });
+        return;
+      }
+      
+      // 文件模式：传递文件和空的文档内容
+      await generateReport(
+        resumeFile,
+        supportFiles,
+        setResult,
+        onStepChange,
+        "", // 空的文档内容
+        customRolePrompt,
+        customTaskPrompt,
+        customOutputFormatPrompt
+      );
+    }
   };
 
   return (
@@ -292,106 +371,160 @@ export function CVFileUploadForm({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 个人简历素材表上传 */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-stone-700" />
-                    <h3 className="text-sm font-medium text-stone-800">
-                      个人简历素材表
-                    </h3>
-                    <Badge
-                      variant="destructive"
-                      className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-stone-700" />
+                      <h3 className="text-sm font-medium text-stone-800">
+                        个人简历素材表
+                      </h3>
+                      <Badge
+                        variant="destructive"
+                        className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+                      >
+                        必需
+                      </Badge>
+                    </div>
+                    
+                    {/* 文档粘贴模式切换按钮 */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={togglePasteMode}
+                      disabled={isGeneratingReport}
+                      className="h-5 px-2 text-xs hover:bg-stone-200"
+                      title={isPasteMode ? "切换到文件上传模式" : "切换到文档粘贴模式"}
                     >
-                      必需
-                    </Badge>
+                      {isPasteMode ? (
+                        <>
+                          <Upload className="h-3 w-3 mr-1" />
+                          文件模式
+                        </>
+                      ) : (
+                        <>
+                          <FileEdit className="h-3 w-3 mr-1" />
+                          粘贴模式
+                        </>
+                      )}
+                    </Button>
                   </div>
 
-                  {resumeFile ? (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                          <div>
-                            <div className="text-sm font-medium">
-                              {resumeFile.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatFileSize(resumeFile.size)}
-                            </div>
-                          </div>
+                  {isPasteMode ? (
+                    /* 文档粘贴模式 */
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="请粘贴您的简历内容到这里..."
+                        value={pastedResumeText}
+                        onChange={(e) => handlePastedTextChange(e.target.value)}
+                        disabled={isGeneratingReport}
+                        className="min-h-[108px] text-sm border border-stone-200 bg-white placeholder:text-stone-500 focus-visible:ring-1 focus-visible:ring-stone-400 focus-visible:border-stone-400 transition-colors shadow-sm rounded-md p-3 resize-y"
+                      />
+
+
+                      {pastedResumeText && (
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPastedResumeText("")}
+                            disabled={isGeneratingReport}
+                            className="h-6 px-2 text-xs hover:bg-red-100 hover:text-red-600"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            清空
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleRemoveResumeFile}
-                          disabled={isGeneratingReport}
-                          className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   ) : (
-                    <div
-                      ref={resumeDropAreaRef}
-                      className={cn(
-                        "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer",
-                        isDraggingResume
-                          ? "border-stone-500 bg-stone-100/30"
-                          : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",
-                        isGeneratingReport && "opacity-50 pointer-events-none"
-                      )}
-                      onClick={triggerResumeFileInput}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDraggingResume(true);
-                      }}
-                      onDragEnter={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDraggingResume(true);
-                      }}
-                      onDragLeave={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDraggingResume(false);
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDraggingResume(false);
+                    /* 文件上传模式 */
+                    resumeFile ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <div>
+                              <div className="text-sm font-medium">
+                                {resumeFile.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatFileSize(resumeFile.size)}
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveResumeFile}
+                            disabled={isGeneratingReport}
+                            className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        ref={resumeDropAreaRef}
+                        className={cn(
+                          "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer",
+                          isDraggingResume
+                            ? "border-stone-500 bg-stone-100/30"
+                            : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",
+                          isGeneratingReport && "opacity-50 pointer-events-none"
+                        )}
+                        onClick={triggerResumeFileInput}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingResume(true);
+                        }}
+                        onDragEnter={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingResume(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingResume(false);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingResume(false);
 
-                        if (
-                          e.dataTransfer?.files &&
-                          e.dataTransfer.files.length > 0
-                        ) {
-                          const file = e.dataTransfer.files[0];
-                          handleResumeFile(file);
-                        }
-                      }}
-                    >
-                      <input
-                        type="file"
-                        ref={resumeInputRef}
-                        onChange={handleResumeFileChange}
-                        className="hidden"
-                        accept=".docx,.xlsx,.xls,.pptx,.ppt,.txt,.md,.csv,.pdf,.jpg,.jpeg,.png"
-                        disabled={isGeneratingReport}
-                      />
-                      <Upload className="h-6 w-6 mx-auto mb-2 text-stone-600" />
-                      <div className="text-sm font-medium mb-1">
-                        点击上传或拖拽文件
+                          if (
+                            e.dataTransfer?.files &&
+                            e.dataTransfer.files.length > 0
+                          ) {
+                            const file = e.dataTransfer.files[0];
+                            handleResumeFile(file);
+                          }
+                        }}
+                      >
+                        <input
+                          type="file"
+                          ref={resumeInputRef}
+                          onChange={handleResumeFileChange}
+                          className="hidden"
+                          accept=".docx,.xlsx,.xls,.pptx,.ppt,.txt,.md,.csv,.pdf,.jpg,.jpeg,.png"
+                          disabled={isGeneratingReport}
+                        />
+                        <Upload className="h-6 w-6 mx-auto mb-2 text-stone-600" />
+                        <div className="text-sm font-medium mb-1">
+                          点击上传或拖拽文件
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          推荐DOCX格式（≤10MB）
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        推荐DOCX格式（≤10MB）
-                      </div>
-                    </div>
+                    )
                   )}
                 </div>
 
                 {/* 支持材料上传 */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ">
                     <Files className="h-4 w-4 text-stone-600" />
                     <h3 className="text-sm font-medium text-stone-800">
                       支持材料
@@ -406,7 +539,7 @@ export function CVFileUploadForm({
 
                   {/* 已上传的支持文件列表 */}
                   {supportFiles.length > 0 && (
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                    <div className="min-h-[108px] space-y-2 max-h-32 overflow-y-auto">
                       {supportFiles.map((file, index) => (
                         <div
                           key={index}
@@ -441,7 +574,7 @@ export function CVFileUploadForm({
                   <div
                     ref={supportDropAreaRef}
                     className={cn(
-                      "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer",
+                      "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer min-h-[108px] ",
                       isDraggingSupport
                         ? "border-stone-500 bg-stone-100/30"
                         : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",
@@ -556,6 +689,7 @@ export function CVFileUploadForm({
                   // 清空所有输入和文件
                   setResumeFile(null);
                   setSupportFiles([]);
+                  setPastedResumeText("");
                   setCustomRolePrompt("");
                   setCustomTaskPrompt("");
                   setCustomOutputFormatPrompt("");
@@ -584,7 +718,7 @@ export function CVFileUploadForm({
                 size="default"
                 className="flex items-center gap-1 bg-gradient-to-r from-stone-600 to-stone-700 hover:from-stone-700 hover:to-stone-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 onClick={handleSubmit}
-                disabled={isGeneratingReport || !resumeFile}
+                disabled={isGeneratingReport || (isPasteMode ? !pastedResumeText.trim() : !resumeFile)}
               >
                 {isGeneratingReport ? (
                   <>

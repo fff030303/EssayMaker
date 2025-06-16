@@ -44,14 +44,13 @@ export function ContentRenderer({
     const unwrappedContent = unwrapMarkdownCodeBlock(segment.content);
     const contentType = detectContentType(unwrappedContent);
 
-    console.log(`渲染段落 ${index}:`, {
-      contentType,
-      原始内容长度: segment.content.length,
-      解包后长度: unwrappedContent.length,
-      原始内容预览: segment.content.substring(0, 200) + "...",
-      解包后预览: unwrappedContent.substring(0, 200) + "...",
-    });
-
+    // console.log(`渲染段落 ${index}:`, {
+    //   contentType,
+    //   原始内容长度: segment.content.length,
+    //   解包后长度: unwrappedContent.length,
+    //   原始内容预览: segment.content.substring(0, 200) + "...",
+    //   解包后预览: unwrappedContent.substring(0, 200) + "...",
+    // });
     if (contentType === "html") {
       return (
         <div
@@ -72,20 +71,19 @@ export function ContentRenderer({
         .replace(/\n{4,}/g, "\n\n\n")
         .trim();
 
-      console.log("内容修复处理:", {
-        原始长度: extractedContent.length,
-        修复后长度: fixedContent.length,
-        经历标题数量: (
-          fixedContent.match(/\*\*经历[一二三四五六七八九十]：/g) || []
-        ).length,
-        修复前SEA行:
-          extractedContent.split("\n").find((line) => line.includes("SEA")) ||
-          "未找到",
-        修复后SEA行:
-          fixedContent.split("\n").find((line) => line.includes("SEA")) ||
-          "未找到",
-      });
-
+      // console.log("内容修复处理:", {
+      //   原始长度: extractedContent.length,
+      //   修复后长度: fixedContent.length,
+      //   经历标题数量: (
+      //     fixedContent.match(/\*\*经历[一二三四五六七八九十]：/g) || []
+      //   ).length,
+      //   修复前SEA行:
+      //     extractedContent.split("\n").find((line) => line.includes("SEA")) ||
+      //     "未找到",
+      //   修复后SEA行:
+      //     fixedContent.split("\n").find((line) => line.includes("SEA")) ||
+      //     "未找到",
+      // });
       return (
         <div
           key={index}

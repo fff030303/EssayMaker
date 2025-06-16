@@ -50,11 +50,11 @@ export function ContentRenderer({ content }: ContentRendererProps) {
             // 渲染Markdown内容
             const extractedContent = extractMarkdownFromHtml(content);
             const markdownContent = processMarkdownLineBreaks(extractedContent);
-            console.log("ResultDisplay渲染Markdown:", {
-              original: content.substring(0, 100) + "...",
-              extracted: extractedContent.substring(0, 100) + "...",
-              processed: markdownContent.substring(0, 100) + "...",
-            });
+            // console.log("ResultDisplay渲染Markdown:", {
+            //   original: content.substring(0, 100) + "...",
+            //   extracted: extractedContent.substring(0, 100) + "...",
+            //   processed: markdownContent.substring(0, 100) + "...",
+            // });
             return (
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}

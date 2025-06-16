@@ -124,7 +124,7 @@ export function RLReportAndResumeDisplay({
         description: "内容已复制到剪贴板",
       });
     } catch (err) {
-      console.error("复制失败:", err);
+      // console.error("复制失败:", err);
       toast({
         variant: "destructive",
         title: "复制失败",

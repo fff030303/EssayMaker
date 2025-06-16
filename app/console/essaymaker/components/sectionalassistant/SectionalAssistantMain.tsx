@@ -68,7 +68,7 @@ interface SectionalAssistantMainProps {
   onStrategyGenerate?: (result: DisplayResult) => void;
   onStrategyGeneratingChange?: (isGenerating: boolean) => void;
   // 🆕 新增：数据保存回调
-  onDataSave?: (originalFile: File | null, strategyContent: string) => void;
+  onDataSave?: (originalFile: File | null, strategyContent: string, originalEssayDoc?: string) => void;
   // 🆕 新增：清空所有内容回调
   onClearAll?: () => void;
 }
@@ -99,6 +99,8 @@ export function SectionalAssistantMain({
   // 新增：存储原始文件和搜索结果数据，用于改写策略生成
   const [originalEssayFile, setOriginalEssayFile] = useState<File | null>(null);
   const [searchResult, setSearchResult] = useState<string>("");
+  // 🆕 新增：存储粘贴内容
+  const [originalEssayDoc, setOriginalEssayDoc] = useState<string>("");
 
   // 🆕 新增：存储个性化需求
   const [personalizationRequirements, setPersonalizationRequirements] =
@@ -131,10 +133,25 @@ export function SectionalAssistantMain({
   const handleDataUpdate = (
     file: File | null,
     searchData: string,
-    personalizationRequirements?: string
+    personalizationRequirements?: string,
+    originalEssayDoc?: string
   ) => {
+    console.log('[SectionalAssistantMain] handleDataUpdate 调用:', {
+      hasFile: !!file,
+      searchDataLength: searchData.length,
+      hasPersonalizationRequirements: !!personalizationRequirements,
+      hasOriginalEssayDoc: !!originalEssayDoc,
+      originalEssayDocLength: originalEssayDoc?.length || 0
+    });
+
     setOriginalEssayFile(file);
     setSearchResult(searchData);
+    
+    // 🆕 保存粘贴内容到状态
+    if (originalEssayDoc) {
+      setOriginalEssayDoc(originalEssayDoc);
+      console.log('[SectionalAssistantMain] 保存粘贴内容:', originalEssayDoc.substring(0, 100) + '...');
+    }
 
     // 🆕 保存个性化需求到状态
     if (personalizationRequirements) {
@@ -143,7 +160,7 @@ export function SectionalAssistantMain({
 
     // 🆕 保存数据到父组件
     if (onDataSave) {
-      onDataSave(file, searchData);
+      onDataSave(file, searchData, originalEssayDoc);
     }
   };
 
@@ -327,6 +344,7 @@ export function SectionalAssistantMain({
               onGenerateStrategy={handleStrategyGenerate}
               onStepChange={onStepChange}
               personalizationRequirements={personalizationRequirements}
+              materialDoc={originalEssayDoc} // 🔧 修复参数名
             />
           ) : (
             /* 占位区域，确保滚动目标始终存在 */

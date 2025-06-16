@@ -123,7 +123,8 @@ export const apiService = {
     queryText: string,
     metadata?: any,
     files?: File[],
-    transcriptFiles?: File[]
+    transcriptFiles?: File[],
+    materialDoc?: string // 新增：粘贴的文档内容
   ) {
     try {
       const apiKey = getApiKey();
@@ -133,15 +134,17 @@ export const apiService = {
       console.log("API密钥存在:", !!apiKey);
       console.log("初稿文件数量:", files?.length || 0);
       console.log("成绩单文件数量:", transcriptFiles?.length || 0);
+      console.log("粘贴文档内容长度:", materialDoc?.length || 0);
 
       // 设置请求超时
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
 
-      // 检查是否有文件需要上传
+      // 检查是否有文件需要上传或粘贴内容
       const hasFiles =
         (files && files.length > 0) ||
-        (transcriptFiles && transcriptFiles.length > 0);
+        (transcriptFiles && transcriptFiles.length > 0) ||
+        (materialDoc && typeof materialDoc === 'string' && materialDoc.trim());
 
       // 根据是否有文件选择不同的请求方式
       let response;
@@ -165,6 +168,12 @@ export const apiService = {
             console.log(
               `添加初稿文件: ${files[0].name} (${files[0].size} bytes)`
             );
+          }
+
+          // 添加粘贴的文档内容
+          if (materialDoc && typeof materialDoc === 'string' && materialDoc.trim()) {
+            formData.append("material_doc", materialDoc);
+            console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
           }
 
           // 添加成绩单文件 - 可以有多个
@@ -585,22 +594,24 @@ export const apiService = {
 
   // 生成推荐信
   async generateRecommendationLetter(
-    resumeMaterial: File,
+    resumeMaterial: File | null,
     writing_requirements: string,
     recommenderNumber: string,
     supportFiles: File[] = [],
     customRolePrompt: string = "",
     customTaskPrompt: string = "",
-    customOutputFormatPrompt: string = ""
+    customOutputFormatPrompt: string = "",
+    materialDoc: string = ""
   ) {
     try {
       const apiKey = getApiKey();
       const apiUrl = getApiUrl();
 
       console.log("准备生成推荐信, API地址:", apiUrl);
-      console.log("推荐信素材文件:", resumeMaterial.name);
+      console.log("推荐信素材文件:", resumeMaterial?.name || "无文件");
       console.log("推荐人数量:", recommenderNumber);
       console.log("支持文件数量:", supportFiles.length);
+      console.log("粘贴文档内容长度:", materialDoc.length);
       console.log("写作需求:", writing_requirements);
       console.log("自定义提示词:", {
         role: customRolePrompt,
@@ -610,12 +621,20 @@ export const apiService = {
 
       // 创建FormData对象用于上传文件
       const formData = new FormData();
-      // 使用recommendation_material作为推荐信素材文件字段名
-      formData.append(
-        "recommendation_material",
-        resumeMaterial,
-        resumeMaterial.name
-      );
+      
+      // 只在有文件时添加 recommendation_material
+      if (resumeMaterial) {
+        formData.append(
+          "recommendation_material",
+          resumeMaterial,
+          resumeMaterial.name
+        );
+      }
+
+      // 添加粘贴的文档内容
+      if (materialDoc) {
+        formData.append("material_doc", materialDoc);
+      }
 
       // 添加支持文件，使用support_files作为字段名
       if (supportFiles.length > 0) {
@@ -901,7 +920,11 @@ export const apiService = {
       // 调用第一步：搜索分析API
       return await this.streamEssayRewriteSearchAndAnalyze(
         searchUserInput,
-        supportFiles
+        supportFiles,
+        "", // customWebSearcherRole
+        "", // customWebSearcherTask
+        "", // customWebSearcherOutputFormat
+        ""  // materialDoc
       );
     } catch (error) {
       console.error("PS分稿助理API调用失败:", error);
@@ -915,7 +938,8 @@ export const apiService = {
     supportFiles: File[] = [],
     customWebSearcherRole: string = "",
     customWebSearcherTask: string = "",
-    customWebSearcherOutputFormat: string = ""
+    customWebSearcherOutputFormat: string = "",
+    materialDoc: string = ""
   ) {
     try {
       const apiKey = getApiKey();
@@ -925,7 +949,8 @@ export const apiService = {
         url: `${apiUrl}/api/ps-final-draft/search-and-analyze`,
         userInputLength: userInput.length,
         supportFilesCount: supportFiles.length,
-        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask || customWebSearcherOutputFormat)
+        hasCustomPrompts: !!(customWebSearcherRole || customWebSearcherTask || customWebSearcherOutputFormat),
+        materialDocLength: materialDoc.length
       });
 
       // 创建FormData对象
@@ -946,6 +971,12 @@ export const apiService = {
       formData.append("custom_web_searcher_role", customWebSearcherRole);
       formData.append("custom_web_searcher_task", customWebSearcherTask);
       formData.append("custom_web_searcher_output_format", customWebSearcherOutputFormat);
+
+      // 添加粘贴的文档内容
+      if (materialDoc && materialDoc.trim()) {
+        formData.append("material_doc", materialDoc);
+        console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+      }
 
       // 打印FormData内容用于调试
       console.log("Essay重写搜索分析FormData内容:");
@@ -997,12 +1028,13 @@ export const apiService = {
   // 第二步：Essay重写策略生成API
   async streamEssayRewriteGenerateStrategy(
     searchResult: string,
-    originalEssayFile: File,
+    originalEssayFile: File | null,
     analysisResult: string = "",
     customStrategyGeneratorRole: string = "",
     customStrategyGeneratorTask: string = "",
     customStrategyGeneratorOutputFormat: string = "",
-    personalizationRequirements: string = ""
+    personalizationRequirements: string = "",
+    materialDoc: string = ""
   ) {
     try {
       const apiKey = getApiKey();
@@ -1011,11 +1043,12 @@ export const apiService = {
       console.log("Essay重写策略生成API调用:", {
         url: `${apiUrl}/api/ps-final-draft/generate-strategy`,
         searchResultLength: searchResult.length,
-        originalEssayFile: originalEssayFile.name,
+        originalEssayFile: originalEssayFile?.name || "无文件",
         analysisResultLength: analysisResult.length,
         hasCustomPrompts: !!(customStrategyGeneratorRole || customStrategyGeneratorTask || customStrategyGeneratorOutputFormat),
         personalizationRequirements: personalizationRequirements,
         personalizationRequirementsLength: personalizationRequirements.length,
+        materialDocLength: materialDoc.length,
       });
 
       // 创建FormData对象
@@ -1023,7 +1056,21 @@ export const apiService = {
       
       // 添加必需参数
       formData.append("search_result", searchResult);
-      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+      
+      // 文件和粘贴内容二选一逻辑
+      if (materialDoc && materialDoc.trim()) {
+        // 优先使用粘贴内容
+        formData.append("material_doc", materialDoc);
+        console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+      } else if (originalEssayFile) {
+        // 没有粘贴内容时使用文件
+        formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+        console.log(`添加初稿文件: ${originalEssayFile.name}`);
+      } else {
+        // 两者都没有时添加空的文档内容作为占位符
+        formData.append("material_doc", "");
+        console.log("添加空的文档内容作为占位符");
+      }
 
       // 添加可选参数
       formData.append("analysis_result", analysisResult);
@@ -1076,10 +1123,11 @@ export const apiService = {
   // 第三步：Essay重写API
   async streamEssayRewriteRewriteEssay(
     rewriteStrategy: string,
-    originalEssayFile: File,
+    originalEssayFile: File | null,
     customEssayRewriterRole: string = "",
     customEssayRewriterTask: string = "",
-    customEssayRewriterOutputFormat: string = ""
+    customEssayRewriterOutputFormat: string = "",
+    materialDoc: string = ""
   ) {
     try {
       const apiKey = getApiKey();
@@ -1088,8 +1136,9 @@ export const apiService = {
       console.log("Essay重写API调用:", {
         url: `${apiUrl}/api/ps-final-draft/rewrite-essay`,
         rewriteStrategyLength: rewriteStrategy.length,
-        originalEssayFile: originalEssayFile.name,
-        hasCustomPrompts: !!(customEssayRewriterRole || customEssayRewriterTask || customEssayRewriterOutputFormat)
+        originalEssayFile: originalEssayFile?.name || "无文件",
+        hasCustomPrompts: !!(customEssayRewriterRole || customEssayRewriterTask || customEssayRewriterOutputFormat),
+        materialDocLength: materialDoc.length
       });
 
       // 创建FormData对象
@@ -1097,7 +1146,21 @@ export const apiService = {
       
       // 添加必需参数
       formData.append("rewrite_strategy", rewriteStrategy);
-      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+      
+      // 文件和粘贴内容二选一逻辑
+      if (materialDoc && materialDoc.trim()) {
+        // 优先使用粘贴内容
+        formData.append("material_doc", materialDoc);
+        console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+      } else if (originalEssayFile) {
+        // 没有粘贴内容时使用文件
+        formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+        console.log(`添加初稿文件: ${originalEssayFile.name}`);
+      } else {
+        // 两者都没有时添加空的文档内容作为占位符
+        formData.append("material_doc", "");
+        console.log("添加空的文档内容作为占位符");
+      }
 
       // 添加自定义提示词参数
       formData.append("custom_essay_rewriter_role", customEssayRewriterRole);

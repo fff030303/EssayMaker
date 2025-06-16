@@ -102,7 +102,7 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
       return newMap;
     });
     
-    console.log(`[StreamingContext] 创建新任务: ${taskId} (${type})`);
+    // console.log(`[StreamingContext] 创建新任务: ${taskId} (${type})`);
     return taskId;
   }, []);
   
@@ -116,12 +116,11 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
   ) => {
     const task = activeTasks.get(taskId);
     if (!task) {
-      console.error(`[StreamingContext] 任务不存在: ${taskId}`);
+      // console.error(`[StreamingContext] 任务不存在: ${taskId}`);
       return;
     }
     
-    console.log(`[StreamingContext] 开始流式生成: ${taskId}`);
-    
+    // console.log(`[StreamingContext] 开始流式生成: ${taskId}`);
     // 创建中止控制器
     const controller = new AbortController();
     const reader = stream.getReader();
@@ -177,7 +176,7 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
       while (true) {
         // 检查是否被中止
         if (controller.signal.aborted) {
-          console.log(`[StreamingContext] 流式生成被中止: ${taskId}`);
+          // console.log(`[StreamingContext] 流式生成被中止: ${taskId}`);
           break;
         }
         
@@ -240,22 +239,21 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
                   });
                   
                   onComplete?.(result);
-                  console.log(`[StreamingContext] 流式生成完成: ${taskId}`);
+                  // console.log(`[StreamingContext] 流式生成完成: ${taskId}`);
                   return;
                   
                 case 'error':
                   throw new Error(data.content || '生成过程中发生错误');
               }
             } catch (parseError) {
-              console.error(`[StreamingContext] 解析数据错误:`, parseError);
+              // console.error(`[StreamingContext] 解析数据错误:`, parseError);
             }
           }
         }
       }
       
     } catch (error) {
-      console.error(`[StreamingContext] 流式生成错误: ${taskId}`, error);
-      
+      // console.error(`[StreamingContext] 流式生成错误: ${taskId}`, error);
       // 标记任务错误
       setActiveTasks(prev => {
         const newMap = new Map(prev);
@@ -283,7 +281,7 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
       try {
         reader.releaseLock();
       } catch (e) {
-        console.warn(`[StreamingContext] 释放reader失败:`, e);
+        // console.warn(`[StreamingContext] 释放reader失败:`, e);
       }
     }
   }, [activeTasks, toast]);
@@ -292,12 +290,11 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
   const pauseStreaming = useCallback((taskId: string) => {
     const task = activeTasks.get(taskId);
     if (!task || task.status !== 'streaming') {
-      console.warn(`[StreamingContext] 无法暂停任务: ${taskId}`);
+      // console.warn(`[StreamingContext] 无法暂停任务: ${taskId}`);
       return;
     }
     
-    console.log(`[StreamingContext] 暂停流式生成: ${taskId}`);
-    
+    // console.log(`[StreamingContext] 暂停流式生成: ${taskId}`);
     // 中止当前流
     task.controller?.abort();
     
@@ -324,12 +321,11 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
   const resumeStreaming = useCallback(async (taskId: string) => {
     const task = activeTasks.get(taskId);
     if (!task || task.status !== 'paused' || !task.resumeParams) {
-      console.warn(`[StreamingContext] 无法恢复任务: ${taskId}`);
+      // console.warn(`[StreamingContext] 无法恢复任务: ${taskId}`);
       return;
     }
     
-    console.log(`[StreamingContext] 恢复流式生成: ${taskId}`);
-    
+    // console.log(`[StreamingContext] 恢复流式生成: ${taskId}`);
     // 这里需要重新调用API来恢复生成
     // 具体实现取决于您的API设计
     toast({
@@ -342,12 +338,11 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
   const stopStreaming = useCallback((taskId: string) => {
     const task = activeTasks.get(taskId);
     if (!task) {
-      console.warn(`[StreamingContext] 任务不存在: ${taskId}`);
+      // console.warn(`[StreamingContext] 任务不存在: ${taskId}`);
       return;
     }
     
-    console.log(`[StreamingContext] 停止流式生成: ${taskId}`);
-    
+    // console.log(`[StreamingContext] 停止流式生成: ${taskId}`);
     // 中止当前流
     task.controller?.abort();
     
@@ -386,8 +381,7 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
   
   // 清理任务
   const cleanupTask = useCallback((taskId: string) => {
-    console.log(`[StreamingContext] 清理任务: ${taskId}`);
-    
+    // console.log(`[StreamingContext] 清理任务: ${taskId}`);
     setActiveTasks(prev => {
       const newMap = new Map(prev);
       newMap.delete(taskId);
@@ -418,7 +412,7 @@ export function StreamingProvider({ children }: { children: React.ReactNode }) {
           ) {
             newMap.delete(taskId);
             cleaned = true;
-            console.log(`[StreamingContext] 自动清理过期任务: ${taskId}`);
+            // console.log(`[StreamingContext] 自动清理过期任务: ${taskId}`);
           }
         }
         

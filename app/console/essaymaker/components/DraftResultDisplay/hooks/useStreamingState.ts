@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { ContentSegment } from "../contentUtils";
 
@@ -35,6 +35,7 @@ export function useStreamingState({
 
   // refs
   const lastUpdateRef = useRef<number>(Date.now());
+  const previousTimestampRef = useRef<string>("");
 
   // 分离reasoning和非reasoning内容
   const reasoningSegments = contentSegments.filter(
@@ -53,27 +54,32 @@ export function useStreamingState({
       );
 
       if (hasActualContent) {
-        console.log("首次检测到resume内容开始生成，准备自动收起thinking");
+        // console.log("首次检测到resume内容开始生成，准备自动收起thinking");
         setShouldCollapseReasoning(true);
         setHasTriggeredAutoCollapse(true);
 
         // 延迟重置shouldCollapseReasoning，给ReasoningCard足够时间响应
         setTimeout(() => {
           setShouldCollapseReasoning(false);
-          console.log("重置shouldCollapseReasoning，允许用户手动展开");
+          // console.log("重置shouldCollapseReasoning，允许用户手动展开");
         }, 100);
       }
     }
-  }, [nonReasoningSegments, hasTriggeredAutoCollapse]);
+  }, [nonReasoningSegments.length, hasTriggeredAutoCollapse]);
 
-  // 每次result.timestamp变化时重置显示内容和状态
+  // 每次result.timestamp变化时重置显示内容和状态 - 使用ref避免无限循环
   useEffect(() => {
-    if (!effectiveResult) return;
-    setUserManuallyScrolled(false);
-    setAutoScroll(true);
-    setShouldCollapseReasoning(false);
-    setHasTriggeredAutoCollapse(false);
-    lastUpdateRef.current = Date.now();
+    if (!effectiveResult?.timestamp) return;
+    
+    // 只有当timestamp真正变化时才重置状态
+    if (previousTimestampRef.current !== effectiveResult.timestamp) {
+      previousTimestampRef.current = effectiveResult.timestamp;
+      setUserManuallyScrolled(false);
+      setAutoScroll(true);
+      setShouldCollapseReasoning(false);
+      setHasTriggeredAutoCollapse(false);
+      lastUpdateRef.current = Date.now();
+    }
   }, [effectiveResult?.timestamp]);
 
   // 当结果完成时，确保显示全部内容
@@ -84,15 +90,15 @@ export function useStreamingState({
   }, [effectiveResult?.isComplete, effectiveResult?.content]);
 
   // 处理自动滚动按钮点击
-  const handleAutoScrollClick = () => {
+  const handleAutoScrollClick = useCallback(() => {
     const newAutoScroll = !autoScroll;
     setAutoScroll(newAutoScroll);
 
     if (newAutoScroll) {
       setUserManuallyScrolled(false);
-      console.log("用户手动启用了自动滚动");
+      // console.log("用户手动启用了自动滚动");
     } else {
-      console.log("用户手动关闭了自动滚动");
+      // console.log("用户手动关闭了自动滚动");
     }
 
     toast({
@@ -101,7 +107,24 @@ export function useStreamingState({
         ? "内容将自动滚动到底部"
         : "内容将保持当前位置",
     });
-  };
+  }, [autoScroll, toast]);
+
+  // 🆕 使用useCallback稳定状态更新函数引用
+  const stableSetAutoScroll = useCallback((value: boolean) => {
+    setAutoScroll(value);
+  }, []);
+
+  const stableSetUserManuallyScrolled = useCallback((value: boolean) => {
+    setUserManuallyScrolled(value);
+  }, []);
+
+  const stableSetShouldCollapseReasoning = useCallback((value: boolean) => {
+    setShouldCollapseReasoning(value);
+  }, []);
+
+  const stableSetHasTriggeredAutoCollapse = useCallback((value: boolean) => {
+    setHasTriggeredAutoCollapse(value);
+  }, []);
 
   // 判断是否正在生成中（流式输出开始前）
   const isGenerating =
@@ -128,9 +151,9 @@ export function useStreamingState({
 
     // 处理函数
     handleAutoScrollClick,
-    setAutoScroll,
-    setUserManuallyScrolled,
-    setShouldCollapseReasoning,
-    setHasTriggeredAutoCollapse,
+    setAutoScroll: stableSetAutoScroll,
+    setUserManuallyScrolled: stableSetUserManuallyScrolled,
+    setShouldCollapseReasoning: stableSetShouldCollapseReasoning,
+    setHasTriggeredAutoCollapse: stableSetHasTriggeredAutoCollapse,
   };
 }

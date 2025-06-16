@@ -76,7 +76,7 @@ export function useCVLogger() {
       if (ENABLE_AUTH_CHECK) {
         // 生产模式：检查用户是否已登录
         if (!session?.user?.email) {
-          console.warn("[CVLogger] 用户未登录，跳过日志记录");
+          // console.warn("[CVLogger] 用户未登录，跳过日志记录");
           return;
         }
       }
@@ -95,15 +95,14 @@ export function useCVLogger() {
               unitName: "本地开发",
             };
 
-      console.log("[CVLogger] 开始记录日志:", {
-        assistantType,
-        endpoint,
-        isSuccess,
-        duration,
-        userEmail: userInfo.email,
-        mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
-      });
-
+      // console.log("[CVLogger] 开始记录日志:", {
+      //   assistantType,
+      //   endpoint,
+      //   isSuccess,
+      //   duration,
+      //   userEmail: userInfo.email,
+      //   mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+      // });
       // 调用日志记录API
       const response = await fetch("/api/essaymaker/llm-logs", {
         method: "POST",
@@ -129,9 +128,9 @@ export function useCVLogger() {
       }
 
       const result = await response.json();
-      console.log("[CVLogger] 日志记录成功:", result.resultId);
+      // console.log("[CVLogger] 日志记录成功:", result.resultId);
     } catch (error) {
-      console.error("[CVLogger] 日志记录失败:", error);
+      // console.error("[CVLogger] 日志记录失败:", error);
       // 日志记录失败不应影响主要功能，所以不抛出异常
     }
   };
@@ -186,16 +185,15 @@ export function useCVLogger() {
       delete filteredData._reasoningData;
     }
 
-    console.log("[CVLogger] 过滤reasoning数据:", {
-      原始内容长度: resultData.content?.length || 0,
-      过滤后内容长度: filteredData.content?.length || 0,
-      原始行数: resultData.content?.split("\n").length || 0,
-      过滤后行数: filteredData.content?.split("\n").length || 0,
-      已移除reasoning字段: ["reasoningSegments", "_reasoningData"].filter(
-        (field) => resultData[field]
-      ),
-    });
-
+    // console.log("[CVLogger] 过滤reasoning数据:", {
+    //   原始内容长度: resultData.content?.length || 0,
+    //   过滤后内容长度: filteredData.content?.length || 0,
+    //   原始行数: resultData.content?.split("\n").length || 0,
+    //   过滤后行数: filteredData.content?.split("\n").length || 0,
+    //   已移除reasoning字段: ["reasoningSegments", "_reasoningData"].filter(
+    //     (field) => resultData[field]
+    //   ),
+    // });
     return filteredData;
   };
 

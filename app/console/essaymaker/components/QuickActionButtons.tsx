@@ -109,12 +109,11 @@ export function QuickActionButtons({
   // 在组件加载时自动触发PS初稿助理界面 - 只执行一次
   useEffect(() => {
     if (hasInitialized) {
-      console.log("[QUICK-BUTTONS] 已初始化，跳过重复初始化");
+      // console.log("[QUICK-BUTTONS] 已初始化，跳过重复初始化");
       return;
     }
 
-    console.log("[QUICK-BUTTONS] 开始初始化");
-
+    // console.log("[QUICK-BUTTONS] 开始初始化");
     if (onDraftClick) {
       onDraftClick();
     }
@@ -148,7 +147,7 @@ export function QuickActionButtons({
 
     // 标记已初始化
     setHasInitialized(true);
-    console.log("[QUICK-BUTTONS] 初始化完成");
+    // console.log("[QUICK-BUTTONS] 初始化完成");
   }, [hasInitialized]); // 依赖hasInitialized而不是空数组
 
   // 处理按钮点击事件

@@ -1,4 +1,4 @@
-// 主页面组件，整合所有功能：
+﻿// 主页面组件，整合所有功能：
 
 // - 使用useEssayMaker钩子管理状态和逻辑
 // - 根据查询类型决定是否显示多步骤流程
@@ -175,10 +175,22 @@ export default function EssayMakerPage() {
     useState<File | null>(null);
   const [sectionalStrategyContent, setSectionalStrategyContent] =
     useState<string>("");
+  // 🆕 新增：分稿助理粘贴内容状态
+  const [sectionalOriginalEssayDoc, setSectionalOriginalEssayDoc] =
+    useState<string>("");
 
   // 🆕 新增：清空时间戳，用于触发子组件清空
   const [sectionalClearTimestamp, setSectionalClearTimestamp] =
     useState<number>(0);
+
+  // 🆕 新增：追踪sectionalOriginalEssayDoc的变化
+  useEffect(() => {
+    console.log("[PAGE] 📋 sectionalOriginalEssayDoc 状态变化:", {
+      length: sectionalOriginalEssayDoc.length,
+      content: sectionalOriginalEssayDoc ? sectionalOriginalEssayDoc.substring(0, 100) + '...' : 'empty',
+      timestamp: new Date().toISOString()
+    });
+  }, [sectionalOriginalEssayDoc]);
 
   // 🆕 添加监听器来调试时间戳变化
   useEffect(() => {
@@ -284,6 +296,7 @@ export default function EssayMakerPage() {
         setIsSectionalFinalGenerating(false);
         setSectionalOriginalFile(null);
         setSectionalStrategyContent("");
+        setSectionalOriginalEssayDoc("");
       };
 
       if (type === "draft") {
@@ -611,6 +624,7 @@ export default function EssayMakerPage() {
     // 清空数据文件
     setSectionalOriginalFile(null);
     setSectionalStrategyContent("");
+    setSectionalOriginalEssayDoc("");
     console.log("[PAGE] ✅ 已清空数据文件");
 
     // 🆕 更新清空时间戳，触发子组件清空
@@ -728,9 +742,10 @@ export default function EssayMakerPage() {
                   }
                   onStrategyGenerate={setSectionalStrategyResult}
                   onStrategyGeneratingChange={setIsSectionalStrategyGenerating}
-                  onDataSave={(originalFile, strategyContent) => {
+                  onDataSave={(originalFile, strategyContent, originalEssayDoc) => {
                     setSectionalOriginalFile(originalFile);
                     setSectionalStrategyContent(strategyContent);
+                    setSectionalOriginalEssayDoc(originalEssayDoc || "");
                   }}
                   onClearAll={clearSectionalAssistantAll}
                 />
@@ -931,6 +946,7 @@ export default function EssayMakerPage() {
                         strategyContent={sectionalStrategyContent}
                         onClearAll={clearSectionalAssistantAll}
                         clearTimestamp={sectionalClearTimestamp}
+                        originalEssayDoc={sectionalOriginalEssayDoc}
                       />
                     );
                   } else {

@@ -57,29 +57,28 @@ export const detectContentType = (content: string): "html" | "markdown" => {
     hasHtmlTags && !hasComplexHtml && hasMarkdownTitles;
 
   // 添加调试日志
-  console.log("ResultDisplay内容检测:", {
-    content: content.substring(0, 200) + "...",
-    hasHtmlTags,
-    hasHtmlEntities,
-    hasHtmlStructure,
-    hasComplexHtml,
-    hasMarkdownTitles,
-    hasMarkdownSyntax,
-    isSimpleWrappedMarkdown,
-    // 添加标题检测的详细信息
-    hasH1: content.includes("# "),
-    hasH2: content.includes("## "),
-    hasH3: content.includes("### "),
-    titleMatches: content.match(/#{1,6}\s[^\n]+/g),
-    detectedType: hasComplexHtml
-      ? "html" // 优先保持复杂HTML格式
-      : isSimpleWrappedMarkdown
-      ? "markdown" // 简单包装的Markdown
-      : hasHtmlTags || hasHtmlEntities || hasHtmlStructure
-      ? "html"
-      : "markdown",
-  });
-
+  // console.log("ResultDisplay内容检测:", {
+  //   content: content.substring(0, 200) + "...",
+  //   hasHtmlTags,
+  //   hasHtmlEntities,
+  //   hasHtmlStructure,
+  //   hasComplexHtml,
+  //   hasMarkdownTitles,
+  //   hasMarkdownSyntax,
+  //   isSimpleWrappedMarkdown,
+  //   // 添加标题检测的详细信息
+  //   hasH1: content.includes("# "),
+  //   hasH2: content.includes("## "),
+  //   hasH3: content.includes("### "),
+  //   titleMatches: content.match(/#{1,6}\s[^\n]+/g),
+  //   detectedType: hasComplexHtml
+  //     ? "html" // 优先保持复杂HTML格式
+  //     : isSimpleWrappedMarkdown
+  //     ? "markdown" // 简单包装的Markdown
+  //     : hasHtmlTags || hasHtmlEntities || hasHtmlStructure
+  //     ? "html"
+  //     : "markdown",
+  // });
   // 如果是复杂HTML（包含样式），必须按HTML处理以保持格式
   if (hasComplexHtml) {
     return "html";
@@ -193,10 +192,10 @@ export const sanitizeHtml = (html: string): string => {
   // 后处理：将HTML中的Markdown语法转换为HTML
   let processedHtml = sanitized;
 
-  console.log(
-    "ResultDisplay开始处理HTML内容:",
-    processedHtml.substring(0, 200)
-  );
+  // console.log(
+  //   "ResultDisplay开始处理HTML内容:",
+  //   processedHtml.substring(0, 200)
+  // );
 
   // 1. 首先处理标题（必须在其他处理之前，按从大到小的顺序）
   // 处理行首的标题
@@ -253,8 +252,7 @@ export const sanitizeHtml = (html: string): string => {
       '\n<h1 style="font-size: 1.875rem; font-weight: bold; margin: 1.5rem 0 1rem 0;">$1</h1>'
     );
 
-  console.log("ResultDisplay标题处理后:", processedHtml.substring(0, 300));
-
+  // console.log("ResultDisplay标题处理后:", processedHtml.substring(0, 300));
   // 2. 处理横线分隔符
   processedHtml = processedHtml
     .replace(
@@ -312,38 +310,34 @@ export const sanitizeHtml = (html: string): string => {
 
   // 8. 处理换行 - 保留空行，正确处理单个换行
   // 首先保护已有的HTML标签，避免在标签中间插入br
-  console.log(
-    "ResultDisplay换行处理前的内容:",
-    processedHtml.substring(0, 500)
-  );
+  // console.log(
+  //   "ResultDisplay换行处理前的内容:",
+  //   processedHtml.substring(0, 500)
+  // );
 
   processedHtml = processedHtml
     // 第一步：将多个连续空行合并为一个空行
     .replace(/(\n\s*){3,}/g, "\n\n"); // 3个或更多连续换行合并为2个换行（即一个空行）
 
-  console.log("ResultDisplay第一步处理后:", processedHtml.substring(0, 500));
-
+  // console.log("ResultDisplay第一步处理后:", processedHtml.substring(0, 500));
   // 第二步：在特定情况下保留空行效果 - 简化正则表达式
   processedHtml = processedHtml.replace(
     /([•●]\s*[^\n]+)\n([^\n•●])/g,
     "$1\n\n$2"
   ); // 在列表项后添加空行
 
-  console.log("ResultDisplay第二步处理后:", processedHtml.substring(0, 500));
-
+  // console.log("ResultDisplay第二步处理后:", processedHtml.substring(0, 500));
   // 第三步：处理双换行（空行）
   processedHtml = processedHtml.replace(/\n\s*\n/g, "\n<br>\n"); // 双换行转换为一个br（保留空行效果）
 
-  console.log("ResultDisplay第三步处理后:", processedHtml.substring(0, 500));
-
+  // console.log("ResultDisplay第三步处理后:", processedHtml.substring(0, 500));
   // 第四步：处理单个换行，但避免影响HTML标签
   processedHtml = processedHtml.replace(
     /(?<!>)(?<!<br>)\n(?!<)(?!<br>)/g,
     "<br>\n"
   ); // 单个换行转br，但避免重复处理
 
-  console.log("ResultDisplay换行处理后:", processedHtml.substring(0, 400));
-
+  // console.log("ResultDisplay换行处理后:", processedHtml.substring(0, 400));
   // 9. 确保内容被适当的标签包围
   if (!processedHtml.match(/^<[h1-6]>|^<p>|^<div/)) {
     processedHtml = "<div>" + processedHtml;
@@ -361,13 +355,12 @@ export const sanitizeHtml = (html: string): string => {
     .replace(/<div>(<ul>)/g, "$1") // 移除列表前的div标签
     .replace(/(<\/ul>)<\/div>/g, "$1"); // 移除列表后的div标签
 
-  console.log("ResultDisplay最终处理结果:", {
-    original: html.substring(0, 100) + "...",
-    processed: processedHtml.substring(0, 200) + "...",
-    titleCount: (processedHtml.match(/<h[1-6]>/g) || []).length,
-    hrCount: (processedHtml.match(/<hr/g) || []).length,
-    brCount: (processedHtml.match(/<br>/g) || []).length,
-  });
-
+  // console.log("ResultDisplay最终处理结果:", {
+  //   original: html.substring(0, 100) + "...",
+  //   processed: processedHtml.substring(0, 200) + "...",
+  //   titleCount: (processedHtml.match(/<h[1-6]>/g) || []).length,
+  //   hrCount: (processedHtml.match(/<hr/g) || []).length,
+  //   brCount: (processedHtml.match(/<br>/g) || []).length,
+  // });
   return processedHtml;
 };

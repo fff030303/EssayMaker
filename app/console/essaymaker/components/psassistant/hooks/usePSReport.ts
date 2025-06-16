@@ -78,6 +78,7 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
     query: string,
     files?: File[],
     transcriptFiles?: File[],
+    materialDoc?: string, // 新增：粘贴的文档内容
     onLogResult?: (
       requestData: any,
       resultData: any,
@@ -94,35 +95,28 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
       files: files?.map((f) => ({ name: f.name, size: f.size })) || [],
       transcriptFiles:
         transcriptFiles?.map((f) => ({ name: f.name, size: f.size })) || [],
+      materialDoc: materialDoc || "",
       timestamp: new Date().toISOString(),
     };
 
     try {
-      console.log(
-        "usePSReport - handleStreamResponse - 接收的文件数量:",
-        files?.length || 0
-      );
-      console.log(
-        "usePSReport - handleStreamResponse - 接收的成绩单文件数量:",
-        transcriptFiles?.length || 0
-      );
-
+      
       // 输出具体文件信息
       if (files && files.length > 0) {
-        console.log(
-          "usePSReport - handleStreamResponse - 上传文件:",
-          files
-            .map((f) => `${f.name} (${(f.size / 1024).toFixed(1)}KB)`)
-            .join(", ")
-        );
+        // console.log(
+        //   "usePSReport - handleStreamResponse - 上传文件:",
+        //   files
+        //     .map((f) => `${f.name} (${(f.size / 1024).toFixed(1)}KB)`)
+        //     .join(", ")
+        // );
       }
       if (transcriptFiles && transcriptFiles.length > 0) {
-        console.log(
-          "usePSReport - handleStreamResponse - 成绩单文件:",
-          transcriptFiles
-            .map((f) => `${f.name} (${(f.size / 1024).toFixed(1)}KB)`)
-            .join(", ")
-        );
+        // console.log(
+        //   "usePSReport - handleStreamResponse - 成绩单文件:",
+        //   transcriptFiles
+        //     .map((f) => `${f.name} (${(f.size / 1024).toFixed(1)}KB)`)
+        //     .join(", ")
+        // );
       }
 
       setIsLoading(true);
@@ -132,15 +126,15 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
         setTimeout(() => reject(new Error("请求超时")), 30000); // 30秒超时
       });
 
-      console.log("PS报告助理API请求参数:", {
-        query,
-        timestamp: new Date().toISOString(),
-        source: "web",
-        userId: session?.user?.email || "anonymous",
-        filesCount: files?.length || 0,
-        transcriptFilesCount: transcriptFiles?.length || 0,
-      });
-
+      // console.log("PS报告助理API请求参数:", {
+        // query,
+        // timestamp: new Date().toISOString(),
+        // source: "web",
+        // userId: session?.user?.email || "anonymous",
+        // filesCount: files?.length || 0,
+        // transcriptFilesCount: transcriptFiles?.length || 0,
+        // materialDocLength: materialDoc?.length || 0,
+      // });
       const streamPromise = apiService.streamQuery(
         query,
         {
@@ -149,7 +143,8 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
           userId: session?.user?.email || "anonymous",
         },
         files,
-        transcriptFiles
+        transcriptFiles,
+        materialDoc // 传递粘贴的文档内容
       );
 
       // 使用 Promise.race 实现超时处理
@@ -158,8 +153,7 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
         timeoutPromise,
       ])) as ReadableStream<Uint8Array> | null;
 
-      console.log("PS报告助理API响应流:", stream);
-
+      // console.log("PS报告助理API响应流:", stream);
       if (!stream) {
         throw new Error("无法获取响应流");
       }
@@ -167,19 +161,19 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
       // 使用通用的流处理器
       await processStream(stream, {
         onUpdate: (result) => {
-          console.log("PS报告助理 - 流更新:", {
-            contentLength: result.content.length,
-            currentStep: result.currentStep,
-            stepsCount: result.steps?.length || 0,
-            isComplete: result.isComplete,
-          });
+          // console.log("PS报告助理 - 流更新:", {
+            // contentLength: result.content.length,
+            // currentStep: result.currentStep,
+            // stepsCount: result.steps?.length || 0,
+            // isComplete: result.isComplete,
+          // });
           setResult(result);
         },
         onComplete: async (result) => {
-          console.log("PS报告助理 - 流完成:", {
-            contentLength: result.content.length,
-            stepsCount: result.steps?.length || 0,
-          });
+          // console.log("PS报告助理 - 流完成:", {
+            // contentLength: result.content.length,
+            // stepsCount: result.steps?.length || 0,
+          // });
           const finalResult = {
             ...result,
             isComplete: true,
@@ -198,7 +192,7 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
           }
         },
         onError: async (error) => {
-          console.error("PS报告助理 - 流处理错误:", error);
+          // console.error("PS报告助理 - 流处理错误:", error);
           if (toast) {
             toast.error("处理请求失败: " + error.message);
           }
@@ -226,7 +220,7 @@ export function usePSReport({ setResult, toast, session }: UsePSReportProps) {
         charDelay: 0.2, // 字符显示间隔0.2毫秒
       });
     } catch (error) {
-      console.error("PS报告助理处理流式响应错误:", error);
+      // console.error("PS报告助理处理流式响应错误:", error);
       const errorResult = {
         content: "处理请求时出现错误",
         timestamp: new Date().toISOString(),

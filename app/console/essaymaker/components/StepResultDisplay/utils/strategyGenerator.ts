@@ -73,17 +73,16 @@ export async function generateRewriteStrategy(
   // 性能监控开始
   const startTime = enablePerformanceMonitoring ? Date.now() : 0;
 
-  console.log("策略生成开始，参数:", {
-    hasSearchResult: !!searchResult,
-    hasOriginalFile: !!originalEssayFile,
-    hasAnalysisResult: !!analysisResult,
-    customPrompts: {
-      role: !!customRole,
-      task: !!customTask,
-      outputFormat: !!customOutputFormat,
-    },
-  });
-
+  // console.log("策略生成开始，参数:", {
+  //   hasSearchResult: !!searchResult,
+  //   hasOriginalFile: !!originalEssayFile,
+  //   hasAnalysisResult: !!analysisResult,
+  //   customPrompts: {
+  //     role: !!customRole,
+  //     task: !!customTask,
+  //     outputFormat: !!customOutputFormat,
+  //   },
+  // });
   try {
     // 调用流式API
     const streamResponse = await apiService.streamEssayRewriteGenerateStrategy(
@@ -155,7 +154,7 @@ export async function generateRewriteStrategy(
             // 通知进度更新
             handler.onProgress?.(updatedResult);
           } catch (e) {
-            console.warn("解析流数据失败:", e);
+            // console.warn("解析流数据失败:", e);
           }
         }
       }
@@ -173,12 +172,11 @@ export async function generateRewriteStrategy(
     // 计算执行时间
     const duration = enablePerformanceMonitoring ? Date.now() - startTime : 0;
 
-    console.log("策略生成完成:", {
-      contentLength: strategyContent.length,
-      stepsCount: steps.length,
-      duration: `${duration}ms`,
-    });
-
+    // console.log("策略生成完成:", {
+    //   contentLength: strategyContent.length,
+    //   stepsCount: steps.length,
+    //   duration: `${duration}ms`,
+    // });
     // 通知完成
     handler.onComplete?.(finalResult);
 
@@ -192,8 +190,7 @@ export async function generateRewriteStrategy(
     const errorObj = error instanceof Error ? error : new Error("未知错误");
     const duration = enablePerformanceMonitoring ? Date.now() - startTime : 0;
 
-    console.error("策略生成失败:", errorObj);
-
+    // console.error("策略生成失败:", errorObj);
     // 数据记录（失败情况）
     if (enableDataLogging) {
       await logStrategyGenerationResult(
@@ -231,30 +228,30 @@ async function logStrategyGenerationResult(
   try {
     // 这里需要导入适当的日志记录Hook或服务
     // 由于原代码中使用了 useSectionalLogger，我们需要在组件层面处理这个逻辑
-    console.log("策略生成结果记录:", {
-      params: {
-        hasSearchResult: !!params.searchResult,
-        hasOriginalFile: !!params.originalEssayFile,
-        hasAnalysisResult: !!params.analysisResult,
-        customPrompts: {
-          role: !!params.customRole,
-          task: !!params.customTask,
-          outputFormat: !!params.customOutputFormat,
-        },
-      },
-      result: result
-        ? {
-            contentLength: result.content?.length || 0,
-            stepsCount: result.steps?.length || 0,
-            isComplete: result.isComplete,
-          }
-        : null,
-      isSuccess,
-      duration,
-      errorMessage,
-    });
+    // console.log("策略生成结果记录:", {
+    //   params: {
+    //     hasSearchResult: !!params.searchResult,
+    //     hasOriginalFile: !!params.originalEssayFile,
+    //     hasAnalysisResult: !!params.analysisResult,
+    //     customPrompts: {
+    //       role: !!params.customRole,
+    //       task: !!params.customTask,
+    //       outputFormat: !!params.customOutputFormat,
+    //     },
+    //   },
+    //   result: result
+    //     ? {
+    //         contentLength: result.content?.length || 0,
+    //         stepsCount: result.steps?.length || 0,
+    //         isComplete: result.isComplete,
+    //       }
+    //     : null,
+    //   isSuccess,
+    //   duration,
+    //   errorMessage,
+    // });
   } catch (logError) {
-    console.warn("记录策略生成结果失败:", logError);
+    // console.warn("记录策略生成结果失败:", logError);
   }
 }
 
@@ -300,7 +297,7 @@ export function createDefaultStrategyHandler(
     onProgress: onUpdate,
     onComplete: onUpdate,
     onError: (error) => {
-      console.error("策略生成处理器错误:", error);
+      // console.error("策略生成处理器错误:", error);
     },
   };
 }

@@ -84,20 +84,20 @@ export function ReasoningCard({
 
   // 🆕 所有hooks必须在条件性return之前调用
   useEffect(() => {
-    console.log("ReasoningCard 渲染:", {
-      segmentsCount: reasoningSegments?.length || 0,
-      isComplete,
-      title,
-      isCollapsed,
-      autoCollapsed,
-      shouldAutoCollapse,
-      hasRespondedToAutoCollapse,
-      segments: reasoningSegments?.map((s) => ({
-        type: s.content_type,
-        length: s.content?.length || 0,
-        preview: s.content?.substring(0, 50) + "...",
-      })),
-    });
+    // console.log("ReasoningCard 渲染:", {
+    //   segmentsCount: reasoningSegments?.length || 0,
+    //   isComplete,
+    //   title,
+    //   isCollapsed,
+    //   autoCollapsed,
+    //   shouldAutoCollapse,
+    //   hasRespondedToAutoCollapse,
+    //   segments: reasoningSegments?.map((s) => ({
+    //     type: s.content_type,
+    //     length: s.content?.length || 0,
+    //     preview: s.content?.substring(0, 50) + "...",
+    //   })),
+    // });
   }, [
     reasoningSegments,
     isComplete,
@@ -113,7 +113,7 @@ export function ReasoningCard({
     if (isComplete && !autoCollapsed && !isCollapsed) {
       // 🆕 只在用户没有手动操作的情况下才自动收起
       const timer = setTimeout(() => {
-        console.log("ReasoningCard: 3秒后自动收起");
+        // console.log("ReasoningCard: 3秒后自动收起");
         setIsCollapsed(true);
         setAutoCollapsed(true);
       }, 3000);
@@ -125,10 +125,10 @@ export function ReasoningCard({
   // 🆕 响应外部收起信号：当resume开始生成时立即收起（只响应一次）
   useEffect(() => {
     if (shouldAutoCollapse && !hasRespondedToAutoCollapse) {
-      console.log("ReasoningCard: 首次响应外部信号，立即收起thinking");
+      // console.log("ReasoningCard: 首次响应外部信号，立即收起thinking");
       setIsCollapsed(true);
       setHasRespondedToAutoCollapse(true);
-      console.log("ReasoningCard: 已标记为响应过外部信号，不再重复收起");
+      // console.log("ReasoningCard: 已标记为响应过外部信号，不再重复收起");
     }
   }, [shouldAutoCollapse, hasRespondedToAutoCollapse]);
 
@@ -141,7 +141,7 @@ export function ReasoningCard({
 
   // 🆕 现在在所有hooks之后进行条件性return
   if (!reasoningSegments || reasoningSegments.length === 0) {
-    console.log("ReasoningCard: 没有reasoning内容，不渲染");
+    // console.log("ReasoningCard: 没有reasoning内容，不渲染");
     return null;
   }
 
@@ -164,16 +164,14 @@ export function ReasoningCard({
     .filter((content) => content && content.length > 0) // 过滤空内容
     .join("\n\n---\n\n"); // 用分隔线分开不同的思考段落
 
-  console.log("ReasoningCard: 聚合内容长度:", aggregatedContent.length);
-
+  // console.log("ReasoningCard: 聚合内容长度:", aggregatedContent.length);
   // 🆕 添加转义字符处理的调试日志
-  console.log("ReasoningCard: 转义字符处理:", {
-    原始内容示例: reasoningSegments[0]?.content?.substring(0, 100) + "...",
-    处理后内容示例: aggregatedContent.substring(0, 100) + "...",
-    包含转义字符: reasoningSegments.some((s) => s.content?.includes("\\n")),
-    处理后是否还有转义字符: aggregatedContent.includes("\\n"),
-  });
-
+  // console.log("ReasoningCard: 转义字符处理:", {
+  //   原始内容示例: reasoningSegments[0]?.content?.substring(0, 100) + "...",
+  //   处理后内容示例: aggregatedContent.substring(0, 100) + "...",
+  //   包含转义字符: reasoningSegments.some((s) => s.content?.includes("\\n")),
+  //   处理后是否还有转义字符: aggregatedContent.includes("\\n"),
+  // });
   // 处理点击事件
   const handleToggle = () => {
     const newCollapsedState = !isCollapsed;
@@ -181,13 +179,13 @@ export function ReasoningCard({
 
     // 🆕 如果用户手动展开，重置所有自动状态，确保用户完全控制
     if (!newCollapsedState) {
-      console.log("ReasoningCard: 用户手动展开，重置所有自动状态");
+      // console.log("ReasoningCard: 用户手动展开，重置所有自动状态");
       setAutoCollapsed(false);
     } else {
-      console.log("ReasoningCard: 用户手动收起");
+      // console.log("ReasoningCard: 用户手动收起");
     }
 
-    console.log("ReasoningCard: 用户手动", newCollapsedState ? "收起" : "展开");
+    // console.log("ReasoningCard: 用户手动", newCollapsedState ? "收起" : "展开");
   };
 
   // 渲染reasoning内容
@@ -219,30 +217,28 @@ export function ReasoningCard({
       hasHtmlEntities ||
       hasStyleAttr;
 
-    console.log("ReasoningCard 内容渲染分析:", {
-      原始内容长度: content.length,
-      处理后内容长度: processedContent.length,
-      解包后内容长度: unwrappedContent.length,
-      内容预览: unwrappedContent.substring(0, 200) + "...",
-      检测到HTML标签: hasHtmlTags,
-      检测到Strong标签: hasStrongTags,
-      检测到Em标签: hasEmTags,
-      检测到HTML实体: hasHtmlEntities,
-      检测到样式属性: hasStyleAttr,
-      强制HTML渲染: forceHtmlRendering,
-      原始detectContentType结果: detectContentType(unwrappedContent),
-    });
-
+    // console.log("ReasoningCard 内容渲染分析:", {
+    //   原始内容长度: content.length,
+    //   处理后内容长度: processedContent.length,
+    //   解包后内容长度: unwrappedContent.length,
+    //   内容预览: unwrappedContent.substring(0, 200) + "...",
+    //   检测到HTML标签: hasHtmlTags,
+    //   检测到Strong标签: hasStrongTags,
+    //   检测到Em标签: hasEmTags,
+    //   检测到HTML实体: hasHtmlEntities,
+    //   检测到样式属性: hasStyleAttr,
+    //   强制HTML渲染: forceHtmlRendering,
+    //   原始detectContentType结果: detectContentType(unwrappedContent),
+    // });
     // 🆕 优先尝试HTML渲染
     if (forceHtmlRendering) {
-      console.log("ReasoningCard: 使用HTML渲染模式");
+      // console.log("ReasoningCard: 使用HTML渲染模式");
       const sanitizedHtml = sanitizeHtml(unwrappedContent);
-      console.log("ReasoningCard: HTML清理结果:", {
-        原始长度: unwrappedContent.length,
-        清理后长度: sanitizedHtml.length,
-        清理后预览: sanitizedHtml.substring(0, 200) + "...",
-      });
-
+      // console.log("ReasoningCard: HTML清理结果:", {
+      //   原始长度: unwrappedContent.length,
+      //   清理后长度: sanitizedHtml.length,
+      //   清理后预览: sanitizedHtml.substring(0, 200) + "...",
+      // });
       return (
         <div
           className="reasoning-content text-sm"
@@ -252,15 +248,14 @@ export function ReasoningCard({
         />
       );
     } else {
-      console.log("ReasoningCard: 使用Markdown渲染模式");
+      // console.log("ReasoningCard: 使用Markdown渲染模式");
       const extractedContent = extractMarkdownFromHtml(unwrappedContent);
       // 🆕 直接使用原始内容，不进行换行处理
 
-      console.log("ReasoningCard: Markdown处理结果:", {
-        提取后内容: extractedContent.substring(0, 200) + "...",
-        最终内容: extractedContent.substring(0, 200) + "...",
-      });
-
+      // console.log("ReasoningCard: Markdown处理结果:", {
+      //   提取后内容: extractedContent.substring(0, 200) + "...",
+      //   最终内容: extractedContent.substring(0, 200) + "...",
+      // });
       return (
         <div className="reasoning-markdown text-sm">
           <ReactMarkdown

@@ -102,12 +102,11 @@ export function RLGeneration({
 
   // 处理生成推荐信
   const handleGenerateLetter = async () => {
-    console.log("开始生成推荐信...");
-    console.log("当前结果:", result);
-    console.log("写作需求:", writingRequirements);
-
+    // console.log("开始生成推荐信...");
+    // console.log("当前结果:", result);
+    // console.log("写作需求:", writingRequirements);
     if (!result || !result.content) {
-      console.log("没有结果或内容，显示错误提示");
+      // console.log("没有结果或内容，显示错误提示");
       toast({
         variant: "destructive",
         title: "生成失败",
@@ -120,8 +119,7 @@ export function RLGeneration({
 
     setIsGenerating(true);
     try {
-      console.log("调用格式化推荐信API...");
-
+      // console.log("调用格式化推荐信API...");
       // 🆕 整合完整的写作需求字符串
       let fullWritingRequirements = "";
 
@@ -150,8 +148,7 @@ export function RLGeneration({
         fullWritingRequirements += `输出格式要求：${customOutputFormatPrompt.trim()}`;
       }
 
-      console.log("整合后的写作需求:", fullWritingRequirements);
-
+      // console.log("整合后的写作需求:", fullWritingRequirements);
       // 🆕 调用API时只传递整合后的写作需求字符串，其他提示词参数设为空
       const response = await apiService.formatRecommendationLetter(
         result.content,
@@ -161,12 +158,10 @@ export function RLGeneration({
         fullWritingRequirements // 传递整合后的完整写作需求
       );
 
-      console.log("API响应:", response);
-
+      // console.log("API响应:", response);
       // 使用统一的流式处理
       if (response instanceof ReadableStream) {
-        console.log("开始处理流式响应...");
-
+        // console.log("开始处理流式响应...");
         await processStream(response, {
           onUpdate: (result) => {
             onFormattedLetterChange({
@@ -203,8 +198,7 @@ export function RLGeneration({
             });
           },
           onError: async (error) => {
-            console.error("生成推荐信时出错:", error);
-
+            // console.error("生成推荐信时出错:", error);
             // 记录失败的格式化结果
             await logFormatResult(
               {
@@ -231,8 +225,7 @@ export function RLGeneration({
         });
       }
     } catch (error) {
-      console.error("生成推荐信时出错:", error);
-
+      // console.error("生成推荐信时出错:", error);
       // 记录失败的格式化结果
       await logFormatResult(
         {

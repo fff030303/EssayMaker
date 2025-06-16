@@ -62,7 +62,7 @@ export function StepTypeCount({ steps, type, icon, label }: StepTypeCountProps) 
       const stepData = parseStepContent(step);
       return stepData.type === type;
     } catch (error) {
-      console.error("Error parsing step content:", error);
+      // console.error("Error parsing step content:", error);
       return false;
     }
   }).length;

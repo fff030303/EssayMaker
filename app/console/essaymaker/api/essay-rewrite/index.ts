@@ -1,4 +1,4 @@
-import { getApiKey, getApiUrl } from "../common/config";
+﻿import { getApiKey, getApiUrl } from "../common/config";
 
 // PS分稿助理专用API - 只调用搜索分析（第一步）
 export async function streamSectionalQuery(
@@ -44,7 +44,8 @@ export async function streamEssayRewriteSearchAndAnalyze(
   customWebSearcherRole: string = "",
   customWebSearcherTask: string = "",
   customWebSearcherOutputFormat: string = "",
-  personalizationRequirements: string = ""
+  personalizationRequirements: string = "",
+  materialDoc: string = "" // 新增：粘贴的文档内容
 ) {
   try {
     const apiKey = getApiKey();
@@ -60,6 +61,7 @@ export async function streamEssayRewriteSearchAndAnalyze(
         customWebSearcherOutputFormat
       ),
       hasPersonalizationRequirements: !!personalizationRequirements,
+      materialDocLength: materialDoc.length,
     });
 
     // 创建FormData对象
@@ -87,6 +89,12 @@ export async function streamEssayRewriteSearchAndAnalyze(
       "personalization_requirements",
       personalizationRequirements
     );
+
+    // 添加粘贴的文档内容
+    if (materialDoc && materialDoc.trim()) {
+      formData.append("material_doc", materialDoc);
+      console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+    }
 
     // 打印FormData内容用于调试
     console.log("Essay重写搜索分析FormData内容:");
@@ -138,12 +146,13 @@ export async function streamEssayRewriteSearchAndAnalyze(
 // 第二步：Essay重写策略生成API
 export async function streamEssayRewriteGenerateStrategy(
   searchResult: string,
-  originalEssayFile: File,
+  originalEssayFile: File | null,
   analysisResult: string = "",
   customStrategyGeneratorRole: string = "",
   customStrategyGeneratorTask: string = "",
   customStrategyGeneratorOutputFormat: string = "",
-  personalizationRequirements: string = ""
+  personalizationRequirements: string = "",
+  materialDoc: string = "" // 新增：粘贴的文档内容
 ) {
   try {
     const apiKey = getApiKey();
@@ -152,7 +161,7 @@ export async function streamEssayRewriteGenerateStrategy(
     console.log("Essay重写策略生成API调用:", {
       url: `${apiUrl}/api/ps-final-draft/generate-strategy`,
       searchResultLength: searchResult.length,
-      originalEssayFile: originalEssayFile.name,
+      originalEssayFile: originalEssayFile?.name || "无文件",
       analysisResultLength: analysisResult.length,
       hasCustomPrompts: !!(
         customStrategyGeneratorRole ||
@@ -160,6 +169,7 @@ export async function streamEssayRewriteGenerateStrategy(
         customStrategyGeneratorOutputFormat
       ),
       hasPersonalizationRequirements: !!personalizationRequirements,
+      materialDocLength: materialDoc.length,
     });
 
     // 创建FormData对象
@@ -167,11 +177,21 @@ export async function streamEssayRewriteGenerateStrategy(
 
     // 添加必需参数
     formData.append("search_result", searchResult);
-    formData.append(
-      "original_essay_file",
-      originalEssayFile,
-      originalEssayFile.name
-    );
+    
+    // 添加初稿文件（如果有）或粘贴内容
+    if (originalEssayFile) {
+      formData.append(
+        "original_essay_file",
+        originalEssayFile,
+        originalEssayFile.name
+      );
+    }
+
+    // 添加粘贴的文档内容
+    if (materialDoc && materialDoc.trim()) {
+      formData.append("material_doc", materialDoc);
+      console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+    }
 
     // 添加可选参数
     formData.append("analysis_result", analysisResult);
@@ -244,10 +264,11 @@ export async function streamEssayRewriteGenerateStrategy(
 // 第三步：Essay重写API
 export async function streamEssayRewriteRewriteEssay(
   rewriteStrategy: string,
-  originalEssayFile: File,
+  originalEssayFile: File | null,
   customEssayRewriterRole: string = "",
   customEssayRewriterTask: string = "",
-  customEssayRewriterOutputFormat: string = ""
+  customEssayRewriterOutputFormat: string = "",
+  materialDoc: string = "" // 新增：粘贴的文档内容
 ) {
   try {
     const apiKey = getApiKey();
@@ -256,12 +277,13 @@ export async function streamEssayRewriteRewriteEssay(
     console.log("Essay重写API调用:", {
       url: `${apiUrl}/api/ps-final-draft/rewrite-essay`,
       rewriteStrategyLength: rewriteStrategy.length,
-      originalEssayFile: originalEssayFile.name,
+      originalEssayFile: originalEssayFile?.name || "无文件",
       hasCustomPrompts: !!(
         customEssayRewriterRole ||
         customEssayRewriterTask ||
         customEssayRewriterOutputFormat
       ),
+      materialDocLength: materialDoc.length,
     });
 
     // 创建FormData对象
@@ -269,11 +291,21 @@ export async function streamEssayRewriteRewriteEssay(
 
     // 添加必需参数
     formData.append("rewrite_strategy", rewriteStrategy);
-    formData.append(
-      "original_essay_file",
-      originalEssayFile,
-      originalEssayFile.name
-    );
+    
+    // 添加初稿文件（如果有）
+    if (originalEssayFile) {
+      formData.append(
+        "original_essay_file",
+        originalEssayFile,
+        originalEssayFile.name
+      );
+    }
+
+    // 添加粘贴的文档内容
+    if (materialDoc && materialDoc.trim()) {
+      formData.append("material_doc", materialDoc);
+      console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+    }
 
     // 添加自定义提示词参数
     formData.append("custom_essay_rewriter_role", customEssayRewriterRole);

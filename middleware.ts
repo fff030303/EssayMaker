@@ -7,8 +7,8 @@ export function middleware(request: NextRequest) {
   
   // 只对根路径进行处理
   if (url.pathname === '/') {
-    // 将路径修改为 /essaymaker
-    url.pathname = '/essaymaker'
+    // 将路径修改为 /console/essaymaker
+    url.pathname = '/console/essaymaker'
     return NextResponse.redirect(url)
   }
 }

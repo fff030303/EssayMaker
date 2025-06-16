@@ -68,6 +68,9 @@ import {
   MessageSquareQuote,
   User,
   Mail,
+  FileEdit,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -166,6 +169,10 @@ export function RLFileUploadForm({
   const [customOutputFormatPrompt, setCustomOutputFormatPrompt] =
     useState<string>("");
 
+  // 新增：文档粘贴模式状态
+  const [isPasteMode, setIsPasteMode] = useState(false);
+  const [pastedResumeText, setPastedResumeText] = useState<string>("");
+
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const supportInputRef = useRef<HTMLInputElement>(null);
   const resumeDropAreaRef = useRef<HTMLDivElement>(null);
@@ -233,6 +240,34 @@ export function RLFileUploadForm({
     });
   };
 
+  // 新增：切换文档粘贴模式
+  const togglePasteMode = () => {
+    const newMode = !isPasteMode;
+    setIsPasteMode(newMode);
+    
+    // 切换模式时清空之前的内容
+    if (newMode) {
+      // 切换到粘贴模式，清空文件
+      setResumeFile(null);
+      if (resumeInputRef.current) {
+        resumeInputRef.current.value = "";
+      }
+    } else {
+      // 切换到文件模式，清空文本
+      setPastedResumeText("");
+    }
+    
+    toast({
+      title: newMode ? "切换到文档粘贴模式" : "切换到文件上传模式",
+      description: newMode ? "现在可以直接粘贴文档内容" : "现在可以上传文件",
+    });
+  };
+
+  // 新增：处理粘贴文本内容
+  const handlePastedTextChange = (text: string) => {
+    setPastedResumeText(text);
+  };
+
   // 删除推荐信素材表文件
   const handleRemoveResumeFile = () => {
     setResumeFile(null);
@@ -289,20 +324,31 @@ export function RLFileUploadForm({
 
   // 处理提交
   const handleSubmit = async () => {
-    console.log("[RLFileUploadForm] handleSubmit 被调用");
-    console.log("[RLFileUploadForm] 当前推荐信文件:", resumeFile?.name);
-    console.log(
-      "[RLFileUploadForm] logAnalysisResult函数:",
-      typeof logAnalysisResult
-    );
-
-    if (!resumeFile) {
-      toast({
-        variant: "destructive",
-        title: "文件缺失",
-        description: "请上传推荐信素材表",
-      });
-      return;
+    // console.log("[RLFileUploadForm] handleSubmit 被调用");
+    // console.log("[RLFileUploadForm] 当前推荐信文件:", resumeFile?.name);
+    // console.log(
+    //   "[RLFileUploadForm] logAnalysisResult函数:",
+    //   typeof logAnalysisResult
+    // );
+    // 检查是否有简历内容（文件或粘贴文本）
+    if (isPasteMode) {
+      if (!pastedResumeText.trim()) {
+        toast({
+          variant: "destructive",
+          title: "内容缺失",
+          description: "请粘贴推荐信素材内容",
+        });
+        return;
+      }
+    } else {
+      if (!resumeFile) {
+        toast({
+          variant: "destructive",
+          title: "文件缺失",
+          description: "请上传推荐信素材表",
+        });
+        return;
+      }
     }
 
     // 验证必填字段
@@ -385,22 +431,37 @@ export function RLFileUploadForm({
 
     try {
       // 使用apiService中的推荐信生成方法，传入构建的完整要求
-      const response = await apiService.generateRecommendationLetter(
-        resumeFile,
-        fullWritingRequirements, // 使用构建的完整要求
-        recommenderNumber.toString(),
-        supportFiles,
-        customRolePrompt,
-        customTaskPrompt,
-        customOutputFormatPrompt
-      );
+      let response;
+      if (isPasteMode) {
+        // 粘贴模式：传递null文件和粘贴的文档内容，需要修改API以支持material_doc参数
+        response = await apiService.generateRecommendationLetter(
+          null,
+          fullWritingRequirements,
+          recommenderNumber.toString(),
+          supportFiles,
+          customRolePrompt,
+          customTaskPrompt,
+          customOutputFormatPrompt,
+          pastedResumeText // 传递粘贴的文档内容
+        );
+      } else {
+        // 文件模式：传递文件和空的文档内容
+        response = await apiService.generateRecommendationLetter(
+          resumeFile,
+          fullWritingRequirements,
+          recommenderNumber.toString(),
+          supportFiles,
+          customRolePrompt,
+          customTaskPrompt,
+          customOutputFormatPrompt,
+          "" // 空的文档内容
+        );
+      }
 
-      console.log("API响应类型:", typeof response);
-
+      // console.log("API响应类型:", typeof response);
       // 检查响应类型
       if (response instanceof ReadableStream) {
-        console.log("接收到流式响应，开始处理...");
-
+        // console.log("接收到流式响应，开始处理...");
         await processStream(response, {
           onUpdate: (result) => {
             setStreamContent(result.content);
@@ -421,7 +482,7 @@ export function RLFileUploadForm({
             // 记录成功的分析结果
             await logAnalysisResult(
               {
-                fileContent: resumeFile.name,
+                fileContent: resumeFile?.name || (isPasteMode ? "粘贴文档" : "未知文件"),
                 supportFiles: supportFiles.map((f) => f.name),
                 writingRequirements: fullWritingRequirements,
                 hasCustomPrompt: !!(
@@ -453,12 +514,11 @@ export function RLFileUploadForm({
             });
           },
           onError: async (error) => {
-            console.error("处理推荐信时出错:", error);
-
+            // console.error("处理推荐信时出错:", error);
             // 记录失败的分析结果
             await logAnalysisResult(
               {
-                fileContent: resumeFile.name,
+                fileContent: resumeFile?.name || (isPasteMode ? "粘贴文档" : "未知文件"),
                 supportFiles: supportFiles.map((f) => f.name),
                 writingRequirements: fullWritingRequirements,
                 hasCustomPrompt: !!(
@@ -495,8 +555,7 @@ export function RLFileUploadForm({
         });
       } else {
         // 普通JSON响应
-        console.log("API响应数据:", response);
-
+        // console.log("API响应数据:", response);
         if (response && typeof response === "object") {
           const responseObj = response as any;
           const content = responseObj?.text || JSON.stringify(response);
@@ -507,7 +566,7 @@ export function RLFileUploadForm({
           // 记录成功的分析结果
           await logAnalysisResult(
             {
-              fileContent: resumeFile.name,
+              fileContent: resumeFile?.name || (isPasteMode ? "粘贴文档" : "未知文件"),
               supportFiles: supportFiles.map((f) => f.name),
               writingRequirements: fullWritingRequirements,
               hasCustomPrompt: !!(
@@ -535,12 +594,11 @@ export function RLFileUploadForm({
         }
       }
     } catch (error) {
-      console.error("提交推荐信时出错:", error);
-
+      // console.error("提交推荐信时出错:", error);
       // 记录失败的分析结果
       await logAnalysisResult(
         {
-          fileContent: resumeFile.name,
+          fileContent: resumeFile?.name || (isPasteMode ? "粘贴文档" : "未知文件"),
           supportFiles: supportFiles.map((f) => f.name),
           writingRequirements: fullWritingRequirements,
           hasCustomPrompt: !!(
@@ -603,43 +661,95 @@ export function RLFileUploadForm({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 推荐信素材表上传 */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-medium">推荐信素材表</h3>
-                    <Badge
-                      variant="destructive"
-                      className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-medium">推荐信素材表</h3>
+                      <Badge
+                        variant="destructive"
+                        className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+                      >
+                        必需
+                      </Badge>
+                    </div>
+                    
+                    {/* 文档粘贴模式切换按钮 */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={togglePasteMode}
+                      disabled={isLoading}
+                      className="h-5 px-2 text-xs hover:bg-stone-200"
+                      title={isPasteMode ? "切换到文件上传模式" : "切换到文档粘贴模式"}
                     >
-                      必需
-                    </Badge>
+                      {isPasteMode ? (
+                        <>
+                          <Upload className="h-3 w-3 mr-1" />
+                          文件模式
+                        </>
+                      ) : (
+                        <>
+                          <FileEdit className="h-3 w-3 mr-1" />
+                          粘贴模式
+                        </>
+                      )}
+                    </Button>
                   </div>
 
-                  {resumeFile ? (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                          <div>
-                            <div className="text-sm font-medium">
-                              {resumeFile.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatFileSize(resumeFile.size)}
-                            </div>
-                          </div>
+                  {isPasteMode ? (
+                    /* 文档粘贴模式 */
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="请粘贴您的推荐信素材内容到这里..."
+                        value={pastedResumeText}
+                        onChange={(e) => handlePastedTextChange(e.target.value)}
+                        disabled={isLoading}
+                        className="min-h-[108px] text-sm border border-stone-200 bg-white placeholder:text-stone-500 focus-visible:ring-1 focus-visible:ring-stone-400 focus-visible:border-stone-400 transition-colors shadow-sm rounded-md p-3 resize-y"
+                      />
+
+                      {pastedResumeText && (
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPastedResumeText("")}
+                            disabled={isLoading}
+                            className="h-6 px-2 text-xs hover:bg-red-100 hover:text-red-600"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            清空
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleRemoveResumeFile}
-                          disabled={isLoading}
-                          className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   ) : (
+                    /* 文件上传模式 */
+                    resumeFile ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <div>
+                              <div className="text-sm font-medium">
+                                {resumeFile.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatFileSize(resumeFile.size)}
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveResumeFile}
+                            disabled={isLoading}
+                            className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
                     <div
                       ref={resumeDropAreaRef}
                       className={cn(
@@ -694,7 +804,8 @@ export function RLFileUploadForm({
                       <div className="text-xs text-muted-foreground">
                         推荐DOCX格式（≤10MB）
                       </div>
-                    </div>
+                      </div>
+                    )
                   )}
                 </div>
 
@@ -885,6 +996,7 @@ export function RLFileUploadForm({
                   // 清空所有输入和文件
                   setResumeFile(null);
                   setSupportFiles([]);
+                  setPastedResumeText("");
                   setCustomRolePrompt("");
                   setCustomTaskPrompt("");
                   setCustomOutputFormatPrompt("");
@@ -919,7 +1031,7 @@ export function RLFileUploadForm({
                 size="default"
                 className="flex items-center gap-1 bg-gradient-to-r from-stone-600 to-stone-700 hover:from-stone-700 hover:to-stone-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 onClick={handleSubmit}
-                disabled={isLoading || !resumeFile || !gender.trim()}
+                disabled={isLoading || (isPasteMode ? !pastedResumeText.trim() : !resumeFile) || !gender.trim()}
               >
                 {isLoading ? (
                   <>

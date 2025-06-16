@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SectionalStrategyAndDraftDisplay 组件
  *
  * 功能：分稿助理的策略和稿件展示组件，显示改写策略和生成的最终稿件
@@ -78,6 +78,8 @@ interface SectionalStrategyAndDraftDisplayProps {
   onClearAll?: () => void;
   // 🆕 新增：清空时间戳，用于触发清空操作
   clearTimestamp?: number;
+  // 🆕 新增：粘贴模式支持
+  originalEssayDoc?: string;
 }
 
 export function SectionalStrategyAndDraftDisplay({
@@ -90,6 +92,7 @@ export function SectionalStrategyAndDraftDisplay({
   strategyContent,
   onClearAll,
   clearTimestamp,
+  originalEssayDoc,
 }: SectionalStrategyAndDraftDisplayProps) {
   const [isGeneratingFinalDraft, setIsGeneratingFinalDraft] = useState(false);
 
@@ -184,16 +187,57 @@ export function SectionalStrategyAndDraftDisplay({
     isGeneratingFinalDraft,
   ]);
 
+  // 🔥 测试函数 - 简单的点击处理
+  const testClickHandler = () => {
+    console.log("🔥🔥🔥 测试按钮被点击了！");
+    alert("测试按钮被点击了！");
+  };
+
   // 处理生成最终稿件
   const handleGenerateFinalDraft = useCallback(async () => {
-    if (!originalFile || !strategyResult?.content) {
+    console.log("🔥 handleGenerateFinalDraft 被调用");
+    
+    // 🆕 新增：显示originalEssayDoc的实际内容（前100个字符）
+    console.log("🔥 originalEssayDoc 详细信息:", {
+      exists: !!originalEssayDoc,
+      type: typeof originalEssayDoc,
+      length: originalEssayDoc?.length || 0,
+      content: originalEssayDoc ? originalEssayDoc.substring(0, 100) + '...' : 'null或undefined',
+      isEmpty: originalEssayDoc === '',
+      isNull: originalEssayDoc === null,
+      isUndefined: originalEssayDoc === undefined
+    });
+    
+    console.log("🔥 参数检查:", {
+      hasOriginalFile: !!originalFile,
+      originalFileName: originalFile?.name,
+      hasOriginalEssayDoc: !!originalEssayDoc,
+      originalEssayDocLength: originalEssayDoc?.length,
+      hasStrategyContent: !!strategyResult?.content,
+      strategyContentLength: strategyResult?.content?.length,
+    });
+    
+    // 🆕 新增：更详细的验证信息
+    const missingItems = [];
+    if (!originalFile && !originalEssayDoc) {
+      missingItems.push("原始Essay内容（需要上传文件或粘贴文本）");
+    }
+    if (!strategyResult?.content) {
+      missingItems.push("改写策略内容（需要先生成改写策略）");
+    }
+    
+    if (missingItems.length > 0) {
+      console.log("🔥 验证失败，缺少内容:", missingItems);
+      const missingItemsText = missingItems.join("、");
       toast({
         variant: "destructive",
         title: "生成失败",
-        description: "缺少必要的文件或策略内容",
+        description: `缺少必要内容：${missingItemsText}`,
       });
       return;
     }
+    
+    console.log("🔥 验证通过，开始生成最终稿件");
 
     setIsGeneratingFinalDraft(true);
     onGeneratingStateChange(true);
@@ -218,16 +262,17 @@ export function SectionalStrategyAndDraftDisplay({
 
       console.log(
         "传递给第三步API的改写策略内容长度:",
-        strategyResult.content.length
+        strategyResult?.content?.length || 0
       );
 
       // 🆕 修改：只传递第二步生成的改写策略，不使用第一步的搜索结果
       const response = await apiService.streamEssayRewriteRewriteEssay(
-        strategyResult.content, // 只传递第二步生成的改写策略
+        strategyResult?.content || "", // 只传递第二步生成的改写策略
         originalFile,
         customEssayRewriterRole,
         customEssayRewriterTask,
-        customEssayRewriterOutputFormat
+        customEssayRewriterOutputFormat,
+        originalEssayDoc // 🆕 新增：传递粘贴内容
       );
 
       if (response instanceof ReadableStream) {
@@ -259,7 +304,7 @@ export function SectionalStrategyAndDraftDisplay({
               "[SectionalStrategyAndDraftDisplay] 准备记录最终稿件生成结果到数据库:",
               {
                 requestData: {
-                  rewriteStrategy: !!strategyResult.content,
+                  rewriteStrategy: !!(strategyResult?.content),
                   originalEssayFile: !!originalFile,
                   customEssayRewriterRole,
                   customEssayRewriterTask,
@@ -273,7 +318,7 @@ export function SectionalStrategyAndDraftDisplay({
 
             await logFinalDraftResult(
               {
-                rewriteStrategy: strategyResult.content,
+                rewriteStrategy: strategyResult?.content || "",
                 originalEssayFile: originalFile,
                 customEssayRewriterRole,
                 customEssayRewriterTask,
@@ -338,7 +383,7 @@ export function SectionalStrategyAndDraftDisplay({
                   "[SectionalStrategyAndDraftDisplay] 准备记录最终稿件生成结果到数据库 (complete):",
                   {
                     requestData: {
-                      rewriteStrategy: !!strategyResult.content,
+                      rewriteStrategy: !!(strategyResult?.content),
                       originalEssayFile: !!originalFile,
                       customEssayRewriterRole,
                       customEssayRewriterTask,
@@ -441,6 +486,7 @@ export function SectionalStrategyAndDraftDisplay({
     }
   }, [
     originalFile,
+    originalEssayDoc, // 🆕 新增：粘贴内容依赖项
     strategyResult,
     strategyContent,
     onFinalDraftChange,

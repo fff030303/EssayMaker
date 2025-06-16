@@ -2,43 +2,52 @@ import { getApiKey, getApiUrl } from "../common/config";
 
 // 生成推荐信
 export async function generateRecommendationLetter(
-  resumeMaterial: File,
+  resumeMaterial: File | null,
   writing_requirements: string,
   recommenderNumber: string,
   supportFiles: File[] = [],
   customRolePrompt: string = "",
   customTaskPrompt: string = "",
-  customOutputFormatPrompt: string = ""
+  customOutputFormatPrompt: string = "",
+  materialDoc: string = ""
 ) {
   try {
     const apiKey = getApiKey();
     const apiUrl = getApiUrl();
 
-    console.log("准备生成推荐信, API地址:", apiUrl);
-    console.log("推荐信素材文件:", resumeMaterial.name);
-    console.log("推荐人数量:", recommenderNumber);
-    console.log("支持文件数量:", supportFiles.length);
-    console.log("写作需求:", writing_requirements);
-    console.log("自定义提示词:", {
-      role: customRolePrompt,
-      task: customTaskPrompt,
-      outputFormat: customOutputFormatPrompt,
-    });
-
+    // console.log("准备生成推荐信, API地址:", apiUrl);
+    // console.log("推荐信素材文件:", resumeMaterial?.name || "无文件");
+    // console.log("推荐人数量:", recommenderNumber);
+    // console.log("支持文件数量:", supportFiles.length);
+    // console.log("粘贴文档内容长度:", materialDoc.length);
+    // console.log("写作需求:", writing_requirements);
+    // console.log("自定义提示词:", {
+    //   role: customRolePrompt,
+    //   task: customTaskPrompt,
+    //   outputFormat: customOutputFormatPrompt,
+    // });
     // 创建FormData对象用于上传文件
     const formData = new FormData();
-    // 使用recommendation_material作为推荐信素材文件字段名
-    formData.append(
-      "recommendation_material",
-      resumeMaterial,
-      resumeMaterial.name
-    );
+    
+    // 只在有文件时添加 recommendation_material
+    if (resumeMaterial) {
+      formData.append(
+        "recommendation_material",
+        resumeMaterial,
+        resumeMaterial.name
+      );
+    }
+
+    // 添加粘贴的文档内容
+    if (materialDoc) {
+      formData.append("material_doc", materialDoc);
+    }
 
     // 添加支持文件，使用support_files作为字段名
     if (supportFiles.length > 0) {
       supportFiles.forEach((file, index) => {
         formData.append("support_files", file, file.name);
-        console.log(`添加支持文件${index + 1}: ${file.name}`);
+        // console.log(`添加支持文件${index + 1}: ${file.name}`);
       });
     }
 
@@ -83,7 +92,7 @@ export async function generateRecommendationLetter(
           }
         } catch (parseError) {
           // JSON解析失败，使用原始错误信息
-          console.error("解析错误响应失败:", parseError);
+          // console.error("解析错误响应失败:", parseError);
         }
       }
       throw new Error(
@@ -95,15 +104,15 @@ export async function generateRecommendationLetter(
     const contentType = response.headers.get("content-type");
 
     if (contentType && contentType.includes("text/event-stream")) {
-      console.log("接收到流式响应");
+      // console.log("接收到流式响应");
       return response.body;
     } else {
-      console.log("接收到普通响应");
+      // console.log("接收到普通响应");
       const text = await response.text();
       return text;
     }
   } catch (error) {
-    console.error("生成推荐信时出错:", error);
+    // console.error("生成推荐信时出错:", error);
     throw error;
   }
 }
@@ -120,15 +129,14 @@ export async function formatRecommendationLetter(
     const apiKey = getApiKey();
     const apiUrl = getApiUrl();
 
-    console.log("准备格式化推荐信, API地址:", apiUrl);
-    console.log("原始推荐信内容长度:", rawLetter.length);
-    console.log("写作需求:", writing_requirements);
-    console.log("自定义提示词:", {
-      role: customRolePrompt,
-      task: customTaskPrompt,
-      outputFormat: customOutputFormatPrompt,
-    });
-
+    // console.log("准备格式化推荐信, API地址:", apiUrl);
+    // console.log("原始推荐信内容长度:", rawLetter.length);
+    // console.log("写作需求:", writing_requirements);
+    // console.log("自定义提示词:", {
+    //   role: customRolePrompt,
+    //   task: customTaskPrompt,
+    //   outputFormat: customOutputFormatPrompt,
+    // });
     // 创建FormData对象
     const formData = new FormData();
     formData.append("raw_letter", rawLetter);
@@ -140,14 +148,14 @@ export async function formatRecommendationLetter(
     // 打印上传的表单数据
     for (let [key, value] of formData.entries()) {
       if (typeof value === "string" && value.length > 500) {
-        console.log(
-          `${key}: String - ${value.length} 字符 (前50字符: ${value.substring(
-            0,
-            50
-          )}...)`
-        );
+        // console.log(
+        //   `${key}: String - ${value.length} 字符 (前50字符: ${value.substring(
+        //     0,
+        //     50
+        //   )}...)`
+        // );
       } else {
-        console.log(`${key}: ${value}`);
+        // console.log(`${key}: ${value}`);
       }
     }
 
@@ -163,18 +171,17 @@ export async function formatRecommendationLetter(
     );
 
     if (!response.ok) {
-      console.error("Format Letter response status:", response.status);
-      console.error("Format Letter response status text:", response.statusText);
-      console.error(
-        "Format Letter response headers:",
-        Object.fromEntries(response.headers)
-      );
+      // console.error("Format Letter response status:", response.status);
+      // console.error("Format Letter response status text:", response.statusText);
+      // console.error(
+      //   "Format Letter response headers:",
+      //   Object.fromEntries(response.headers)
+      // );
 
       const errorText = await response
         .text()
         .catch(() => "No error text available");
-      console.error("Format Letter error details:", errorText);
-
+      // console.error("Format Letter error details:", errorText);
       throw new Error(
         `HTTP error! status: ${response.status}, details: ${errorText}`
       );
@@ -184,15 +191,15 @@ export async function formatRecommendationLetter(
     const contentType = response.headers.get("content-type");
 
     if (contentType && contentType.includes("text/event-stream")) {
-      console.log("接收到流式响应");
+      // console.log("接收到流式响应");
       return response.body;
     } else {
-      console.log("接收到普通响应");
+      // console.log("接收到普通响应");
       const text = await response.text();
       return text;
     }
   } catch (error) {
-    console.error("Format Letter API error:", error);
+    // console.error("Format Letter API error:", error);
     throw error;
   }
 }

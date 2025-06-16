@@ -109,17 +109,16 @@ export function PSReportAndDraftDisplay({
   }, [finalDraft]);
 
   const handleGenerateFinalDraft = () => {
-    console.log("[DRAFT-GEN] 🎯 handleGenerateFinalDraft 被调用");
-    console.log("[DRAFT-GEN] 🎯 检查条件:", {
-      hasResult: !!result,
-      hasResultContent: !!result?.content,
-      userDirection: userDirection,
-      userDirectionTrim: userDirection.trim(),
-      onGenerateFinalDraftExists: !!onGenerateFinalDraft,
-    });
-
+    // console.log("[DRAFT-GEN] 🎯 handleGenerateFinalDraft 被调用");
+    // console.log("[DRAFT-GEN] 🎯 检查条件:", {
+    //   hasResult: !!result,
+    //   hasResultContent: !!result?.content,
+    //   userDirection: userDirection,
+    //   userDirectionTrim: userDirection.trim(),
+    //   onGenerateFinalDraftExists: !!onGenerateFinalDraft,
+    // });
     if (!result || !result.content) {
-      console.log("[DRAFT-GEN] ❌ 缺少result或content");
+      // console.log("[DRAFT-GEN] ❌ 缺少result或content");
       toast({
         variant: "destructive",
         title: "生成失败",
@@ -130,7 +129,7 @@ export function PSReportAndDraftDisplay({
     }
 
     if (!userDirection.trim()) {
-      console.log("[DRAFT-GEN] ❌ 缺少userDirection");
+      // console.log("[DRAFT-GEN] ❌ 缺少userDirection");
       toast({
         variant: "destructive",
         title: "生成失败",
@@ -142,27 +141,27 @@ export function PSReportAndDraftDisplay({
 
     // 确保已提交状态为true，这样用户在不同步骤间导航时不会有问题
     if (setHasSubmittedDraft) {
-      console.log("[DRAFT-GEN] ✅ 设置已提交文件状态为true");
+      // console.log("[DRAFT-GEN] ✅ 设置已提交文件状态为true");
       setHasSubmittedDraft(true);
     }
 
     // 设置本地生成状态
-    console.log("[DRAFT-GEN] 🔄 设置本地生成状态为true");
+    // console.log("[DRAFT-GEN] 🔄 设置本地生成状态为true");
     setGeneratingFinalDraft(true);
 
     // 调用生成函数
     if (onGenerateFinalDraft) {
-      console.log("[DRAFT-GEN] 🚀 调用onGenerateFinalDraft");
-      console.log("[DRAFT-GEN] 🚀 使用现有的素材整理报告");
+      // console.log("[DRAFT-GEN] 🚀 调用onGenerateFinalDraft");
+      // console.log("[DRAFT-GEN] 🚀 使用现有的素材整理报告");
       try {
         onGenerateFinalDraft();
-        console.log("[DRAFT-GEN] ✅ onGenerateFinalDraft调用成功");
+        // console.log("[DRAFT-GEN] ✅ onGenerateFinalDraft调用成功");
       } catch (error) {
-        console.error("[DRAFT-GEN] ❌ onGenerateFinalDraft调用出错:", error);
+        // console.error("[DRAFT-GEN] ❌ onGenerateFinalDraft调用出错:", error);
         setGeneratingFinalDraft(false);
       }
     } else {
-      console.error("[DRAFT-GEN] ❌ 未提供onGenerateFinalDraft回调函数");
+      // console.error("[DRAFT-GEN] ❌ 未提供onGenerateFinalDraft回调函数");
       setGeneratingFinalDraft(false);
     }
   };
@@ -192,24 +191,23 @@ export function PSReportAndDraftDisplay({
             transcriptAnalysis: transcriptAnalysis || undefined,
           },
           onUpdate: (result) => {
-            console.log("PS初稿生成更新:", result);
+            // console.log("PS初稿生成更新:", result);
             // 这里可以更新本地状态
           },
           onComplete: (result) => {
-            console.log("PS初稿生成完成:", result);
+            // console.log("PS初稿生成完成:", result);
             // 通知用户生成完成
           },
           onError: (error) => {
-            console.error("PS初稿生成错误:", error);
+            // console.error("PS初稿生成错误:", error);
           },
         }
       );
 
       setGlobalTaskId(taskId);
-      console.log("创建全局PS初稿生成任务:", taskId);
-
+      // console.log("创建全局PS初稿生成任务:", taskId);
     } catch (error) {
-      console.error("启动全局流式生成失败:", error);
+      // console.error("启动全局流式生成失败:", error);
     }
   }, [
     onGenerateFinalDraft,

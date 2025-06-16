@@ -2,20 +2,45 @@ import { getApiKey, getApiUrl } from "../common/config";
 
 // 简历生成API
 export async function generateResume(
-  resumeMaterial: File,
-  supportFiles: File[] = []
+  resumeMaterial: File | null,
+  supportFiles: File[] = [],
+  materialDoc: string = "",
+  customRolePrompt: string = "",
+  customTaskPrompt: string = "",
+  customOutputFormatPrompt: string = ""
 ) {
   try {
     const apiKey = getApiKey();
     const apiUrl = getApiUrl();
 
     console.log("准备生成简历, API地址:", apiUrl);
-    console.log("简历材料文件:", resumeMaterial.name);
+    console.log("简历材料文件:", resumeMaterial?.name || "无文件");
     console.log("支持文件数量:", supportFiles.length);
+    console.log("粘贴文档内容长度:", materialDoc.length);
+    console.log("自定义提示词:", {
+      role: customRolePrompt,
+      task: customTaskPrompt,
+      outputFormat: customOutputFormatPrompt,
+    });
 
     // 创建FormData对象
     const formData = new FormData();
-    formData.append("resume_material", resumeMaterial);
+    
+    // 根据模式决定传递哪个参数，不能同时传递
+    if (materialDoc && materialDoc.trim()) {
+      // 粘贴模式：只传递文档内容
+      formData.append("material_doc", materialDoc);
+      console.log("使用粘贴模式：material_doc");
+    } else if (resumeMaterial) {
+      // 文件模式：只传递文件
+      formData.append("resume_material", resumeMaterial);
+      console.log("使用文件模式：resume_material");
+    }
+
+    // 添加自定义提示词参数
+    formData.append("custom_role_prompt", customRolePrompt);
+    formData.append("custom_task_prompt", customTaskPrompt);
+    formData.append("custom_output_format_prompt", customOutputFormatPrompt);
 
     // 添加支持文件
     supportFiles.forEach((file, index) => {

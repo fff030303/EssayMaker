@@ -73,6 +73,11 @@ interface AdvancedInputAreaProps {
   setProgramInfo: (info: any) => void; // 请根据实际数据结构替换'any'
   otherRequirements: any; // 请根据实际数据结构替换'any'
   setOtherRequirements: (req: any) => void; // 请根据实际数据结构替换'any'
+  // 🆕 粘贴模式相关props
+  isPasteMode?: boolean;
+  setPasteMode?: (isPaste: boolean) => void;
+  pastedText?: string;
+  setPastedText?: (text: string) => void;
 }
 
 export function AdvancedInputArea({
@@ -111,12 +116,26 @@ export function AdvancedInputArea({
   setProgramInfo,
   otherRequirements,
   setOtherRequirements,
+  // 🆕 粘贴模式相关props
+  isPasteMode: parentIsPasteMode,
+  setPasteMode: parentSetPasteMode,
+  pastedText: parentPastedText,
+  setPastedText: parentSetPastedText,
 }: AdvancedInputAreaProps) {
   const { toast } = useToast();
 
   // 🆕 组件状态管理
   const [isCollapsed, setIsCollapsed] = useState(false); // 主卡片折叠状态
   const [submitting, setSubmitting] = useState(false); // 提交状态
+  
+  // 🆕 粘贴模式状态管理 - 使用本地状态，如果父组件没有传递的话
+  const [localIsPasteMode, setLocalIsPasteMode] = useState(false);
+  const [localPastedText, setLocalPastedText] = useState("");
+  
+  const isPasteMode = parentIsPasteMode !== undefined ? parentIsPasteMode : localIsPasteMode;
+  const setIsPasteMode = parentSetPasteMode || setLocalIsPasteMode;
+  const pastedText = parentPastedText !== undefined ? parentPastedText : localPastedText;
+  const setPastedText = parentSetPastedText || setLocalPastedText;
 
   // 监听isLoading变化，重置submitting状态
   useEffect(() => {
@@ -156,15 +175,29 @@ export function AdvancedInputArea({
 
   // 处理提交
   const handleSubmit = () => {
-    // 初稿模式下必须有个人陈述素材表文件
-    if (type === "draft" && !draftFile) {
-      toast({
-        variant: "destructive",
-        title: "文件缺失",
-        description: "请上传个人陈述素材表文件",
-        action: <ToastAction altText="关闭">关闭</ToastAction>,
-      });
-      return;
+    // 初稿模式下必须有个人陈述素材表文件或粘贴内容
+    if (type === "draft") {
+      if (isPasteMode) {
+        if (!pastedText.trim()) {
+          toast({
+            variant: "destructive",
+            title: "内容缺失",
+            description: "请粘贴个人陈述素材内容",
+            action: <ToastAction altText="关闭">关闭</ToastAction>,
+          });
+          return;
+        }
+      } else {
+        if (!draftFile) {
+          toast({
+            variant: "destructive",
+            title: "文件缺失",
+            description: "请上传个人陈述素材表文件",
+            action: <ToastAction altText="关闭">关闭</ToastAction>,
+          });
+          return;
+        }
+      }
     }
 
     // 防止重复提交，设置提交状态
@@ -339,6 +372,10 @@ export function AdvancedInputArea({
                   otherFiles={otherFiles}
                   setOtherFiles={setOtherFiles}
                   isLoading={isLoading}
+                  isPasteMode={isPasteMode}
+                  setPasteMode={setIsPasteMode}
+                  pastedText={pastedText}
+                  setPastedText={setPastedText}
                 />
 
                 {/* 🆕 提交按钮区域 */}

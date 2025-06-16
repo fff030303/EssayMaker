@@ -66,6 +66,7 @@ interface StepResultSectionProps {
   onGenerateStrategy?: (strategyResult: DisplayResult) => void;
   onStepChange?: (step: number) => void;
   personalizationRequirements?: string; // 🆕 新增：个性化需求参数
+  materialDoc?: string; // 🆕 新增：粘贴的文档内容
 }
 
 export function StepResultSection({
@@ -80,6 +81,7 @@ export function StepResultSection({
   onGenerateStrategy,
   onStepChange,
   personalizationRequirements,
+  materialDoc, // 🆕 新增：粘贴的文档内容
 }: StepResultSectionProps) {
   // 创建结果区域的引用
   const resultRef = useRef<HTMLDivElement>(null);
@@ -202,6 +204,7 @@ export function StepResultSection({
               onStepChange={onStepChange}
               personalizationRequirements={personalizationRequirements}
               onShowFullContent={handleShowFullContent}
+              materialDoc={materialDoc} // 🆕 新增：传递粘贴的文档内容
             />
           </div>
         </div>

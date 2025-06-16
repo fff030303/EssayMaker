@@ -14,10 +14,12 @@
 
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import {
   Upload,
   FileText,
@@ -25,6 +27,7 @@ import {
   CheckCircle,
   AlertCircle,
   Files,
+  FileEdit,
 } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 
@@ -38,6 +41,11 @@ interface FileUploadSectionProps {
   isDraggingSupport: boolean;
   setIsDraggingSupport: (dragging: boolean) => void;
   isLoading: boolean;
+  // 新增：粘贴模式相关
+  isPasteMode?: boolean;
+  setPasteMode?: (mode: boolean) => void;
+  pastedText?: string;
+  setPastedText?: (text: string) => void;
 }
 
 export function FileUploadSection({
@@ -50,7 +58,37 @@ export function FileUploadSection({
   isDraggingSupport,
   setIsDraggingSupport,
   isLoading,
+  isPasteMode = false,
+  setPasteMode,
+  pastedText = "",
+  setPastedText,
 }: FileUploadSectionProps) {
+  const { toast } = useToast();
+
+  // 切换粘贴模式
+  const togglePasteMode = () => {
+    if (!setPasteMode) return;
+    
+    const newMode = !isPasteMode;
+    setPasteMode(newMode);
+    
+    // 切换模式时清空之前的内容
+    if (newMode) {
+      // 切换到粘贴模式，清空文件
+      setOriginalEssayFile(null);
+    } else {
+      // 切换到文件模式，清空文本
+      if (setPastedText) {
+        setPastedText("");
+      }
+    }
+    
+    toast({
+      title: newMode ? "切换到文档粘贴模式" : "切换到文件上传模式",
+      description: newMode ? "现在可以直接粘贴文档内容" : "现在可以上传文件",
+    });
+  };
+
   // 处理初稿文件上传
   const handleOriginalFileUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -91,7 +129,7 @@ export function FileUploadSection({
     }
   };
 
-  // 拖拽处理
+  // 处理拖拽事件
   const handleDragEvents = (
     e: React.DragEvent,
     type: "original" | "support",
@@ -145,76 +183,131 @@ export function FileUploadSection({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 初稿文件上传 */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-stone-700" />
-            <h3 className="text-sm font-medium text-stone-800">初稿文件</h3>
-            <Badge
-              variant="destructive"
-              className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
-            >
-              必需
-            </Badge>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-stone-700" />
+              <h3 className="text-sm font-medium text-stone-800">初稿文件</h3>
+              <Badge
+                variant="destructive"
+                className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+              >
+                必需
+              </Badge>
+            </div>
+            
+            {/* 文档粘贴模式切换按钮 */}
+            {setPasteMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={togglePasteMode}
+                disabled={isLoading}
+                className="h-5 px-2 text-xs hover:bg-stone-200"
+                title={isPasteMode ? "切换到文件上传模式" : "切换到文档粘贴模式"}
+              >
+                {isPasteMode ? (
+                  <>
+                    <Upload className="h-3 w-3 mr-1" />
+                    文件模式
+                  </>
+                ) : (
+                  <>
+                    <FileEdit className="h-3 w-3 mr-1" />
+                    粘贴模式
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
-          {originalEssayFile ? (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <div>
-                    <div className="text-sm font-medium text-stone-800">
-                      {originalEssayFile.name}
-                    </div>
-                    <div className="text-xs text-stone-600">
-                      {formatFileSize(originalEssayFile.size)}
-                    </div>
-                  </div>
+          {isPasteMode ? (
+            // 文档粘贴模式
+            <div className="space-y-2">
+              <Textarea
+                placeholder="请粘贴您的初稿内容到这里..."
+                value={pastedText}
+                onChange={(e) => setPastedText && setPastedText(e.target.value)}
+                disabled={isLoading}
+                className="min-h-[108px] text-sm border border-stone-200 bg-white placeholder:text-stone-500 focus-visible:ring-1 focus-visible:ring-stone-400 focus-visible:border-stone-400 transition-colors shadow-sm rounded-md p-3 resize-y"
+              />
+
+              {pastedText && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPastedText && setPastedText("")}
+                    disabled={isLoading}
+                    className="h-6 px-2 text-xs hover:bg-red-100 hover:text-red-600"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    清空
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeOriginalFile}
-                  disabled={isLoading}
-                  className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              )}
             </div>
           ) : (
-            <div
-              className={`
-                border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer
-                ${
-                  isDraggingOriginal
-                    ? "border-stone-500 bg-stone-100/70"
-                    : "border-stone-300 hover:border-stone-500 hover:bg-stone-50"
-                }
-                ${isLoading ? "opacity-50 pointer-events-none" : ""}
-              `}
-              onDragEnter={(e) => handleDragEvents(e, "original", "enter")}
-              onDragLeave={(e) => handleDragEvents(e, "original", "leave")}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => handleDragEvents(e, "original", "drop")}
-              onClick={() => {
-                const input = document.createElement("input");
-                input.type = "file";
-                input.accept = ".pdf,.doc,.docx,.txt";
-                input.onchange = (e) =>
-                  handleOriginalFileUpload(
-                    (e.target as HTMLInputElement).files
-                  );
-                input.click();
-              }}
-            >
-              <Upload className="h-6 w-6 mx-auto mb-2 text-stone-600" />
-              <div className="text-sm font-medium mb-1 text-stone-800">
-                点击上传或拖拽文件
+            // 文件上传模式
+            originalEssayFile ? (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <div className="text-sm font-medium text-stone-800">
+                        {originalEssayFile.name}
+                      </div>
+                      <div className="text-xs text-stone-600">
+                        {formatFileSize(originalEssayFile.size)}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeOriginalFile}
+                    disabled={isLoading}
+                    className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="text-xs text-stone-600">
-                PDF、Word、TXT（≤10MB）
+            ) : (
+              <div
+                className={`
+                  border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer
+                  ${
+                    isDraggingOriginal
+                      ? "border-stone-500 bg-stone-100/70"
+                      : "border-stone-300 hover:border-stone-500 hover:bg-stone-50"
+                  }
+                  ${isLoading ? "opacity-50 pointer-events-none" : ""}
+                `}
+                onDragEnter={(e) => handleDragEvents(e, "original", "enter")}
+                onDragLeave={(e) => handleDragEvents(e, "original", "leave")}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDragEvents(e, "original", "drop")}
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = ".pdf,.doc,.docx,.txt";
+                  input.onchange = (e) =>
+                    handleOriginalFileUpload(
+                      (e.target as HTMLInputElement).files
+                    );
+                  input.click();
+                }}
+              >
+                <Upload className="h-6 w-6 mx-auto mb-2 text-stone-600" />
+                <div className="text-sm font-medium mb-1 text-stone-800">
+                  点击上传或拖拽文件
+                </div>
+                <div className="text-xs text-stone-600">
+                  PDF、Word、TXT（≤10MB）
+                </div>
               </div>
-            </div>
+            )
           )}
         </div>
 

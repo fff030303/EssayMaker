@@ -22,6 +22,7 @@ export interface StepResultDisplayProps {
   onStepChange?: (step: number) => void;
   personalizationRequirements?: string;
   onShowFullContent?: () => void;
+  materialDoc?: string; // 新增：粘贴的文档内容
 }
 
 /**

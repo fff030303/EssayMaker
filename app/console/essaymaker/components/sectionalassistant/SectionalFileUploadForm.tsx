@@ -58,7 +58,8 @@ interface SectionalFileUploadFormProps {
   onDataUpdate?: (
     file: File | null,
     searchData: string,
-    personalizationRequirements?: string
+    personalizationRequirements?: string,
+    materialDoc?: string // 🆕 新增：粘贴的文档内容
   ) => void;
   onScrollToResult?: () => void;
   onClearAll?: () => void;
@@ -96,6 +97,10 @@ export function SectionalFileUploadForm({
   const [isDraggingOriginal, setIsDraggingOriginal] = useState(false);
   const [isDraggingSupport, setIsDraggingSupport] = useState(false);
 
+  // 新增：文档粘贴模式状态
+  const [isPasteMode, setIsPasteMode] = useState(false);
+  const [pastedText, setPastedText] = useState<string>("");
+
   const { toast } = useToast();
 
   // 🆕 新增：数据存储Hook
@@ -111,8 +116,9 @@ export function SectionalFileUploadForm({
       return;
     }
 
-    if (!originalEssayFile) {
-      setError("请上传初稿文件");
+    // 检查是否有初稿内容（文件或粘贴文本，有任意一个即可）
+    if (!originalEssayFile && !pastedText.trim()) {
+      setError("请上传初稿文件或粘贴初稿内容");
       return;
     }
 
@@ -135,13 +141,15 @@ export function SectionalFileUploadForm({
       });
 
       // 🆕 修改：直接调用第一步API，传递自定义提示词
+      const materialDoc = pastedText.trim(); // 粘贴的文档内容，不再依赖isPasteMode
       const response = await apiService.streamEssayRewriteSearchAndAnalyze(
         userInput,
         supportFiles, // 支持文件
         customWebSearcherRole,
         customWebSearcherTask,
         customWebSearcherOutputFormat,
-        personalizationRequirements // 🆕 新增：传递个性化需求参数
+        personalizationRequirements, // 🆕 新增：传递个性化需求参数
+        materialDoc // 🆕 新增：传递粘贴的文档内容
       );
 
       console.log("分稿助理API响应:", response);
@@ -264,9 +272,10 @@ export function SectionalFileUploadForm({
                   // 传递数据给父组件
                   if (onDataUpdate) {
                     onDataUpdate(
-                      originalEssayFile,
+                      originalEssayFile, // 直接传递文件，如果没有文件则为null
                       currentStepContent,
-                      personalizationRequirements
+                      personalizationRequirements,
+                      materialDoc // 🆕 新增：传递粘贴的文档内容
                     );
                   }
                 } else if (data.type === "complete") {
@@ -292,9 +301,10 @@ export function SectionalFileUploadForm({
 
                   if (onDataUpdate) {
                     onDataUpdate(
-                      originalEssayFile,
+                      originalEssayFile, // 直接传递文件，如果没有文件则为null
                       currentStepContent,
-                      personalizationRequirements
+                      personalizationRequirements,
+                      materialDoc // 🆕 新增：传递粘贴的文档内容
                     );
                   }
 
@@ -414,7 +424,7 @@ export function SectionalFileUploadForm({
     }
   };
 
-  const canSubmit = userInput.trim() && originalEssayFile && !isLoading;
+  const canSubmit = userInput.trim() && (originalEssayFile || pastedText.trim()) && !isLoading;
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -516,6 +526,10 @@ export function SectionalFileUploadForm({
                 isDraggingSupport={isDraggingSupport}
                 setIsDraggingSupport={setIsDraggingSupport}
                 isLoading={isLoading}
+                isPasteMode={isPasteMode}
+                setPasteMode={setIsPasteMode}
+                pastedText={pastedText}
+                setPastedText={setPastedText}
               />
 
               {/* 错误提示 */}

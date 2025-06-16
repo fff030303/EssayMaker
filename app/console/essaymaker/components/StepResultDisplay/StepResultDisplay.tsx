@@ -57,6 +57,7 @@ export function StepResultDisplay({
   onStepChange,
   personalizationRequirements,
   onShowFullContent,
+  materialDoc = "", // 新增：粘贴的文档内容
 }: StepResultDisplayProps) {
   // 状态管理
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
@@ -105,11 +106,11 @@ export function StepResultDisplay({
 
   // 处理撰写改写策略 - 完全复制原始逻辑
   const handleGenerateStrategy = async () => {
-    if (!originalEssayFile || !searchResult) {
+    if ((!originalEssayFile && !materialDoc.trim()) || !searchResult) {
       toast({
         variant: "destructive",
         title: "参数不足",
-        description: "缺少原始文件或搜索结果数据",
+        description: "缺少原始文件/粘贴内容或搜索结果数据",
       });
       return;
     }
@@ -135,11 +136,13 @@ export function StepResultDisplay({
       const streamResponse =
         await apiService.streamEssayRewriteGenerateStrategy(
           searchResult,
-          originalEssayFile,
+          originalEssayFile || null, // 确保类型为 File | null
           result.content || "", // 使用当前分析结果作为analysisResult
           customStrategyGeneratorRole,
           customStrategyGeneratorTask,
-          customStrategyGeneratorOutputFormat
+          customStrategyGeneratorOutputFormat,
+          personalizationRequirements || "",
+          materialDoc // 🆕 新增：传递粘贴的文档内容
         );
 
       if (!streamResponse) {
@@ -280,7 +283,7 @@ export function StepResultDisplay({
       await logStrategyResult(
         {
           searchResult,
-          originalEssayFile,
+          originalEssayFile: originalEssayFile || null,
           customStrategyGeneratorRole,
           customStrategyGeneratorTask,
           customStrategyGeneratorOutputFormat,
@@ -342,7 +345,21 @@ export function StepResultDisplay({
         )}
 
         {/* 撰写改写策略按钮和自定义提示词 */}
-        {originalEssayFile && searchResult && (
+        {(() => {
+          const hasFile = !!originalEssayFile;
+          const hasMaterialDoc = !!materialDoc.trim();
+          const hasSearchResult = !!searchResult;
+          
+          console.log('[StepResultDisplay] 按钮显示条件检查:', {
+            hasFile,
+            hasMaterialDoc,
+            hasSearchResult,
+            materialDocLength: materialDoc.length,
+            shouldShow: (hasFile || hasMaterialDoc) && hasSearchResult
+          });
+          
+          return (hasFile || hasMaterialDoc) && hasSearchResult;
+        })() && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Button

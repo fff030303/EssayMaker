@@ -149,7 +149,7 @@ export function InputArea({
   const debouncedQuery = useCallback((value: string) => {
     if (value.trim().length > 0) {
       // 这里可以添加实时建议或预览功能
-      console.log("Debounced query:", value);
+      // console.log("Debounced query:", value);
     }
   }, []);
 

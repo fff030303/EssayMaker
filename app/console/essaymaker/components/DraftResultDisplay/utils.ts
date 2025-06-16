@@ -55,10 +55,7 @@ export const unwrapMarkdownCodeBlock = (content: string): string => {
   const match = content.trim().match(markdownBlockRegex);
 
   if (match) {
-    console.log("检测到被代码块包裹的 markdown 内容，正在解包:", {
-      original: content.substring(0, 100) + "...",
-      unwrapped: match[1].substring(0, 100) + "...",
-    });
+    
     return match[1];
   }
 
@@ -111,29 +108,28 @@ export const detectContentType = (content: string): "html" | "markdown" => {
     hasHtmlTags && !hasComplexHtml && hasMarkdownTitles;
 
   // 添加调试日志
-  console.log("内容检测:", {
-    content: content.substring(0, 200) + "...",
-    hasHtmlTags,
-    hasHtmlEntities,
-    hasHtmlStructure,
-    hasComplexHtml,
-    hasMarkdownTitles,
-    hasMarkdownSyntax,
-    isSimpleWrappedMarkdown,
-    // 添加标题检测的详细信息
-    hasH1: content.includes("# "),
-    hasH2: content.includes("## "),
-    hasH3: content.includes("### "),
-    titleMatches: content.match(/#{1,6}\s[^\n]+/g),
-    detectedType: hasComplexHtml
-      ? "html" // 优先保持复杂HTML格式
-      : isSimpleWrappedMarkdown
-      ? "markdown" // 简单包装的Markdown
-      : hasHtmlTags || hasHtmlEntities || hasHtmlStructure
-      ? "html"
-      : "markdown",
-  });
-
+  // console.log("内容检测:", {
+  //   content: content.substring(0, 200) + "...",
+  //   hasHtmlTags,
+  //   hasHtmlEntities,
+  //   hasHtmlStructure,
+  //   hasComplexHtml,
+  //   hasMarkdownTitles,
+  //   hasMarkdownSyntax,
+  //   isSimpleWrappedMarkdown,
+  //   // 添加标题检测的详细信息
+  //   hasH1: content.includes("# "),
+  //   hasH2: content.includes("## "),
+  //   hasH3: content.includes("### "),
+  //   titleMatches: content.match(/#{1,6}\s[^\n]+/g),
+  //   detectedType: hasComplexHtml
+  //     ? "html" // 优先保持复杂HTML格式
+  //     : isSimpleWrappedMarkdown
+  //     ? "markdown" // 简单包装的Markdown
+  //     : hasHtmlTags || hasHtmlEntities || hasHtmlStructure
+  //     ? "html"
+  //     : "markdown",
+  // });
   // 如果是复杂HTML（包含样式），必须按HTML处理以保持格式
   if (hasComplexHtml) {
     return "html";
@@ -256,13 +252,12 @@ export const cleanMarkdownToPlainText = (content: string): string => {
     .replace(/^\s+|\s+$/gm, "") // 去除每行开头和结尾的空白
     .trim();
 
-  console.log("清理内容:", {
-    original: unwrappedContent.substring(0, 100) + "...",
-    cleaned: cleanContent.substring(0, 100) + "...",
-    htmlTagsRemoved: (unwrappedContent.match(/<[^>]*>/g) || []).length,
-    markdownRemoved: unwrappedContent !== cleanContent,
-  });
-
+  // console.log("清理内容:", {
+  //   original: unwrappedContent.substring(0, 100) + "...",
+  //   cleaned: cleanContent.substring(0, 100) + "...",
+  //   htmlTagsRemoved: (unwrappedContent.match(/<[^>]*>/g) || []).length,
+  //   markdownRemoved: unwrappedContent !== cleanContent,
+  // });
   return cleanContent;
 };
 
@@ -285,11 +280,10 @@ export const sanitizeHtml = (html: string): string => {
     .replace(/<i>/gi, "<em>") // 将<i>标签转为<em>
     .replace(/<\/i>/gi, "</em>");
 
-  console.log("HTML预处理:", {
-    原始: html.substring(0, 200) + "...",
-    预处理后: preprocessedHtml.substring(0, 200) + "...",
-  });
-
+  // console.log("HTML预处理:", {
+  //   原始: html.substring(0, 200) + "...",
+  //   预处理后: preprocessedHtml.substring(0, 200) + "...",
+  // });
   const sanitized = DOMPurify.sanitize(preprocessedHtml, {
     ALLOWED_TAGS: [
       "h1",
@@ -344,12 +338,11 @@ export const sanitizeHtml = (html: string): string => {
   // 后处理：将HTML中的Markdown语法转换为HTML
   let processedHtml = sanitized;
 
-  console.log("DOMPurify处理后:", {
-    清理结果: processedHtml.substring(0, 200) + "...",
-    是否包含strong: processedHtml.includes("<strong>"),
-    是否包含em: processedHtml.includes("<em>"),
-  });
-
+  // console.log("DOMPurify处理后:", {
+  //   清理结果: processedHtml.substring(0, 200) + "...",
+  //   是否包含strong: processedHtml.includes("<strong>"),
+  //   是否包含em: processedHtml.includes("<em>"),
+  // });
   // 🆕 简化处理：优先保持现有HTML标签，只转换纯Markdown语法
 
   // 1. 处理标题（只在没有HTML标题标签时）
@@ -446,13 +439,12 @@ export const sanitizeHtml = (html: string): string => {
     .replace(/\n\s*\n/g, "\n<br>\n") // 双换行转换为br
     .replace(/(?<!>)(?<!<br>)\n(?!<)(?!<br>)/g, "<br>\n"); // 单换行转br
 
-  console.log("最终处理结果:", {
-    最终HTML: processedHtml.substring(0, 300) + "...",
-    包含strong标签: processedHtml.includes("<strong>"),
-    包含em标签: processedHtml.includes("<em>"),
-    包含br标签: processedHtml.includes("<br>"),
-  });
-
+  // console.log("最终处理结果:", {
+  //   最终HTML: processedHtml.substring(0, 300) + "...",
+  //   包含strong标签: processedHtml.includes("<strong>"),
+  //   包含em标签: processedHtml.includes("<em>"),
+  //   包含br标签: processedHtml.includes("<br>"),
+  // });
   return processedHtml;
 };
 
@@ -463,11 +455,10 @@ export const removeHtmlKeepMarkdown = (content: string): string => {
   // 先解包可能被代码块包裹的内容
   const unwrappedContent = unwrapMarkdownCodeBlock(content);
 
-  console.log("开始去除HTML，保留Markdown:", {
-    原始内容长度: unwrappedContent.length,
-    原始预览: unwrappedContent.substring(0, 200) + "...",
-  });
-
+  // console.log("开始去除HTML，保留Markdown:", {
+  //   原始内容长度: unwrappedContent.length,
+  //   原始预览: unwrappedContent.substring(0, 200) + "...",
+  // });
   // 🆕 第一步：将HTML格式标签转换为Markdown格式（改进版本）
   let processedContent = unwrappedContent;
 
@@ -517,24 +508,22 @@ export const removeHtmlKeepMarkdown = (content: string): string => {
     // 🆕 处理span标签（保留内容，去除标签）
     .replace(/<span[^>]*>(.*?)<\/span>/gi, "$1");
 
-  console.log("HTML标签转换后:", {
-    转换后长度: processedContent.length,
-    转换后预览: processedContent.substring(0, 300) + "...",
-    "包含**标记": processedContent.includes("**"),
-    "包含*标记": processedContent.includes("*"),
-    "包含#标记": processedContent.includes("#"),
-  });
-
+  // console.log("HTML标签转换后:", {
+  //   转换后长度: processedContent.length,
+  //   转换后预览: processedContent.substring(0, 300) + "...",
+  //   "包含**标记": processedContent.includes("**"),
+  //   "包含*标记": processedContent.includes("*"),
+  //   "包含#标记": processedContent.includes("#"),
+  // });
   // 🆕 第二步：去除所有剩余的HTML标签（保留内容）
   const beforeCleanup = processedContent;
   processedContent = processedContent.replace(/<[^>]*>/g, "");
 
-  console.log("去除剩余HTML标签:", {
-    清理前长度: beforeCleanup.length,
-    清理后长度: processedContent.length,
-    是否还有HTML标签: /<[^>]+>/.test(processedContent),
-  });
-
+  // console.log("去除剩余HTML标签:", {
+  //   清理前长度: beforeCleanup.length,
+  //   清理后长度: processedContent.length,
+  //   是否还有HTML标签: /<[^>]+>/.test(processedContent),
+  // });
   // 🆕 第三步：处理HTML实体
   processedContent = processedContent
     .replace(/&nbsp;/g, " ")
@@ -577,32 +566,31 @@ export const removeHtmlKeepMarkdown = (content: string): string => {
     // 🆕 最终清理
     .trim();
 
-  console.log("最终清理完成:", {
-    最终长度: processedContent.length,
-    最终预览: processedContent.substring(0, 400) + "...",
-    包含Markdown粗体: processedContent.includes("**"),
-    包含Markdown斜体: /\*[^*]+\*/.test(processedContent),
-    包含Markdown标题: /^#{1,6}\s/.test(processedContent),
-    包含HTML标签: /<[^>]+>/.test(processedContent),
-    空行数量: (processedContent.match(/\n\n/g) || []).length,
-  });
-
+  // console.log("最终清理完成:", {
+  //   最终长度: processedContent.length,
+  //   最终预览: processedContent.substring(0, 400) + "...",
+  //   包含Markdown粗体: processedContent.includes("**"),
+  //   包含Markdown斜体: /\*[^*]+\*/.test(processedContent),
+  //   包含Markdown标题: /^#{1,6}\s/.test(processedContent),
+  //   包含HTML标签: /<[^>]+>/.test(processedContent),
+  //   空行数量: (processedContent.match(/\n\n/g) || []).length,
+  // });
   // 🆕 验证转换结果
   if (processedContent.length === 0) {
-    console.warn("转换后内容为空，返回原始内容");
+    // console.warn("转换后内容为空，返回原始内容");
     return unwrappedContent;
   }
 
   // 🆕 如果转换后内容太短，可能出现了问题
   if (processedContent.length < unwrappedContent.length * 0.3) {
-    console.warn("转换后内容长度大幅减少，可能存在问题:", {
-      原始长度: unwrappedContent.length,
-      转换后长度: processedContent.length,
-      减少比例:
-        Math.round(
-          (1 - processedContent.length / unwrappedContent.length) * 100
-        ) + "%",
-    });
+    // console.warn("转换后内容长度大幅减少，可能存在问题:", {
+    //   原始长度: unwrappedContent.length,
+    //   转换后长度: processedContent.length,
+    //   减少比例:
+    //     Math.round(
+    //       (1 - processedContent.length / unwrappedContent.length) * 100
+    //     ) + "%",
+    // });
   }
 
   return processedContent;

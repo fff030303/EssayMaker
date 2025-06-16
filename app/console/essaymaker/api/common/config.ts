@@ -7,7 +7,7 @@ const getApiKey = () => {
     process.env.NEXT_PUBLIC_AGENT_FORGE_KEY ||
     process.env.NEXT_PUBLIC_NEWKB_API_KEY;
   if (!key) {
-    console.warn("API Key not found in environment variables");
+    // console.warn("API Key not found in environment variables");
     return "";
   }
   // 清理和获取第一个有效的key
@@ -21,7 +21,7 @@ const getApiUrl = () => {
     // 生产环境使用线上域名
     const url = process.env.NEXT_PUBLIC_AGENT_FORGE_URL;
     if (!url) {
-      console.error("NEXT_PUBLIC_AGENT_FORGE_URL 环境变量未设置!");
+      // console.error("NEXT_PUBLIC_AGENT_FORGE_URL 环境变量未设置!");
       return "https://agentforge-production.up.railway.app"; // 使用实际的生产环境域名
     }
     return url;
@@ -29,7 +29,7 @@ const getApiUrl = () => {
     // 开发环境使用本地域名
     const url = process.env.NEXT_PUBLIC_AGENT_FORGE_URL;
     if (!url) {
-      console.error("NEXT_PUBLIC_AGENT_FORGE_URL 环境变量未设置!");
+      // console.error("NEXT_PUBLIC_AGENT_FORGE_URL 环境变量未设置!");
       return "http://localhost:8000";
     }
     return url;
@@ -51,7 +51,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
     const apiKey = getApiKey();
     if (!apiKey) {
-      console.error("No API key available for request");
+      // console.error("No API key available for request");
     } else {
       config.headers = config.headers || {};
       config.headers["X-API-Key"] = apiKey;
@@ -63,7 +63,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("Request interceptor error:", error);
+    // console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
 );

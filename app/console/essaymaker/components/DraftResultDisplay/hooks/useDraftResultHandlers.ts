@@ -69,7 +69,7 @@ export function useDraftResultHandlers({
         description: "内容已复制到剪贴板（已去除格式）",
       });
     } catch (err) {
-      console.error("复制失败:", err);
+      // console.error("复制失败:", err);
       toast({
         title: "复制失败",
         description: "无法复制到剪贴板，请尝试手动复制",
@@ -101,13 +101,12 @@ export function useDraftResultHandlers({
       // 去除HTML代码，保留Markdown格式
       const processedContent = removeHtmlKeepMarkdown(contentToDownload);
 
-      console.log("下载内容处理:", {
-        原始内容长度: contentToDownload.length,
-        处理后长度: processedContent.length,
-        原始预览: contentToDownload.substring(0, 200) + "...",
-        处理后预览: processedContent.substring(0, 200) + "...",
-      });
-
+      // console.log("下载内容处理:", {
+      //   原始内容长度: contentToDownload.length,
+      //   处理后长度: processedContent.length,
+      //   原始预览: contentToDownload.substring(0, 200) + "...",
+      //   处理后预览: processedContent.substring(0, 200) + "...",
+      // });
       // 使用格式化Word生成器处理Markdown
       const { generateWordDocumentWithFormatting } = await import(
         "../../../utils/docxGenerator"
@@ -119,11 +118,10 @@ export function useDraftResultHandlers({
         description: `${title}已下载为Word文档`,
       });
     } catch (error) {
-      console.error("下载Word文档失败:", error);
-
+      // console.error("下载Word文档失败:", error);
       // 如果格式化下载失败，尝试纯文本下载
       try {
-        console.log("尝试使用纯文本生成器...");
+        // console.log("尝试使用纯文本生成器...");
         const { generateWordDocument } = await import(
           "../../../utils/docxGenerator"
         );
@@ -148,7 +146,7 @@ export function useDraftResultHandlers({
           description: `${title}已下载为Word文档`,
         });
       } catch (fallbackError) {
-        console.error("纯文本docx生成也失败:", fallbackError);
+        // console.error("纯文本docx生成也失败:", fallbackError);
         toast({
           title: "下载失败",
           description: "文档下载失败，请稍后重试",

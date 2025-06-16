@@ -12,31 +12,31 @@ export const OTHER_FILE_TYPES = [".pdf", ".jpg", ".jpeg", ".png"]; // 成绩单�
 export const validateDraftFileType = (file: File): boolean => {
   const fileName = file.name.toLowerCase();
   const isValid = DRAFT_FILE_TYPES.some((type) => fileName.endsWith(type));
-  console.log("验证个人陈述素材表文件:", {
-    originalFileName: file.name,
-    fileName: file.name,
-    lowerCaseName: fileName,
-    fileType: file.type,
-    fileSize: file.size,
-    supportedTypes: DRAFT_FILE_TYPES,
-    checkResults: DRAFT_FILE_TYPES.map((type) => ({
-      type,
-      endsWith: fileName.endsWith(type),
-    })),
-    isValid,
-  });
+  // console.log("验证个人陈述素材表文件:", {
+  //   originalFileName: file.name,
+  //   fileName: file.name,
+  //   lowerCaseName: fileName,
+  //   fileType: file.type,
+  //   fileSize: file.size,
+  //   supportedTypes: DRAFT_FILE_TYPES,
+  //   checkResults: DRAFT_FILE_TYPES.map((type) => ({
+  //     type,
+  //     endsWith: fileName.endsWith(type),
+  //   })),
+  //   isValid,
+  // });
   return isValid;
 };
 
 export const validateOtherFileType = (file: File): boolean => {
   const fileName = file.name.toLowerCase();
   const isValid = OTHER_FILE_TYPES.some((type) => fileName.endsWith(type));
-  console.log("验证成绩单文件:", {
-    fileName: file.name,
-    lowerCaseName: fileName,
-    supportedTypes: OTHER_FILE_TYPES,
-    isValid,
-  });
+  // console.log("验证成绩单文件:", {
+  //   fileName: file.name,
+  //   lowerCaseName: fileName,
+  //   supportedTypes: OTHER_FILE_TYPES,
+  //   isValid,
+  // });
   return isValid;
 };
 

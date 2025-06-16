@@ -17,7 +17,8 @@
 import React, { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, X, GraduationCap } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Upload, FileText, X, GraduationCap, FileEdit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -35,6 +36,11 @@ interface FileUploadSectionProps {
   otherFiles: File[];
   setOtherFiles: (files: File[]) => void;
   isLoading: boolean;
+  // 新增：粘贴模式支持
+  isPasteMode?: boolean;
+  setPasteMode?: (isPaste: boolean) => void;
+  pastedText?: string;
+  setPastedText?: (text: string) => void;
 }
 
 export function FileUploadSection({
@@ -43,6 +49,10 @@ export function FileUploadSection({
   otherFiles,
   setOtherFiles,
   isLoading,
+  isPasteMode = false,
+  setPasteMode,
+  pastedText = "",
+  setPastedText,
 }: FileUploadSectionProps) {
   const { toast } = useToast();
 
@@ -283,6 +293,32 @@ export function FileUploadSection({
     otherFilesInputRef.current?.click();
   };
 
+  // 切换粘贴模式
+  const togglePasteMode = () => {
+    if (!setPasteMode) return;
+    
+    const newMode = !isPasteMode;
+    setPasteMode(newMode);
+    
+    // 切换模式时清空之前的内容
+    if (newMode) {
+      // 切换到粘贴模式，清空文件
+      setDraftFile(null);
+    } else {
+      // 切换到文件模式，清空粘贴内容
+      if (setPastedText) {
+        setPastedText("");
+      }
+    }
+  };
+
+  // 处理粘贴文本变化
+  const handlePastedTextChange = (text: string) => {
+    if (setPastedText) {
+      setPastedText(text);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -294,63 +330,120 @@ export function FileUploadSection({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* 个人陈述素材表上传 */}
         <div className="space-y-3">
-          <div className="text-sm font-medium text-stone-700 flex items-center gap-1">
-            <FileText className="h-4 w-4" />
-            个人陈述素材表
-            <Badge
-              variant="destructive"
-              className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-stone-700" />
+              <h3 className="text-sm font-medium text-stone-800">
+                个人陈述素材表
+              </h3>
+              <Badge
+                variant="destructive"
+                className="ml-2 text-xs px-2 py-0.5 h-5 bg-pink-600 text-white border-pink-600 hover:bg-pink-700"
+              >
+                必需
+              </Badge>
+            </div>
+            
+            {/* 文档粘贴模式切换按钮 */}
+            {setPasteMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={togglePasteMode}
+                disabled={isLoading}
+                className="h-5 px-2 text-xs hover:bg-stone-200"
+                title={isPasteMode ? "切换到文件上传模式" : "切换到文档粘贴模式"}
+              >
+                {isPasteMode ? (
+                  <>
+                    <Upload className="h-3 w-3 mr-1" />
+                    文件模式
+                  </>
+                ) : (
+                  <>
+                    <FileEdit className="h-3 w-3 mr-1" />
+                    粘贴模式
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+          {isPasteMode ? (
+            /* 文档粘贴模式 */
+            <div className="space-y-2">
+              <Textarea
+                placeholder="请粘贴您的个人陈述素材内容到这里..."
+                value={pastedText}
+                onChange={(e) => handlePastedTextChange(e.target.value)}
+                disabled={isLoading}
+                className="min-h-[108px] text-sm border border-stone-200 bg-white placeholder:text-stone-500 focus-visible:ring-1 focus-visible:ring-stone-400 focus-visible:border-stone-400 transition-colors shadow-sm rounded-md p-3 resize-y"
+              />
+
+              {pastedText && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePastedTextChange("")}
+                    disabled={isLoading}
+                    className="h-6 px-2 text-xs hover:bg-red-100 hover:text-red-600"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    清空
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* 文件上传模式 */
+            <div
+              ref={draftDropAreaRef}
+              className={cn(
+                "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer",
+                isDraggingDraft
+                  ? "border-stone-500 bg-stone-100/30"
+                  : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",
+                isLoading && "opacity-50 cursor-not-allowed"
+              )}
+              onClick={!isLoading ? triggerDraftFileInput : undefined}
             >
-              必需
-            </Badge>
-          </div>
-          <div
-            ref={draftDropAreaRef}
-            className={cn(
-              "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer",
-              isDraggingDraft
-                ? "border-stone-500 bg-stone-100/30"
-                : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",
-              isLoading && "opacity-50 cursor-not-allowed"
-            )}
-            onClick={!isLoading ? triggerDraftFileInput : undefined}
-          >
-            {draftFile ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2">
-                  <FileText className="h-5 w-5 text-stone-700" />
-                  <span className="text-sm font-medium text-stone-800">
-                    {draftFile.name}
-                  </span>
+              {draftFile ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <FileText className="h-5 w-5 text-stone-700" />
+                    <span className="text-sm font-medium text-stone-800">
+                      {draftFile.name}
+                    </span>
+                  </div>
+                  <div className="text-xs text-stone-600">
+                    {formatFileSize(draftFile.size)}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveDraftFile();
+                    }}
+                    className="h-6 px-2 text-xs border-stone-300 text-stone-700 hover:bg-stone-100 hover:border-stone-400"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    移除
+                  </Button>
                 </div>
-                <div className="text-xs text-stone-600">
-                  {formatFileSize(draftFile.size)}
+              ) : (
+                <div className="space-y-2">
+                  <Upload className="h-8 w-8 mx-auto text-stone-600" />
+                  <div className="text-sm text-stone-700">
+                    点击或拖拽上传 DOCX 文件
+                  </div>
+                  <div className="text-xs text-stone-600">
+                    支持格式：{DRAFT_FILE_TYPES.join(", ")}
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveDraftFile();
-                  }}
-                  className="h-6 px-2 text-xs border-stone-300 text-stone-700 hover:bg-stone-100 hover:border-stone-400"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  移除
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload className="h-8 w-8 mx-auto text-stone-600" />
-                <div className="text-sm text-stone-700">
-                  点击或拖拽上传 DOCX 文件
-                </div>
-                <div className="text-xs text-stone-600">
-                  支持格式：{DRAFT_FILE_TYPES.join(", ")}
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 成绩单文件上传 */}

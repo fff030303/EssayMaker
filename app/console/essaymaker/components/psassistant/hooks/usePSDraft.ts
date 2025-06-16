@@ -99,17 +99,16 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
     };
 
     try {
-      console.log("[usePSDraft] 🚀 开始生成初稿");
-      console.log("[usePSDraft] 参数检查:", {
-        purifiedContentLength: purifiedContent.length,
-        direction,
-        requirements,
-        transcriptAnalysisLength: transcriptAnalysis?.length || 0,
-      });
-
+      // console.log("[usePSDraft] 🚀 开始生成初稿");
+      // console.log("[usePSDraft] 参数检查:", {
+      //   purifiedContentLength: purifiedContent.length,
+      //   direction,
+      //   requirements,
+      //   transcriptAnalysisLength: transcriptAnalysis?.length || 0,
+      // });
       // 检查参数
       if (!purifiedContent) {
-        console.log("[usePSDraft] ❌ 提纯内容为空");
+        // console.log("[usePSDraft] ❌ 提纯内容为空");
         if (toast) {
           toast({
             title: "错误",
@@ -146,13 +145,12 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
         isComplete: false,
       });
 
-      console.log("[usePSDraft] API请求参数:", {
-        purifiedContentLength: purifiedContent.length,
-        combinedRequirements,
-        transcriptAnalysisExists: !!transcriptAnalysis,
-        timestamp: new Date().toISOString(),
-      });
-
+      // console.log("[usePSDraft] API请求参数:", {
+      //   purifiedContentLength: purifiedContent.length,
+      //   combinedRequirements,
+      //   transcriptAnalysisExists: !!transcriptAnalysis,
+      //   timestamp: new Date().toISOString(),
+      // });
       // 添加超时处理
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("请求超时")), 30000);
@@ -180,18 +178,18 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
       // 使用通用的流处理器
       await processStream(stream, {
         onUpdate: (result) => {
-          console.log("[usePSDraft] 流更新:", {
-            contentLength: result.content.length,
-            currentStep: result.currentStep,
-            isComplete: result.isComplete,
-          });
+          // console.log("[usePSDraft] 流更新:", {
+          //   contentLength: result.content.length,
+          //   currentStep: result.currentStep,
+          //   isComplete: result.isComplete,
+          // });
           setFinalDraft(result);
           finalResult = result;
         },
         onComplete: async (result) => {
-          console.log("[usePSDraft] 初稿生成完成:", {
-            contentLength: result.content.length,
-          });
+          // console.log("[usePSDraft] 初稿生成完成:", {
+          //   contentLength: result.content.length,
+          // });
           const completedResult = {
             ...result,
             isComplete: true,
@@ -202,14 +200,14 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
 
           // 记录成功日志
           const duration = Date.now() - startTime;
-          console.log("[usePSDraft] 记录成功日志", {
-            duration,
-            contentLength: completedResult.content.length,
-          });
+          // console.log("[usePSDraft] 记录成功日志", {
+          //   duration,
+          //   contentLength: completedResult.content.length,
+          // });
           await logDraftResult(requestData, completedResult, true, duration);
         },
         onError: async (error) => {
-          console.error("[usePSDraft] 初稿生成错误:", error);
+          // console.error("[usePSDraft] 初稿生成错误:", error);
           if (toast) {
             toast({
               title: "错误",
@@ -228,10 +226,10 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
 
           // 记录失败日志
           const duration = Date.now() - startTime;
-          console.log("[usePSDraft] 记录失败日志", {
-            duration,
-            errorMessage: error.message,
-          });
+          // console.log("[usePSDraft] 记录失败日志", {
+          //   duration,
+          //   errorMessage: error.message,
+          // });
           await logDraftResult(
             requestData,
             errorResult,
@@ -244,7 +242,7 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
         charDelay: 0.2, // 字符显示间隔0.2毫秒
       });
     } catch (error) {
-      console.error("[usePSDraft] 初稿生成异常:", error);
+      // console.error("[usePSDraft] 初稿生成异常:", error);
       const errorResult = {
         content: "生成初稿时出现错误",
         timestamp: new Date().toISOString(),
@@ -264,10 +262,10 @@ export function usePSDraft({ setFinalDraft, toast, session }: UsePSDraftProps) {
 
       // 记录异常日志
       const duration = Date.now() - startTime;
-      console.log("[usePSDraft] 记录异常日志", {
-        duration,
-        errorMessage: (error as Error).message,
-      });
+      // console.log("[usePSDraft] 记录异常日志", {
+      //   duration,
+      //   errorMessage: (error as Error).message,
+      // });
       await logDraftResult(
         requestData,
         errorResult,

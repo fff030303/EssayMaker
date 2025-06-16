@@ -117,8 +117,7 @@ export function PSAssistantMain({
   onUserInputChange,
 }: PSAssistantProps = {}) {
   // 简化调试信息
-  console.log("PSAssistantMain 渲染 - onStepChange存在:", !!onStepChange);
-
+  // console.log("PSAssistantMain 渲染 - onStepChange存在:", !!onStepChange);
   const { toast } = useToast();
 
   // 创建适配器函数来处理setResult的类型转换
@@ -140,27 +139,25 @@ export function PSAssistantMain({
 
   // 监听result变化，但不自动跳转步骤
   useEffect(() => {
-    console.log("📄 PSAssistantMain - result changed:", {
-      hasResult: !!result,
-      isComplete: result?.isComplete,
-      contentLength: result?.content?.length || 0,
-    });
+    // console.log("📄 PSAssistantMain - result changed:", {
+    //   hasResult: !!result,
+    //   isComplete: result?.isComplete,
+    //   contentLength: result?.content?.length || 0,
+    // });
   }, [result, onStepChange]);
 
   // 监听finalDraft变化，处理最终初稿完成
   useEffect(() => {
-    console.log("📄 PSAssistantMain - finalDraft changed:", {
-      hasFinalDraft: !!finalDraft,
-      isComplete: finalDraft?.isComplete,
-      contentLength: finalDraft?.content?.length || 0,
-    });
-
+    // console.log("📄 PSAssistantMain - finalDraft changed:", {
+    //   hasFinalDraft: !!finalDraft,
+    //   isComplete: finalDraft?.isComplete,
+    //   contentLength: finalDraft?.content?.length || 0,
+    // });
     if (finalDraft && finalDraft.isComplete && finalDraft.content) {
-      console.log("✅ PSAssistantMain - 最终初稿完成");
-
+      // console.log("✅ PSAssistantMain - 最终初稿完成");
       // PS助理完成初稿后保持在第二步，不自动跳转
       // 用户可以通过导航栏手动选择步骤
-      console.log("🎯 PSAssistantMain - 初稿完成，保持在当前步骤显示结果");
+      // console.log("🎯 PSAssistantMain - 初稿完成，保持在当前步骤显示结果");
     }
   }, [finalDraft, onStepChange]);
 

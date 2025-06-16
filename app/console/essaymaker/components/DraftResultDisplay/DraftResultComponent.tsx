@@ -237,11 +237,7 @@ export function DraftResultDisplay({
         capture: true,
       });
     };
-  }, [
-    streamingState.autoScroll,
-    streamingState.setAutoScroll,
-    streamingState.setUserManuallyScrolled,
-  ]);
+  }, [streamingState.autoScroll]);
 
   // 单独检测内容区域的滚动
   useEffect(() => {
@@ -275,11 +271,7 @@ export function DraftResultDisplay({
     return () => {
       container.removeEventListener("scroll", containerScrollHandler);
     };
-  }, [
-    streamingState.autoScroll,
-    streamingState.setAutoScroll,
-    streamingState.setUserManuallyScrolled,
-  ]);
+  }, [streamingState.autoScroll]);
 
   // 如果正在生成中，显示加载状态
   if (streamingState.isGenerating) {

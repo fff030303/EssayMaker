@@ -77,7 +77,7 @@ export function useRLLogger() {
       if (ENABLE_AUTH_CHECK) {
         // 生产模式：检查用户是否已登录
         if (!session?.user?.email) {
-          console.warn("[RLLogger] 用户未登录，跳过日志记录");
+          // console.warn("[RLLogger] 用户未登录，跳过日志记录");
           return;
         }
       }
@@ -96,15 +96,14 @@ export function useRLLogger() {
               unitName: "本地开发",
             };
 
-      console.log("[RLLogger] 开始记录日志:", {
-        assistantType,
-        endpoint,
-        isSuccess,
-        duration,
-        userEmail: userInfo.email,
-        mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
-      });
-
+      // console.log("[RLLogger] 开始记录日志:", {
+      //   assistantType,
+      //   endpoint,
+      //   isSuccess,
+      //   duration,
+      //   userEmail: userInfo.email,
+      //   mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+      // });
       // 调用日志记录API
       const response = await fetch("/api/essaymaker/llm-logs", {
         method: "POST",
@@ -130,9 +129,9 @@ export function useRLLogger() {
       }
 
       const result = await response.json();
-      console.log("[RLLogger] 日志记录成功:", result.resultId);
+      // console.log("[RLLogger] 日志记录成功:", result.resultId);
     } catch (error) {
-      console.error("[RLLogger] 日志记录失败:", error);
+      // console.error("[RLLogger] 日志记录失败:", error);
       // 日志记录失败不应影响主要功能，所以不抛出异常
     }
   };

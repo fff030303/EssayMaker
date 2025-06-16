@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { apiService } from "@/app/console/essaymaker/api";
+import { generateResume } from "../../../api/resume";
 import { DisplayResult } from "../../../types";
 import { useStreamResponse } from "../../../hooks/useStreamResponse";
-import { useCVLogger } from "./useCVLogger";
+// import { useCVLogger } from "./useCVLogger"; // 注释掉登录相关的import
 
 /**
- * useCVReport Hook
+ * useCVReport Hook - Console版本
  *
  * 功能：管理CV助理报告生成的自定义Hook
  *
@@ -59,29 +59,30 @@ import { useCVLogger } from "./useCVLogger";
  * - generateReport：生成函数
  *
  * @author EssayMaker Team
- * @version 1.0.0
+ * @version 1.0.0 - Console版本
  */
 
 export function useCVReport() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { toast } = useToast();
   const { processStream } = useStreamResponse();
-  const { logAnalysisResult } = useCVLogger();
+  // const { logAnalysisResult } = useCVLogger(); // 注释掉登录相关的hook
 
   const generateReport = async (
-    resumeFile: File,
+    resumeFile: File | null,
     supportFiles: File[],
     setResult: (result: DisplayResult | null) => void,
     onStepChange?: (step: number) => void,
+    materialDoc: string = "",
     customRolePrompt: string = "",
     customTaskPrompt: string = "",
     customOutputFormatPrompt: string = ""
   ) => {
-    if (!resumeFile) {
+    if (!resumeFile && !materialDoc.trim()) {
       toast({
         variant: "destructive",
-        title: "文件缺失",
-        description: "请上传个人简历素材表",
+        title: "内容缺失",
+        description: "请上传简历文件或粘贴简历内容",
       });
       return;
     }
@@ -112,13 +113,16 @@ export function useCVReport() {
     }
 
     try {
-      const response = await apiService.generateResume(
+      // 直接传递resumeFile（可能为null）
+      const response = await generateResume(
         resumeFile,
         supportFiles,
+        materialDoc,
         customRolePrompt,
         customTaskPrompt,
         customOutputFormatPrompt
       );
+      
       console.log("API响应类型:", typeof response);
 
       if (response instanceof ReadableStream) {
@@ -142,20 +146,6 @@ export function useCVReport() {
               });
             }
 
-            await logAnalysisResult(
-              {
-                fileContent: resumeFile.name,
-                supportFiles: supportFiles.map((f) => f.name),
-                customRolePrompt,
-                customTaskPrompt,
-                customOutputFormatPrompt,
-                hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
-              },
-              result,
-              true,
-              Date.now() - startTime
-            );
-
             toast({
               title: "已提交",
               description: "您的简历已分析完成",
@@ -165,20 +155,21 @@ export function useCVReport() {
             console.error("处理简历时出错:", error);
             setIsGeneratingReport(false);
 
-            await logAnalysisResult(
-              {
-                fileContent: resumeFile.name,
-                supportFiles: supportFiles.map((f) => f.name),
-                customRolePrompt,
-                customTaskPrompt,
-                customOutputFormatPrompt,
-                hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
-              },
-              { content: "", error: true },
-              false,
-              Date.now() - startTime,
-              error instanceof Error ? error.message : "处理简历时发生错误"
-            );
+            // 注释掉登录相关的日志记录
+            // await logAnalysisResult(
+            //   {
+            //     fileContent: resumeFile?.name || "粘贴内容",
+            //     supportFiles: supportFiles.map((f) => f.name),
+            //     customRolePrompt,
+            //     customTaskPrompt,
+            //     customOutputFormatPrompt,
+            //     hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
+            //   },
+            //   { content: "", error: true },
+            //   false,
+            //   Date.now() - startTime,
+            //   error instanceof Error ? error.message : "处理简历时发生错误"
+            // );
 
             toast({
               variant: "destructive",
@@ -206,19 +197,20 @@ export function useCVReport() {
           const content = responseObj?.text || JSON.stringify(response);
           setIsGeneratingReport(false);
 
-          await logAnalysisResult(
-            {
-              fileContent: resumeFile.name,
-              supportFiles: supportFiles.map((f) => f.name),
-              customRolePrompt,
-              customTaskPrompt,
-              customOutputFormatPrompt,
-              hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
-            },
-            { content, isComplete: true, currentStep: "简历生成完成" },
-            true,
-            Date.now() - startTime
-          );
+          // 注释掉登录相关的日志记录
+          // await logAnalysisResult(
+          //   {
+          //     fileContent: resumeFile?.name || "粘贴内容",
+          //     supportFiles: supportFiles.map((f) => f.name),
+          //     customRolePrompt,
+          //     customTaskPrompt,
+          //     customOutputFormatPrompt,
+          //     hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
+          //   },
+          //   { content, isComplete: true, currentStep: "简历生成完成" },
+          //   true,
+          //   Date.now() - startTime
+          // );
 
           if (setResult) {
             setResult({
@@ -235,20 +227,21 @@ export function useCVReport() {
       console.error("提交简历时出错:", error);
       setIsGeneratingReport(false);
 
-      await logAnalysisResult(
-        {
-          fileContent: resumeFile.name,
-          supportFiles: supportFiles.map((f) => f.name),
-          customRolePrompt,
-          customTaskPrompt,
-          customOutputFormatPrompt,
-          hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
-        },
-        { content: "", error: true },
-        false,
-        Date.now() - startTime,
-        error instanceof Error ? error.message : "上传简历时发生错误"
-      );
+      // 注释掉登录相关的日志记录
+      // await logAnalysisResult(
+      //   {
+      //     fileContent: resumeFile?.name || "粘贴内容",
+      //     supportFiles: supportFiles.map((f) => f.name),
+      //     customRolePrompt,
+      //     customTaskPrompt,
+      //     customOutputFormatPrompt,
+      //     hasCustomPrompt: !!(customRolePrompt || customTaskPrompt || customOutputFormatPrompt),
+      //   },
+      //   { content: "", error: true },
+      //   false,
+      //   Date.now() - startTime,
+      //   error instanceof Error ? error.message : "上传简历时发生错误"
+      // );
 
       toast({
         variant: "destructive",

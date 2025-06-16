@@ -83,18 +83,17 @@ export function usePSLogger() {
   ) => {
     // 🔧 认证检查 - 可通过顶部开关控制
     if (!canLog()) {
-      console.log("[PSLogger] 用户未登录，跳过日志记录");
+      // console.log("[PSLogger] 用户未登录，跳过日志记录");
       return;
     }
 
     const userInfo = getUserInfo();
-    console.log("[PSLogger] 开始记录报告日志:", {
-      isSuccess,
-      duration,
-      userEmail: userInfo.email,
-      mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
-    });
-
+    // console.log("[PSLogger] 开始记录报告日志:", {
+    //   isSuccess,
+    //   duration,
+    //   userEmail: userInfo.email,
+    //   mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+    // });
     // 构建文件名列表
     const fileNames = [];
     if (requestData.files && requestData.files.length > 0) {
@@ -141,17 +140,17 @@ export function usePSLogger() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("[PSLogger] 报告日志记录成功:", result.resultId);
+        // console.log("[PSLogger] 报告日志记录成功:", result.resultId);
       } else {
         const errorText = await response.text();
-        console.error(
-          "[PSLogger] 报告日志记录失败:",
-          response.status,
-          errorText
-        );
+        // // console.error(
+        //   "[PSLogger] 报告日志记录失败:",
+        //   response.status,
+        //   errorText
+        // );
       }
     } catch (error) {
-      console.error("[PSLogger] 报告日志记录异常:", error);
+      // console.error("[PSLogger] 报告日志记录异常:", error);
     }
   };
 
@@ -165,18 +164,17 @@ export function usePSLogger() {
   ) => {
     // 🔧 认证检查 - 可通过顶部开关控制
     if (!canLog()) {
-      console.log("[PSLogger] 用户未登录，跳过日志记录");
+      // console.log("[PSLogger] 用户未登录，跳过日志记录");
       return;
     }
 
     const userInfo = getUserInfo();
-    console.log("[PSLogger] 开始记录初稿日志:", {
-      isSuccess,
-      duration,
-      userEmail: userInfo.email,
-      mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
-    });
-
+    // console.log("[PSLogger] 开始记录初稿日志:", {
+    //   isSuccess,
+    //   duration,
+    //   userEmail: userInfo.email,
+    //   mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+    // });
     // 对于初稿生成，如果有purifiedContent说明已处理文件内容
     const fileContent =
       requestData.purifiedContent && requestData.purifiedContent.length > 0
@@ -220,17 +218,17 @@ export function usePSLogger() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("[PSLogger] 初稿日志记录成功:", result.resultId);
+        // console.log("[PSLogger] 初稿日志记录成功:", result.resultId);
       } else {
         const errorText = await response.text();
-        console.error(
-          "[PSLogger] 初稿日志记录失败:",
-          response.status,
-          errorText
-        );
+        // console.error(
+        //   "[PSLogger] 初稿日志记录失败:",
+        //   response.status,
+        //   errorText
+        // );
       }
     } catch (error) {
-      console.error("[PSLogger] 初稿日志记录异常:", error);
+      // console.error("[PSLogger] 初稿日志记录异常:", error);
     }
   };
 
@@ -245,18 +243,17 @@ export function usePSLogger() {
   ) => {
     // 🔧 认证检查 - 可通过顶部开关控制
     if (!canLog()) {
-      console.log("[PSLogger] 用户未登录，跳过日志记录");
+      // console.log("[PSLogger] 用户未登录，跳过日志记录");
       return;
     }
 
     const userInfo = getUserInfo();
-    console.log("[PSLogger] 开始记录完整日志:", {
-      isSuccess,
-      duration,
-      userEmail: userInfo.email,
-      mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
-    });
-
+    // console.log("[PSLogger] 开始记录完整日志:", {
+    //   isSuccess,
+    //   duration,
+    //   userEmail: userInfo.email,
+    //   mode: ENABLE_AUTH_CHECK ? "生产模式" : "开发模式",
+    // });
     // 构建文件名列表（可能包含多种来源的文件信息）
     const fileNames = [];
     if (requestData.files && requestData.files.length > 0) {
@@ -326,17 +323,17 @@ export function usePSLogger() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("[PSLogger] 完整日志记录成功:", result.resultId);
+        // console.log("[PSLogger] 完整日志记录成功:", result.resultId);
       } else {
         const errorText = await response.text();
-        console.error(
-          "[PSLogger] 完整日志记录失败:",
-          response.status,
-          errorText
-        );
+        // console.error(
+        //   "[PSLogger] 完整日志记录失败:",
+        //   response.status,
+        //   errorText
+        // );
       }
     } catch (error) {
-      console.error("[PSLogger] 完整日志记录异常:", error);
+      // console.error("[PSLogger] 完整日志记录异常:", error);
     }
   };
 

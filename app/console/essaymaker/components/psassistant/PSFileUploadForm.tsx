@@ -89,6 +89,10 @@ export function PSFileUploadForm({
   const [schoolInfo, setSchoolInfo] = useState("");
   const [programInfo, setProgramInfo] = useState("");
   const [otherRequirementsInput, setOtherRequirementsInput] = useState("");
+  
+  // 🆕 粘贴模式状态
+  const [isPasteMode, setIsPasteMode] = useState(false);
+  const [pastedText, setPastedText] = useState("");
 
   // 监听输入变化并通知父组件
   useEffect(() => {
@@ -122,19 +126,25 @@ export function PSFileUploadForm({
       queryText += `，具体需求：${requirements}`;
     }
 
-    // 准备文件数组
-    const files = draftFile ? [draftFile, ...otherFiles] : [...otherFiles];
+    // 准备文件数组 - 根据模式决定是否使用文件
+    const files = (isPasteMode || !draftFile) ? [] : [draftFile, ...otherFiles];
+    const transcriptFiles = isPasteMode ? [] : otherFiles; // 成绩单文件
+    const materialDoc = isPasteMode ? pastedText : ""; // 粘贴的文档内容
 
     console.log("PSFileUploadForm - 调用 handleStreamResponse", {
       queryText,
+      isPasteMode,
       filesCount: files.length,
+      transcriptFilesCount: transcriptFiles.length,
+      materialDocLength: materialDoc.length,
     });
 
-    // 调用handleStreamResponse，使用onLogResult回调记录真实结果
+    // 调用handleStreamResponse，传递正确的参数
     await handleStreamResponse(
       queryText,
       files,
-      undefined,
+      transcriptFiles,
+      materialDoc, // 🆕 传递粘贴的文档内容
       async (requestData, resultData, isSuccess, duration, errorMessage) => {
         console.log("[PSFileUploadForm] 记录PS报告结果日志", {
           isSuccess,
@@ -188,6 +198,11 @@ export function PSFileUploadForm({
       setProgramInfo={setProgramInfo}
       otherRequirements={otherRequirementsInput}
       setOtherRequirements={setOtherRequirementsInput}
+      // 🆕 粘贴模式相关props
+      isPasteMode={isPasteMode}
+      setPasteMode={setIsPasteMode}
+      pastedText={pastedText}
+      setPastedText={setPastedText}
     />
   );
 }

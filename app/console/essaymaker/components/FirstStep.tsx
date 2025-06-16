@@ -125,7 +125,7 @@ interface FirstStepProps {
   onStrategyGenerate?: (result: DisplayResult) => void;
   onStrategyGeneratingChange?: (isGenerating: boolean) => void;
   // 🆕 新增：数据保存回调
-  onDataSave?: (originalFile: File | null, strategyContent: string) => void;
+  onDataSave?: (originalFile: File | null, strategyContent: string, originalEssayDoc?: string) => void;
   // 🆕 新增：清空所有内容回调
   onClearAll?: () => void;
 }

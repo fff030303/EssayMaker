@@ -39,30 +39,14 @@ export function QueryInputSection({
         </div>
 
         <Textarea
-          placeholder="描述你想了解的课程信息，比如：南加州大学经济学硕士的课程设置和申请要求..."
+          placeholder="请输入学校及专业名称"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           className="min-h-[100px] resize-none border border-stone-200 bg-white text-base placeholder:text-stone-500 focus-visible:ring-1 focus-visible:ring-stone-400 focus-visible:border-stone-400 transition-colors shadow-sm"
           disabled={isLoading}
         />
 
-        {userInput.length === 0 && (
-          <div className="space-y-3">
-            <p className="text-sm text-stone-600">或者试试这些热门查询：</p>
-            <div className="flex flex-wrap gap-2">
-              {QUERY_TEMPLATES.slice(0, 6).map((template, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="cursor-pointer bg-stone-200 hover:bg-stone-700 text-stone-700 hover:text-white transition-colors px-3 py-1.5 text-sm font-normal border-stone-300"
-                  onClick={() => setUserInput(template.content)}
-                >
-                  {template.label}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+        
       </div>
     </div>
   );

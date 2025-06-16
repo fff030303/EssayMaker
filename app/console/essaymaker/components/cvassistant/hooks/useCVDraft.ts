@@ -81,11 +81,10 @@ export function useCVDraft() {
     customTaskPrompt: string = "",
     customOutputFormatPrompt: string = ""
   ) => {
-    console.log("开始生成简历...");
-    console.log("当前结果:", reportResult);
-
+    // console.log("开始生成简历...");
+    // console.log("当前结果:", reportResult);
     if (!reportResult || !reportResult.content) {
-      console.log("没有结果或内容，显示错误提示");
+      // console.log("没有结果或内容，显示错误提示");
       toast({
         variant: "destructive",
         title: "生成失败",
@@ -106,7 +105,7 @@ export function useCVDraft() {
     });
 
     try {
-      console.log("调用格式化简历API...");
+      // console.log("调用格式化简历API...");
       // 调用格式化简历API
       const response = await apiService.formatResume(
         reportResult.content,
@@ -115,12 +114,10 @@ export function useCVDraft() {
         customOutputFormatPrompt
       );
 
-      console.log("API响应:", response);
-
+      // console.log("API响应:", response);
       // 检查响应类型
       if (response instanceof ReadableStream) {
-        console.log("开始处理流式响应...");
-
+        // console.log("开始处理流式响应...");
         await processStream(response, {
           onUpdate: (result) => {
             onFormattedResumeChange({
@@ -154,7 +151,7 @@ export function useCVDraft() {
             });
           },
           onError: async (error) => {
-            console.error("生成简历时出错:", error);
+            // console.error("生成简历时出错:", error);
             setIsGeneratingDraft(false);
 
             // 记录失败的格式化结果
@@ -189,8 +186,7 @@ export function useCVDraft() {
         });
       } else {
         // 处理非流式响应
-        console.log("接收到非流式响应");
-
+        // console.log("接收到非流式响应");
         let content = "";
         if (typeof response === "string") {
           content = response;
@@ -229,7 +225,7 @@ export function useCVDraft() {
         });
       }
     } catch (error) {
-      console.error("生成简历初稿时出错:", error);
+      // console.error("生成简历初稿时出错:", error);
       setIsGeneratingDraft(false);
 
       // 记录失败的格式化结果

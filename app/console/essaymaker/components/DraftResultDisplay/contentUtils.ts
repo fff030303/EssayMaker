@@ -32,7 +32,7 @@ export const parseMultiSegmentContent = (content: string): ContentSegment[] => {
 
   // 如果没有reasoning行，说明是纯文本内容
   if (reasoningLines.length === 0) {
-    console.log("检测到纯文本内容（无reasoning），不进行JSON解析");
+    // console.log("检测到纯文本内容（无reasoning），不进行JSON解析");
     return [
       {
         content_type: "default",
@@ -42,11 +42,10 @@ export const parseMultiSegmentContent = (content: string): ContentSegment[] => {
     ];
   }
 
-  console.log("检测到包含reasoning的混合格式，开始解析:", {
-    reasoningLines: reasoningLines.length,
-    totalLines: lines.length,
-  });
-
+  // console.log("检测到包含reasoning的混合格式，开始解析:", {
+  //   reasoningLines: reasoningLines.length,
+  //   totalLines: lines.length,
+  // });
   // 🆕 分离reasoning（JSON格式）和其他内容（纯文本）
   const segments: ContentSegment[] = [];
   let nonReasoningContent = "";
@@ -100,10 +99,10 @@ export const parseMultiSegmentContent = (content: string): ContentSegment[] => {
           continue;
         }
       } catch (e) {
-        console.log(
-          "reasoning JSON解析失败:",
-          trimmedLine.substring(0, 50) + "..."
-        );
+        // console.log(
+        //   "reasoning JSON解析失败:",
+        //   trimmedLine.substring(0, 50) + "..."
+        // );
         // 解析失败，当作普通文本处理
         nonReasoningContent += line + "\n";
       }
@@ -122,16 +121,16 @@ export const parseMultiSegmentContent = (content: string): ContentSegment[] => {
     });
   }
 
-  console.log("成功解析混合格式内容:", {
-    reasoningSegments: segments.filter((s) => s.content_type === "reasoning")
-      .length,
-    defaultSegments: segments.filter((s) => s.content_type === "default")
-      .length,
-    segments: segments.map((s) => ({
-      type: s.content_type,
-      length: s.content.length,
-    })),
-  });
+  // console.log("成功解析混合格式内容:", {
+  //   reasoningSegments: segments.filter((s) => s.content_type === "reasoning")
+  //     .length,
+  //   defaultSegments: segments.filter((s) => s.content_type === "default")
+  //     .length,
+  //   segments: segments.map((s) => ({
+  //     type: s.content_type,
+  //     length: s.content.length,
+  //   })),
+  // });
 
   return segments;
 };
