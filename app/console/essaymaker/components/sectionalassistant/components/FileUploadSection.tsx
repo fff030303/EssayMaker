@@ -330,15 +330,15 @@ export function FileUploadSection({
               {supportFiles.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-2 bg-stone-100 border border-stone-200 rounded-lg text-sm"
+                  className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg text-sm"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <FileText className="h-3 w-3 text-stone-600 flex-shrink-0" />
+                    <FileText className="h-3 w-3 text-blue-600 flex-shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-xs font-medium truncate text-stone-800">
+                                              <div className="text-xs font-medium truncate">
                         {file.name}
                       </div>
-                      <div className="text-xs text-stone-600">
+                      <div className="text-xs text-muted-foreground">
                         {formatFileSize(file.size)}
                       </div>
                     </div>

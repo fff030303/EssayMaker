@@ -7,7 +7,12 @@ const nextConfig = {
   },
   // 使用 Next.js 内置的 console 移除功能
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // 临时保留所有console以便调试生产环境问题
+    removeConsole: false,
+    // 原配置：
+    // removeConsole: process.env.NODE_ENV === 'production' ? {
+    //   exclude: ['error', 'warn', 'info']
+    // } : false,
   },
   // 构建优化配置
   experimental: {

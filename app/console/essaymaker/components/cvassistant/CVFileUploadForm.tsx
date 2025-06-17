@@ -539,7 +539,7 @@ export function CVFileUploadForm({
 
                   {/* 已上传的支持文件列表 */}
                   {supportFiles.length > 0 && (
-                    <div className="min-h-[108px] space-y-2 max-h-32 overflow-y-auto">
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
                       {supportFiles.map((file, index) => (
                         <div
                           key={index}
@@ -574,7 +574,7 @@ export function CVFileUploadForm({
                   <div
                     ref={supportDropAreaRef}
                     className={cn(
-                      "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer min-h-[108px] ",
+                      "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer",
                       isDraggingSupport
                         ? "border-stone-500 bg-stone-100/30"
                         : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",

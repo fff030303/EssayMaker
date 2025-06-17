@@ -18,7 +18,7 @@ import React, { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, FileText, X, GraduationCap, FileEdit } from "lucide-react";
+import { Upload, FileText, X, GraduationCap, FileEdit, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -396,42 +396,46 @@ export function FileUploadSection({
             </div>
           ) : (
             /* 文件上传模式 */
-            <div
-              ref={draftDropAreaRef}
-              className={cn(
-                "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer",
-                isDraggingDraft
-                  ? "border-stone-500 bg-stone-100/30"
-                  : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",
-                isLoading && "opacity-50 cursor-not-allowed"
-              )}
-              onClick={!isLoading ? triggerDraftFileInput : undefined}
-            >
-              {draftFile ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2">
-                    <FileText className="h-5 w-5 text-stone-700" />
-                    <span className="text-sm font-medium text-stone-800">
-                      {draftFile.name}
-                    </span>
-                  </div>
-                  <div className="text-xs text-stone-600">
-                    {formatFileSize(draftFile.size)}
+            draftFile ? (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <div className="text-sm font-medium text-stone-800">
+                        {draftFile.name}
+                      </div>
+                      <div className="text-xs text-stone-600">
+                        {formatFileSize(draftFile.size)}
+                      </div>
+                    </div>
                   </div>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemoveDraftFile();
                     }}
-                    className="h-6 px-2 text-xs border-stone-300 text-stone-700 hover:bg-stone-100 hover:border-stone-400"
+                    disabled={isLoading}
+                    className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
                   >
-                    <X className="h-3 w-3 mr-1" />
-                    移除
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <div
+                ref={draftDropAreaRef}
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer",
+                  isDraggingDraft
+                    ? "border-stone-500 bg-stone-100/30"
+                    : "border-stone-300 hover:border-stone-400 hover:bg-stone-100/40",
+                  isLoading && "opacity-50 cursor-not-allowed"
+                )}
+                onClick={!isLoading ? triggerDraftFileInput : undefined}
+              >
                 <div className="space-y-2">
                   <Upload className="h-8 w-8 mx-auto text-stone-600" />
                   <div className="text-sm text-stone-700">
@@ -441,8 +445,8 @@ export function FileUploadSection({
                     支持格式：{DRAFT_FILE_TYPES.join(", ")}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )
           )}
         </div>
 
@@ -458,6 +462,44 @@ export function FileUploadSection({
               可选
             </Badge>
           </div>
+
+          {/* 已上传的成绩单文件列表 */}
+          {otherFiles.length > 0 && (
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {otherFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg text-sm"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <FileText className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium truncate">
+                        {file.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveOtherFile(index);
+                    }}
+                    disabled={isLoading}
+                    className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600 flex-shrink-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 成绩单文件上传区域 */}
           <div
             ref={otherDropAreaRef}
             className={cn(
@@ -469,50 +511,15 @@ export function FileUploadSection({
             )}
             onClick={!isLoading ? triggerOtherFilesInput : undefined}
           >
-            {otherFiles.length > 0 ? (
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-stone-800">
-                  已上传 {otherFiles.length} 个文件
-                </div>
-                <div className="space-y-1">
-                  {otherFiles.slice(0, 3).map((file, index) => (
-                    <div
-                      key={index}
-                      className="text-xs text-stone-600 truncate"
-                    >
-                      {file.name}
-                    </div>
-                  ))}
-                  {otherFiles.length > 3 && (
-                    <div className="text-xs text-stone-600">
-                      还有 {otherFiles.length - 3} 个文件...
-                    </div>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleClearAllOtherFiles();
-                  }}
-                  className="h-6 px-2 text-xs border-stone-300 text-stone-700 hover:bg-stone-100 hover:border-stone-400"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  清空
-                </Button>
+            <div className="space-y-2">
+              <Upload className="h-8 w-8 mx-auto text-stone-600" />
+              <div className="text-sm text-stone-700">
+                点击或拖拽上传成绩单
               </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload className="h-8 w-8 mx-auto text-stone-600" />
-                <div className="text-sm text-stone-700">
-                  点击或拖拽上传成绩单
-                </div>
-                <div className="text-xs text-stone-600">
-                  支持格式：{OTHER_FILE_TYPES.join(", ")}
-                </div>
+              <div className="text-xs text-stone-600">
+                支持格式：{OTHER_FILE_TYPES.join(", ")}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

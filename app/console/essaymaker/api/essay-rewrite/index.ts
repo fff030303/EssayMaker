@@ -178,19 +178,19 @@ export async function streamEssayRewriteGenerateStrategy(
     // 添加必需参数
     formData.append("search_result", searchResult);
     
-    // 添加初稿文件（如果有）或粘贴内容
-    if (originalEssayFile) {
-      formData.append(
-        "original_essay_file",
-        originalEssayFile,
-        originalEssayFile.name
-      );
-    }
-
-    // 添加粘贴的文档内容
+    // 粘贴内容和文件二选一的逻辑
     if (materialDoc && materialDoc.trim()) {
+      // 有粘贴内容时，只传 material_doc，不传 original_essay_file
       formData.append("material_doc", materialDoc);
-      console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+      console.log(`使用粘贴内容: ${materialDoc.length} 字符，不传文件`);
+    } else if (originalEssayFile) {
+      // 没有粘贴内容时，传文件
+      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+      console.log(`使用文件: ${originalEssayFile.name}，不传粘贴内容`);
+    } else {
+      // 两者都没有时传空的 material_doc
+      formData.append("material_doc", "");
+      console.log("使用空的粘贴内容作为占位符");
     }
 
     // 添加可选参数
@@ -292,19 +292,19 @@ export async function streamEssayRewriteRewriteEssay(
     // 添加必需参数
     formData.append("rewrite_strategy", rewriteStrategy);
     
-    // 添加初稿文件（如果有）
-    if (originalEssayFile) {
-      formData.append(
-        "original_essay_file",
-        originalEssayFile,
-        originalEssayFile.name
-      );
-    }
-
-    // 添加粘贴的文档内容
+    // 粘贴内容和文件二选一的逻辑
     if (materialDoc && materialDoc.trim()) {
+      // 有粘贴内容时，只传 material_doc，不传 original_essay_file
       formData.append("material_doc", materialDoc);
-      console.log(`添加粘贴文档内容: ${materialDoc.length} 字符`);
+      console.log(`使用粘贴内容: ${materialDoc.length} 字符，不传文件`);
+    } else if (originalEssayFile) {
+      // 没有粘贴内容时，传文件
+      formData.append("original_essay_file", originalEssayFile, originalEssayFile.name);
+      console.log(`使用文件: ${originalEssayFile.name}，不传粘贴内容`);
+    } else {
+      // 两者都没有时传空的 material_doc
+      formData.append("material_doc", "");
+      console.log("使用空的粘贴内容作为占位符");
     }
 
     // 添加自定义提示词参数

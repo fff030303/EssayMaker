@@ -279,10 +279,10 @@ export const sanitizeHtml = (html: string): string => {
     '<code style="background-color: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem;">$1</code>'
   );
 
-  // 5. 处理占位符样式
+  // 5. 处理占位符样式 - 修复异常加粗问题
   processedHtml = processedHtml.replace(
     /\[([^\]]+)\]/g,
-    '<span style="color: #6b7280;">[$1]</span>'
+    '<span style="color: #6b7280; font-weight: normal;">[$1]</span>'
   );
 
   // 6. 处理列表项

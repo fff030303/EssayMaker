@@ -91,7 +91,9 @@ export async function generateRewriteStrategy(
       analysisResult,
       customRole,
       customTask,
-      customOutputFormat
+      customOutputFormat,
+      "", // personalizationRequirements 参数
+      "" // materialDoc 参数
     );
 
     if (!streamResponse) {

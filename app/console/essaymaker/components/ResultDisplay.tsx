@@ -339,10 +339,10 @@ const sanitizeHtml = (html: string): string => {
     '<code style="background-color: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem;">$1</code>'
   );
 
-  // 5. 处理占位符样式
+  // 5. 处理占位符样式 - 修复异常加粗问题
   processedHtml = processedHtml.replace(
     /\[([^\]]+)\]/g,
-    '<span style="color: #6b7280;">[$1]</span>'
+    '<span style="color: #6b7280; font-weight: normal;">[$1]</span>'
   );
 
   // 6. 处理列表项
@@ -529,7 +529,7 @@ export function ResultDisplay({
         outputFormat: customStrategyGeneratorOutputFormat,
       });
 
-      // 🆕 修改：传递自定义提示词参数
+      // 🆕 修改：传递自定义提示词参数和个性化需求
       const streamResponse =
         await apiService.streamEssayRewriteGenerateStrategy(
           searchResult,
@@ -537,7 +537,9 @@ export function ResultDisplay({
           result.content || "", // 使用当前分析结果作为analysisResult
           customStrategyGeneratorRole,
           customStrategyGeneratorTask,
-          customStrategyGeneratorOutputFormat
+          customStrategyGeneratorOutputFormat,
+          personalizationRequirements || "", // 添加个性化需求参数
+          "" // materialDoc 参数，暂时为空
         );
 
       if (!streamResponse) {
