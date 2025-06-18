@@ -647,7 +647,7 @@ export function SectionalStrategyAndDraftDisplay({
                   <div className="flex-grow">
                     <DraftResultDisplay
                       result={finalDraft}
-                      title="个人陈述初稿"
+                      title="个人陈述分稿"
                       key="final-draft"
                     />
                   </div>
