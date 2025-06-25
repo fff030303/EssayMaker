@@ -59,6 +59,7 @@ import { Search, Sparkles, User, FileText, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { SectionalAssistantMain } from "./sectionalassistant/SectionalAssistantMain";
+import { CottonUptoAssistantMain } from "./cottonupto/CottonUptoAssistantMain";
 import { StepResultSection } from "./StepResultSection";
 
 // 在 FirstStepProps 接口中添加 isProfessorSearch 属性
@@ -102,6 +103,7 @@ interface FirstStepProps {
   setIsCVAssistant?: (isCV: boolean) => void; // 添加设置CV助理状态
   setIsRLAssistant?: (isRL: boolean) => void; // 添加设置RL助理状态
   setIsSectionalAssistant?: (isSectional: boolean) => void; // 添加设置分稿助理状态
+  setIsCottonUptoAssistant?: (isCottonUpto: boolean) => void; // 添加设置 Cotton Upto 助手状态
   setShowStepNavigation?: (show: boolean) => void; // 添加控制步骤导航显示
   onUserInputChange?: (
     direction: string,
@@ -121,6 +123,7 @@ interface FirstStepProps {
   ) => void; // 添加设置助理类型的方法
   onCvClick?: () => void; // 添加CV助理按钮点击回调
   onRlClick?: () => void; // 添加RL助理按钮点击回调
+  onCottonUptoClick?: () => void; // 添加Cotton Upto助手按钮点击回调
   // 🆕 新增：改写策略相关props
   onStrategyGenerate?: (result: DisplayResult) => void;
   onStrategyGeneratingChange?: (isGenerating: boolean) => void;
@@ -162,6 +165,7 @@ export function FirstStep({
   setIsCVAssistant,
   setIsRLAssistant,
   setIsSectionalAssistant,
+  setIsCottonUptoAssistant,
   setShowStepNavigation,
   onUserInputChange,
   onOtherFilesChange,
@@ -170,6 +174,7 @@ export function FirstStep({
   setCurrentAssistantType,
   onCvClick,
   onRlClick,
+  onCottonUptoClick,
   onStrategyGenerate,
   onStrategyGeneratingChange,
   onDataSave,
@@ -418,6 +423,12 @@ export function FirstStep({
     setIsInputExpanded(true);
   };
 
+  const handleCottonUptoClick = () => {
+    console.log("Cotton Upto助手点击");
+    setInputMode("cottonupto");
+    setShouldHideResult(false);
+  };
+
   // 添加统一的按钮切换处理函数 - 清空输入和文件
   const handleButtonChange = useCallback(
     (type: ButtonType) => {
@@ -503,7 +514,7 @@ export function FirstStep({
 
   // 添加状态来跟踪当前助理类型
   const [internalAssistantType, setInternalAssistantType] = useState<
-    "draft" | "cv" | "ps" | "custom" | "rl" | "sectional"
+    "draft" | "cv" | "ps" | "custom" | "rl" | "sectional" | "cottonupto"
   >("draft");
 
   return (
@@ -516,6 +527,7 @@ export function FirstStep({
         onCustomClick={handleCustomClick}
         onCvClick={onCvClick}
         onRlClick={onRlClick}
+        onCottonUptoClick={onCottonUptoClick}
         onButtonChange={onButtonChange}
         setResult={setResult}
         setIsPSAssistant={setIsPSAssistant}
@@ -523,6 +535,7 @@ export function FirstStep({
         setIsCVAssistant={setIsCVAssistant}
         setIsRLAssistant={setIsRLAssistant}
         setIsSectionalAssistant={setIsSectionalAssistant}
+        setIsCottonUptoAssistant={setIsCottonUptoAssistant}
         setCurrentAssistantType={setInternalAssistantType}
       />
 
@@ -535,6 +548,8 @@ export function FirstStep({
           return <AssistantTips type="rl" />;
         } else if (internalAssistantType === "sectional") {
           return <AssistantTips type="sectional" />;
+        } else if (internalAssistantType === "cottonupto") {
+          return <AssistantTips type="cottonupto" />;
         } else if (internalAssistantType === "draft") {
           // PS助理的提示现在由PSAssistant组件内部处理，这里不再显示
           return null;
@@ -567,6 +582,15 @@ export function FirstStep({
             onStrategyGeneratingChange={onStrategyGeneratingChange}
             onDataSave={onDataSave}
             onClearAll={onClearAll}
+          />
+        </div>
+      ) : internalAssistantType === "cottonupto" ? (
+        /* Cotton Upto 助手界面 */
+        <div className="w-full">
+          <CottonUptoAssistantMain
+            onStepChange={onStepChange}
+            setResult={setResult}
+            result={result}
           />
         </div>
       ) : internalAssistantType === "draft" ? (
@@ -603,10 +627,11 @@ export function FirstStep({
 
       {/* 结果区域 - 如果有结果且不是CV助理、RL助理、分稿助理或PS助理模式 */}
       <div ref={resultRef}>
-        {/* 不在CV助理、RL助理、分稿助理或PS助理模式时才显示结果区域 */}
+        {/* 不在CV助理、RL助理、分稿助理、Cotton Upto助手或PS助理模式时才显示结果区域 */}
         {internalAssistantType !== "cv" &&
           internalAssistantType !== "rl" &&
           internalAssistantType !== "sectional" &&
+          internalAssistantType !== "cottonupto" &&
           internalAssistantType !== "draft" &&
           result &&
           !shouldHideResult && (

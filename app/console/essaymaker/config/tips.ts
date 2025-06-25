@@ -17,4 +17,9 @@ export const assistantTips = {
   sectional: [
     // 🚫 移除蓝色提示组件 - 按用户要求不显示步骤提示
   ],
+  cottonupto: [
+    "Cotton Upto 助手帮您优化学术写作",
+    "支持文本粘贴和文件上传",
+    "个性化定制满足您的需求",
+  ],
 };

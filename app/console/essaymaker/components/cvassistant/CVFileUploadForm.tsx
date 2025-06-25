@@ -140,7 +140,7 @@ export function CVFileUploadForm({
   const [isDraggingResume, setIsDraggingResume] = useState(false);
   const [isDraggingSupport, setIsDraggingSupport] = useState(false);
   
-  // 新增：文档粘贴模式状态
+  // 新增：文档文本输入模式状态
   const [isPasteMode, setIsPasteMode] = useState(false);
   const [pastedResumeText, setPastedResumeText] = useState<string>("");
 
@@ -222,14 +222,14 @@ export function CVFileUploadForm({
     });
   };
 
-  // 新增：切换文档粘贴模式
+  // 新增：切换文档文本输入模式
   const togglePasteMode = () => {
     const newMode = !isPasteMode;
     setIsPasteMode(newMode);
     
     // 切换模式时清空之前的内容
     if (newMode) {
-      // 切换到粘贴模式，清空文件
+      // 切换到文本输入模式，清空文件
       setResumeFile(null);
       if (resumeInputRef.current) {
         resumeInputRef.current.value = "";
@@ -240,7 +240,7 @@ export function CVFileUploadForm({
     }
     
     toast({
-      title: newMode ? "切换到文档粘贴模式" : "切换到文件上传模式",
+      title: newMode ? "切换到文档文本输入模式" : "切换到文件上传模式",
       description: newMode ? "现在可以直接粘贴文档内容" : "现在可以上传文件",
     });
   };
@@ -311,7 +311,7 @@ export function CVFileUploadForm({
         return;
       }
       
-      // 粘贴模式：传递 null 文件和粘贴的文档内容
+      // 文本输入模式：传递 null 文件和粘贴的文档内容
       await generateReport(
         null, // 不传递文件
         supportFiles,
@@ -385,14 +385,14 @@ export function CVFileUploadForm({
                       </Badge>
                     </div>
                     
-                    {/* 文档粘贴模式切换按钮 */}
+                    {/* 文档文本输入模式切换按钮 */}
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={togglePasteMode}
                       disabled={isGeneratingReport}
                       className="h-5 px-2 text-xs hover:bg-stone-200"
-                      title={isPasteMode ? "切换到文件上传模式" : "切换到文档粘贴模式"}
+                      title={isPasteMode ? "切换到文件上传模式" : "切换到文档文本输入模式"}
                     >
                       {isPasteMode ? (
                         <>
@@ -402,14 +402,14 @@ export function CVFileUploadForm({
                       ) : (
                         <>
                           <FileEdit className="h-3 w-3 mr-1" />
-                          粘贴模式
+                          文本输入模式
                         </>
                       )}
                     </Button>
                   </div>
 
                   {isPasteMode ? (
-                    /* 文档粘贴模式 */
+                    /* 文档文本输入模式 */
                     <div className="space-y-2">
                       <Textarea
                         placeholder="请粘贴您的简历内容到这里..."

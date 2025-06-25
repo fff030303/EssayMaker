@@ -119,6 +119,10 @@ export default function EssayMakerPage() {
   const [isSectionalAssistant, setIsSectionalAssistant] =
     useState<boolean>(false);
 
+  // 新增：添加判断是否为 套瓷助理
+  const [isCottonUptoAssistant, setIsCottonUptoAssistant] =
+    useState<boolean>(false);
+
   // 添加控制步骤导航显示状态，默认显示
   const [showStepNavigation, setShowStepNavigation] = useState<boolean>(true);
 
@@ -235,6 +239,7 @@ export default function EssayMakerPage() {
       isRLAssistant,
       isDraftAssistant,
       isSectionalAssistant,
+      isCottonUptoAssistant,
       currentStep,
       isGeneratingFinalDraft,
       timestamp: new Date().toLocaleTimeString(),
@@ -245,6 +250,7 @@ export default function EssayMakerPage() {
     isRLAssistant,
     isDraftAssistant,
     isSectionalAssistant,
+    isCottonUptoAssistant,
     currentStep,
     isGeneratingFinalDraft,
   ]);
@@ -297,6 +303,8 @@ export default function EssayMakerPage() {
         setSectionalOriginalFile(null);
         setSectionalStrategyContent("");
         setSectionalOriginalEssayDoc("");
+        // 🆕 清理 套瓷助理状态
+        setIsCottonUptoAssistant(false);
       };
 
       if (type === "draft") {
@@ -306,6 +314,7 @@ export default function EssayMakerPage() {
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
         setIsSectionalAssistant(false);
+        setIsCottonUptoAssistant(false);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
@@ -317,6 +326,7 @@ export default function EssayMakerPage() {
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
         setIsSectionalAssistant(false);
+        setIsCottonUptoAssistant(false);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
@@ -328,6 +338,7 @@ export default function EssayMakerPage() {
         setIsCVAssistant(false);
         setIsDraftAssistant(false);
         setIsSectionalAssistant(false);
+        setIsCottonUptoAssistant(false);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
@@ -339,10 +350,23 @@ export default function EssayMakerPage() {
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
         setIsSectionalAssistant(true);
+        setIsCottonUptoAssistant(false);
         setShowStepNavigation(true);
         setHasSubmittedDraft(true);
         handleStepChange(1);
         console.log("[PAGE] 切换到分稿助理模式，已清理所有相关状态");
+      } else if (type === "cottonupto") {
+        clearAllStates();
+        setIsPSAssistant(false);
+        setIsCVAssistant(false);
+        setIsRLAssistant(false);
+        setIsDraftAssistant(false);
+        setIsSectionalAssistant(false);
+        setIsCottonUptoAssistant(true);
+        setShowStepNavigation(true);
+        setHasSubmittedDraft(true);
+        handleStepChange(1);
+        console.log("[PAGE] 切换到Cotton Upto助手模式，已清理所有相关状态");
       } else {
         clearAllStates();
         setIsPSAssistant(false);
@@ -350,6 +374,7 @@ export default function EssayMakerPage() {
         setIsRLAssistant(false);
         setIsDraftAssistant(false);
         setIsSectionalAssistant(false);
+        setIsCottonUptoAssistant(false);
         setShowStepNavigation(false);
         setHasSubmittedDraft(false);
         handleStepChange(1);
@@ -375,6 +400,7 @@ export default function EssayMakerPage() {
       setIsRLAssistant,
       setIsDraftAssistant,
       setIsSectionalAssistant,
+      setIsCottonUptoAssistant,
       setShowStepNavigation,
       setHasSubmittedDraft,
       handleStepChange,
@@ -719,6 +745,7 @@ export default function EssayMakerPage() {
                   setIsCVAssistant={setIsCVAssistant}
                   setIsRLAssistant={setIsRLAssistant}
                   setIsSectionalAssistant={setIsSectionalAssistant}
+                  setIsCottonUptoAssistant={setIsCottonUptoAssistant}
                   setShowStepNavigation={setShowStepNavigation}
                   onUserInputChange={handleUserInputChange}
                   onOtherFilesChange={handleOtherFilesChange}
@@ -738,6 +765,8 @@ export default function EssayMakerPage() {
                       ? "rl"
                       : isSectionalAssistant
                       ? "sectional"
+                      : isCottonUptoAssistant
+                      ? "cottonupto"
                       : "custom"
                   }
                   onStrategyGenerate={setSectionalStrategyResult}
@@ -949,6 +978,27 @@ export default function EssayMakerPage() {
                         originalEssayDoc={sectionalOriginalEssayDoc}
                       />
                     );
+                  } else if (isCottonUptoAssistant) {
+                    console.log("[PAGE] ✅ 渲染 套瓷助理");
+                    return (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center p-8 max-w-md">
+                          <h2 className="text-2xl font-bold mb-4">
+                            套瓷助理
+                          </h2>
+                          <p className="text-muted-foreground mb-6">
+                            套瓷助理界面已集成，请返回第一步查看！
+                          </p>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleStepChange(1)}
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            返回第一步
+                          </Button>
+                        </div>
+                      </div>
+                    );
                   } else {
                     console.log(
                       "[PAGE] ❌ 进入默认分支 - 显示'此查询不需要后续步骤'"
@@ -1030,6 +1080,7 @@ export default function EssayMakerPage() {
           isRLAssistant={isRLAssistant}
           isDraftAssistant={isDraftAssistant}
           isSectionalAssistant={isSectionalAssistant}
+          isCottonUptoAssistant={isCottonUptoAssistant}
           hasSubmittedDraft={hasSubmittedDraft}
         />
 

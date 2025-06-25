@@ -72,6 +72,7 @@ interface StepNavigationProps {
   isRLAssistant: boolean;
   isDraftAssistant?: boolean;
   isSectionalAssistant?: boolean;
+  isCottonUptoAssistant?: boolean;
   hasSubmittedDraft?: boolean;
   hasAnalysisResult?: boolean;
 }
@@ -90,10 +91,11 @@ export function StepNavigation({
   isRLAssistant = false,
   isDraftAssistant = false,
   isSectionalAssistant = false,
+  isCottonUptoAssistant = false,
   hasSubmittedDraft = false,
   hasAnalysisResult = false,
 }: StepNavigationProps) {
-  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理且不是RL助理且不是分稿助理，则不显示导航
+  // 如果不需要多步骤流程且不是教授搜索且不是PS初稿助理且不是CV助理且不是RL助理且不是分稿助理且不是Cotton Upto助手，则不显示导航
   if (
     !shouldShowMultiStepFlow &&
     !isProfessorSearch &&
@@ -101,7 +103,8 @@ export function StepNavigation({
     !isCVAssistant &&
     !isRLAssistant &&
     !isDraftAssistant &&
-    !isSectionalAssistant
+    !isSectionalAssistant &&
+    !isCottonUptoAssistant
   ) {
     return null;
   }
@@ -112,7 +115,8 @@ export function StepNavigation({
     !isProfessorSearch &&
     !isPSAssistant &&
     !isRLAssistant &&
-    !isSectionalAssistant
+    !isSectionalAssistant &&
+    !isCottonUptoAssistant
       ? 3
       : 2;
 
@@ -156,6 +160,8 @@ export function StepNavigation({
                 ? "推荐信信息"
                 : isSectionalAssistant
                 ? "分稿上传"
+                : isCottonUptoAssistant
+                ? "内容上传"
                 : "查询信息"}
             </div>
             {/* 当前步骤的下划线指示器 */}
@@ -179,7 +185,8 @@ export function StepNavigation({
                   !isCVAssistant &&
                   !isRLAssistant &&
                   !isDraftAssistant &&
-                  !isSectionalAssistant
+                  !isSectionalAssistant &&
+                  !isCottonUptoAssistant
                 )
               ) {
                 onStepChange(2);
@@ -198,7 +205,8 @@ export function StepNavigation({
                 !isCVAssistant &&
                 !isRLAssistant &&
                 !isDraftAssistant &&
-                !isSectionalAssistant
+                !isSectionalAssistant &&
+                !isCottonUptoAssistant
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             )}
@@ -214,6 +222,8 @@ export function StepNavigation({
                 ? "推荐信生成"
                 : isSectionalAssistant
                 ? "分稿策略"
+                : isCottonUptoAssistant
+                ? "内容生成"
                 : "补充信息"}
             </div>
             {/* 当前步骤的下划线指示器 */}
@@ -227,7 +237,8 @@ export function StepNavigation({
             !isProfessorSearch &&
             !isPSAssistant &&
             !isRLAssistant &&
-            !isSectionalAssistant && (
+            !isSectionalAssistant &&
+            !isCottonUptoAssistant && (
               <>
                 {/* 分隔符 */}
                 <div className="text-muted-foreground/30 px-2">/</div>

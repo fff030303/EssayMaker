@@ -7,6 +7,8 @@
  * - CV助理：简历生成和优化
  * - RL助理：推荐信生成
  * - PS初稿助理：个人陈述写作
+ * - PS分稿助理：个人陈述分稿写作
+ * - Cotton Upto助手：通用内容生成工具
  * - 自定义查询：通用查询功能
  * - 学校教授查询：专门的学术查询
  * - 问题咨询：一般性问题解答
@@ -60,6 +62,7 @@ export type ButtonType =
   | "cv"
   | "rl"
   | "sectional"
+  | "cottonupto"
   | null;
 
 interface QuickActionButtonsProps {
@@ -69,15 +72,17 @@ interface QuickActionButtonsProps {
   onCustomClick?: () => void;
   onCvClick?: () => void; // 新增 CV 助理点击事件
   onRlClick?: () => void; // 新增 RL 助理点击事件
+  onCottonUptoClick?: () => void; // 新增 Cotton Upto 助手点击事件
   onButtonChange?: (type: ButtonType) => void;
   setResult?: (result: DisplayResult | null) => void; // 修改类型为DisplayResult | null
   setIsPSAssistant?: (isPS: boolean) => void; // 新增属性，设置是否为PS初稿助理
   setIsCVAssistant?: (isCV: boolean) => void; // 新增 CV 助理状态设置
   setIsRLAssistant?: (isRL: boolean) => void; // 新增 RL 助理状态设置
   setIsSectionalAssistant?: (isSectional: boolean) => void; // 新增分稿助理状态设置
+  setIsCottonUptoAssistant?: (isCottonUpto: boolean) => void; // 新增 Cotton Upto 助手状态设置
   setShowStepNavigation?: (show: boolean) => void; // 新增属性，控制是否显示步骤导航
   setCurrentAssistantType?: (
-    type: "draft" | "cv" | "ps" | "custom" | "rl" | "sectional"
+    type: "draft" | "cv" | "ps" | "custom" | "rl" | "sectional" | "cottonupto"
   ) => void; // 添加新的属性
 }
 
@@ -88,12 +93,14 @@ export function QuickActionButtons({
   onCustomClick,
   onCvClick,
   onRlClick,
+  onCottonUptoClick,
   onButtonChange,
   setResult,
   setIsPSAssistant,
   setIsCVAssistant,
   setIsRLAssistant,
   setIsSectionalAssistant,
+  setIsCottonUptoAssistant,
   setShowStepNavigation,
   setCurrentAssistantType, // 添加新的属性
 }: QuickActionButtonsProps) {
@@ -135,6 +142,9 @@ export function QuickActionButtons({
     if (setIsSectionalAssistant) {
       setIsSectionalAssistant(false);
     }
+    if (setIsCottonUptoAssistant) {
+      setIsCottonUptoAssistant(false);
+    }
     // 显示导航栏
     if (setShowStepNavigation) {
       setShowStepNavigation(true);
@@ -166,6 +176,8 @@ export function QuickActionButtons({
         setCurrentAssistantType("rl");
       } else if (type === "custom") {
         setCurrentAssistantType("sectional");
+      } else if (type === "cottonupto") {
+        setCurrentAssistantType("cottonupto");
       } else if (type === "schoolProfessor" || type === "question") {
         setCurrentAssistantType("custom");
       }
@@ -189,11 +201,14 @@ export function QuickActionButtons({
     if (setIsSectionalAssistant) {
       setIsSectionalAssistant(type === "custom");
     }
-    // 修改导航栏显示逻辑：PS初稿助理、CV助理、RL助理和分稿助理都默认显示导航栏
+    if (setIsCottonUptoAssistant) {
+      setIsCottonUptoAssistant(type === "cottonupto");
+    }
+    // 修改导航栏显示逻辑：PS初稿助理、CV助理、RL助理、分稿助理和Cotton Upto助手都默认显示导航栏
     if (setShowStepNavigation) {
-      // 对于PS初稿助理、CV助理、RL助理和分稿助理，始终显示导航栏
+      // 对于PS初稿助理、CV助理、RL助理、分稿助理和Cotton Upto助手，始终显示导航栏
       setShowStepNavigation(
-        type === "draft" || type === "cv" || type === "rl" || type === "custom"
+        type === "draft" || type === "cv" || type === "rl" || type === "custom" || type === "cottonupto"
       );
     }
 
@@ -263,6 +278,15 @@ export function QuickActionButtons({
             disabled={false} // 设置为 false 或删除此行可恢复按钮
           >
             PS分稿助理
+          </Button>
+
+          <Button
+            onClick={() => handleButtonClick("cottonupto", onCottonUptoClick)}
+            variant={getButtonVariant("cottonupto")}
+            size="sm"
+            className="font-medium text-xs md:text-sm"
+          >
+            套瓷助理
           </Button>
 
           {/* <Button

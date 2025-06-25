@@ -23,7 +23,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { assistantTips } from "../config/tips";
 
 interface AssistantTipsProps {
-  type: "draft" | "cv" | "ps" | "custom" | "rl" | "sectional";
+  type: "draft" | "cv" | "ps" | "custom" | "rl" | "sectional" | "cottonupto";
 }
 
 export function AssistantTips({ type }: AssistantTipsProps) {

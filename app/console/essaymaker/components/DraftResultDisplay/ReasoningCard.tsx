@@ -81,6 +81,7 @@ export function ReasoningCard({
   const [autoCollapsed, setAutoCollapsed] = useState(false);
   const [hasRespondedToAutoCollapse, setHasRespondedToAutoCollapse] =
     useState(false);
+  const [userManuallyExpanded, setUserManuallyExpanded] = useState(false);
 
   // 🆕 所有hooks必须在条件性return之前调用
   useEffect(() => {
@@ -92,6 +93,7 @@ export function ReasoningCard({
     //   autoCollapsed,
     //   shouldAutoCollapse,
     //   hasRespondedToAutoCollapse,
+    //   userManuallyExpanded,
     //   segments: reasoningSegments?.map((s) => ({
     //     type: s.content_type,
     //     length: s.content?.length || 0,
@@ -106,12 +108,12 @@ export function ReasoningCard({
     autoCollapsed,
     shouldAutoCollapse,
     hasRespondedToAutoCollapse,
+    userManuallyExpanded,
   ]);
 
-  // 自动收起机制：生成完成后3秒自动收起
+  // 🆕 修复：自动收起机制 - 只在用户没有手动展开过的情况下才自动收起
   useEffect(() => {
-    if (isComplete && !autoCollapsed && !isCollapsed) {
-      // 🆕 只在用户没有手动操作的情况下才自动收起
+    if (isComplete && !autoCollapsed && !isCollapsed && !userManuallyExpanded) {
       const timer = setTimeout(() => {
         // console.log("ReasoningCard: 3秒后自动收起");
         setIsCollapsed(true);
@@ -120,7 +122,7 @@ export function ReasoningCard({
 
       return () => clearTimeout(timer);
     }
-  }, [isComplete, autoCollapsed, isCollapsed]);
+  }, [isComplete, autoCollapsed, isCollapsed, userManuallyExpanded]);
 
   // 🆕 响应外部收起信号：当resume开始生成时立即收起（只响应一次）
   useEffect(() => {
@@ -172,15 +174,16 @@ export function ReasoningCard({
   //   包含转义字符: reasoningSegments.some((s) => s.content?.includes("\\n")),
   //   处理后是否还有转义字符: aggregatedContent.includes("\\n"),
   // });
-  // 处理点击事件
+  // 🆕 修复：处理点击事件 - 添加用户手动操作标记
   const handleToggle = () => {
     const newCollapsedState = !isCollapsed;
     setIsCollapsed(newCollapsedState);
 
-    // 🆕 如果用户手动展开，重置所有自动状态，确保用户完全控制
+    // 🆕 如果用户手动展开，标记为手动展开，防止后续自动收起
     if (!newCollapsedState) {
-      // console.log("ReasoningCard: 用户手动展开，重置所有自动状态");
+      // console.log("ReasoningCard: 用户手动展开，标记为手动展开");
       setAutoCollapsed(false);
+      setUserManuallyExpanded(true); // 关键修复：标记用户手动展开
     } else {
       // console.log("ReasoningCard: 用户手动收起");
     }
